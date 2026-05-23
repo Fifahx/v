@@ -14,11 +14,17 @@
     <header>
         <div class="nav-container">
             <div class="logos">
+                <!-- ใช้ URL รูปภาพจาก Discord ที่มีอยู่เดิม
+                     ถ้าภาพหาย ให้อัปโหลดไปไว้ใน /public/images/ แล้วเปลี่ยน src เป็น /images/logo1.png -->
                 <div class="logo-circle">
-                    <img src="https://cdn.discordapp.com/attachments/1296460975687340053/1498101784588189816/Logo_faculty_of_sta_1.png?ex=69efef82&is=69ee9e02&hm=74f9867255078580b375a7c16a44e5c1e0bf0648e2a7f30326eb57611bc9ed43&">
+                    <img src="https://i.postimg.cc/xT9CVwkm/Logomaster-e6d914f3fa.png"
+                         onerror="this.style.display='none'"
+                         alt="Logo Faculty">
                 </div>
                 <div class="logo-circle">
-                    <img src="https://cdn.discordapp.com/attachments/1296460975687340053/1498107532500271196/f6cdc719062b6b44.png?ex=69eff4dd&is=69eea35d&hm=6a80eb184c41b26b1f86a2b6f335475ad32fa8a053ec838de39fa5ca80547363&">
+                    <img src="https://i.postimg.cc/BvppM911/Logo-faculty-of-sta-(1).png"
+                         onerror="this.style.display='none'"
+                         alt="Logo YRU">
                 </div>
             </div>
             <div class="nav-menu" id="main-nav">
@@ -53,6 +59,10 @@
                     <i class="fas fa-search"></i>ติดตามสถานะการแจ้งเรื่อง
                 </div>
             </div>
+
+            <!-- ── Pinned Tickets Section (admin pin ให้แสดง) ── -->
+            <div id="pinned-tickets-section" class="hidden" style="margin-top:36px;"></div>
+
             <div class="manual-section">
                 <h3>คู่มือการใช้งาน</h3>
                 <div class="manual-grid">
@@ -90,19 +100,39 @@
             <div class="auth-container" style="max-width:600px;">
                 <div class="auth-header">ลงทะเบียน</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                    <div class="form-group"><label>ชื่อ</label><input type="text" id="reg-firstname"></div>
-                    <div class="form-group"><label>นามสกุล</label><input type="text" id="reg-lastname"></div>
+                    <div class="form-group">
+                        <label>ชื่อ <span style="color:#d00000;">*</span></label>
+                        <input type="text" id="reg-firstname" placeholder="ชื่อจริง">
+                    </div>
+                    <div class="form-group">
+                        <label>นามสกุล <span style="color:#d00000;">*</span></label>
+                        <input type="text" id="reg-lastname" placeholder="นามสกุล">
+                    </div>
                 </div>
-                <div class="form-group"><label>อีเมล</label><input type="email" id="reg-email"></div>
+                <div class="form-group">
+                    <label>อีเมล <span style="color:#d00000;">*</span></label>
+                    <input type="email" id="reg-email" placeholder="example@email.com">
+                </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                    <div class="form-group"><label>ID Line</label><input type="text" id="reg-line"></div>
-                    <div class="form-group"><label>เบอร์โทรศัพท์</label><input type="text" id="reg-phone"></div>
+                    <div class="form-group"><label>ID Line</label><input type="text" id="reg-line" placeholder="Line ID (ไม่บังคับ)"></div>
+                    <div class="form-group"><label>เบอร์โทรศัพท์</label><input type="text" id="reg-phone" placeholder="0xx-xxx-xxxx (ไม่บังคับ)"></div>
                 </div>
-                <div class="form-group"><label>กำหนดชื่อผู้ใช้</label><input type="text" id="reg-username"></div>
+                <div class="form-group">
+                    <label>กำหนดชื่อผู้ใช้ <span style="color:#d00000;">*</span></label>
+                    <input type="text" id="reg-username" placeholder="ใช้ตัวอักษร a-z, 0-9 และ _ อย่างน้อย 4 ตัว">
+                    <small style="color:#888;font-size:.78rem;">ตัวอักษรภาษาอังกฤษ ตัวเลข และ _ เท่านั้น อย่างน้อย 4 ตัว</small>
+                </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                    <div class="form-group"><label>รหัสผ่าน</label><input type="password" id="reg-pass"></div>
-                    <div class="form-group"><label>ยืนยันรหัสผ่าน</label><input type="password" id="reg-pass2"></div>
+                    <div class="form-group">
+                        <label>รหัสผ่าน <span style="color:#d00000;">*</span></label>
+                        <input type="password" id="reg-pass" placeholder="อย่างน้อย 8 ตัว มีตัวเลขและตัวอักษร">
+                    </div>
+                    <div class="form-group">
+                        <label>ยืนยันรหัสผ่าน <span style="color:#d00000;">*</span></label>
+                        <input type="password" id="reg-pass2" placeholder="พิมพ์รหัสผ่านอีกครั้ง">
+                    </div>
                 </div>
+                <p style="font-size:.78rem;color:#888;margin-bottom:14px;"><span style="color:#d00000;">*</span> จำเป็นต้องกรอก</p>
                 <button class="btn-auth" id="btn-register" onclick="doRegister()">ยืนยันการลงทะเบียน</button>
                 <p style="margin-top:14px;font-size:.8rem;text-align:center;">มีบัญชีอยู่แล้ว
                     <a onclick="navigateTo('login')" style="color:var(--dgreen);cursor:pointer;font-weight:600;">เข้าสู่ระบบ</a>
@@ -142,7 +172,7 @@
                     </div>
                     <div class="voc-panel">
                         <span class="voc-title">แสดงตัวตน</span>
-                        <label><input type="checkbox" id="isAnon" onchange="toggleAnon()"> แจ้งแบบนิรนาม</label>
+                        <label style="cursor:pointer;"><input type="checkbox" id="isAnon" onchange="toggleAnon()"> แจ้งแบบนิรนาม</label>
                         <div id="identity-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;">
                             <div>ชื่อ-นามสกุล <input type="text" id="v-name" class="voc-input" style="margin-top:6px;"></div>
                             <div>รหัสนักศึกษา/หน่วยงาน <input type="text" id="v-sid" class="voc-input" style="margin-top:6px;"></div>
@@ -178,8 +208,10 @@
                 <div id="step-content-3" class="hidden">
                     <div class="voc-panel">
                         <span class="voc-title">รายละเอียดเรื่องที่แจ้ง</span>
-                        หัวข้อ <input type="text" id="v-subject" class="voc-input" style="margin-top:6px;">
-                        รายละเอียด <textarea id="v-detail" class="voc-input" style="height:120px;resize:vertical;margin-top:6px;"></textarea>
+                        หัวข้อ <span style="color:#d00000;">*</span>
+                        <input type="text" id="v-subject" class="voc-input" style="margin-top:6px;" placeholder="ระบุหัวข้อเรื่องที่ต้องการแจ้ง">
+                        รายละเอียด <span style="color:#d00000;">*</span>
+                        <textarea id="v-detail" class="voc-input" style="height:120px;resize:vertical;margin-top:6px;" placeholder="อธิบายรายละเอียดของเรื่องที่ต้องการแจ้ง"></textarea>
                     </div>
                     <div style="display:flex;">
                         <button class="btn-back" onclick="changeStep(2)">ย้อนกลับ</button>
@@ -284,9 +316,9 @@
             <div class="footer-col">
                 <h3>เมนู</h3>
                 <p>
-                    <a onclick="navigateTo('home')">หน้าหลัก</a><br>
-                    <a onclick="navigateTo('portal')">แจ้งเรื่อง</a><br>
-                    <a onclick="navigateTo('tracking')">ติดตามสถานะ</a>
+                    <a onclick="navigateTo('home')" style="cursor:pointer;">หน้าหลัก</a><br>
+                    <a onclick="navigateTo('portal')" style="cursor:pointer;">แจ้งเรื่อง</a><br>
+                    <a onclick="navigateTo('tracking')" style="cursor:pointer;">ติดตามสถานะ</a>
                 </p>
             </div>
         </div>

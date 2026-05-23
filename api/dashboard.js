@@ -1,5 +1,11 @@
 // api/dashboard.js
-// GET /api/dashboard  — สถิติภาพรวม (admin)
+// GET /api/dashboard — สถิติภาพรวม (admin)
+// ใช้ตำแหน่งคอลัมน์ใหม่:
+//   col9  = ความเร่งด่วน (I)
+//   col8  = ประเภทเรื่อง (H)
+//   col5  = ประเภทผู้แจ้ง (E)
+//   col12 = สถานะ (L)
+//   col4  = วันที่แจ้ง (D)
 
 const {
   getSheetsClient, getSheetData,
@@ -15,26 +21,36 @@ module.exports = async function handler(req, res) {
     const sheets = await getSheetsClient();
     const data   = await getSheetData(sheets, SHEET_TICKETS);
 
-    const stats = { total:0, pending:0, inprogress:0, done:0, rejected:0,
-                    byCategory:{}, byCustomer:{}, byMonth:{} };
+    const stats = {
+      total: 0, pending: 0, inprogress: 0, done: 0, rejected: 0,
+      byCategory: {}, byCustomer: {}, byMonth: {},
+    };
+
+    if (!data || data.length <= 1) return res.json({ success: true, stats });
+
+    const headers      = data[0];
+    const statusIdx    = headers.indexOf('สถานะ');
+    const categoryIdx  = headers.indexOf('ประเภทเรื่อง');
+    const custTypeIdx  = headers.indexOf('ประเภทผู้แจ้ง');
+    const dateIdx      = headers.indexOf('วันที่แจ้ง');
 
     for (let i = 1; i < data.length; i++) {
       if (!data[i][0]) continue;
       stats.total++;
-      const status   = String(data[i][9]  || '');
-      const category = String(data[i][5]  || '');
-      const custType = String(data[i][2]  || '');
-      const dateStr  = String(data[i][1]  || '');
+
+      const status   = String(data[i][statusIdx]   || '');
+      const category = String(data[i][categoryIdx] || '');
+      const custType = String(data[i][custTypeIdx] || '');
+      const dateStr  = String(data[i][dateIdx]     || '');
 
       if      (status === 'รอดำเนินการ')        stats.pending++;
       else if (status === 'กำลังดำเนินการ')      stats.inprogress++;
       else if (status === 'เสร็จสิ้น')           stats.done++;
       else if (status === 'ปฏิเสธ')              stats.rejected++;
 
-      stats.byCategory[category] = (stats.byCategory[category] || 0) + 1;
-      stats.byCustomer[custType] = (stats.byCustomer[custType] || 0) + 1;
+      if (category) stats.byCategory[category] = (stats.byCategory[category] || 0) + 1;
+      if (custType) stats.byCustomer[custType] = (stats.byCustomer[custType] || 0) + 1;
 
-      // วันที่รูปแบบ dd/MM/yyyy HH:mm → ดึง month/year
       if (dateStr.length >= 10) {
         const parts = dateStr.split('/');
         if (parts.length >= 3) {

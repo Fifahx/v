@@ -177,3 +177,31 @@ footer { background: #1b4332; color: #fff; padding: 40px 20px; }
     .home-grid { grid-template-columns: 1fr; }
     .nav-menu { gap: 10px; }
 }
+
+/* ── FIX: cursor pointer ทุกจุดที่คลิกได้ ── */
+a, button, .opt-btn, .main-card, .filter-btn,
+.btn-auth, .btn-submit, .btn-back, .btn-update,
+.btn-nav-active, .admin-login-link, .modal-close,
+[onclick], summary, label[for], input[type="checkbox"],
+input[type="radio"] {
+  cursor: pointer !important;
+}
+
+/* ── FIX: validation error state ── */
+input.input-error {
+  border-color: #d00000 !important;
+  box-shadow: 0 0 0 3px rgba(208,0,0,.12) !important;
+}
+
+/* ── Pinned tickets section ── */
+#pinned-tickets-section {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  border-top: 3px solid var(--dgreen);
+}
+
+#pinned-tickets-section .ticket-card {
+  border-left-color: #e7e71b;
+}
