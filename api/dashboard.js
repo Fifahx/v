@@ -1,16 +1,7 @@
 // api/dashboard.js
-// GET /api/dashboard — สถิติภาพรวม (admin)
-// ใช้ตำแหน่งคอลัมน์ใหม่:
-//   col9  = ความเร่งด่วน (I)
-//   col8  = ประเภทเรื่อง (H)
-//   col5  = ประเภทผู้แจ้ง (E)
-//   col12 = สถานะ (L)
-//   col4  = วันที่แจ้ง (D)
+// GET /api/dashboard — สถิติภาพรวม + ความเร่งด่วน (admin)
 
-const {
-  getSheetsClient, getSheetData,
-  SHEET_TICKETS, setCorsHeaders,
-} = require('./_sheets');
+const { getSheetsClient, getSheetData, SHEET_TICKETS, setCorsHeaders } = require('./_sheets');
 
 module.exports = async function handler(req, res) {
   setCorsHeaders(res);
@@ -24,6 +15,9 @@ module.exports = async function handler(req, res) {
     const stats = {
       total: 0, pending: 0, inprogress: 0, done: 0, rejected: 0,
       byCategory: {}, byCustomer: {}, byMonth: {},
+      byPriority: { high: 0, medium: 0, low: 0 },
+      // สรุปเฉพาะ ticket เร่งด่วนที่ยังไม่เสร็จ
+      urgentTickets: [],
     };
 
     if (!data || data.length <= 1) return res.json({ success: true, stats });
@@ -33,6 +27,11 @@ module.exports = async function handler(req, res) {
     const categoryIdx  = headers.indexOf('ประเภทเรื่อง');
     const custTypeIdx  = headers.indexOf('ประเภทผู้แจ้ง');
     const dateIdx      = headers.indexOf('วันที่แจ้ง');
+    const priorityIdx  = headers.indexOf('ความเร่งด่วน');
+    const subjectIdx   = headers.indexOf('หัวข้อ');
+    const ticketIdIdx  = headers.indexOf('Ticket ID');
+    const dueIdx       = headers.indexOf('กำหนดตอบกลับ');
+    const assigneeIdx  = headers.indexOf('ผู้รับผิดชอบ');
 
     for (let i = 1; i < data.length; i++) {
       if (!data[i][0]) continue;
@@ -42,6 +41,7 @@ module.exports = async function handler(req, res) {
       const category = String(data[i][categoryIdx] || '');
       const custType = String(data[i][custTypeIdx] || '');
       const dateStr  = String(data[i][dateIdx]     || '');
+      const priority = String(data[i][priorityIdx] || 'medium').toLowerCase();
 
       if      (status === 'รอดำเนินการ')        stats.pending++;
       else if (status === 'กำลังดำเนินการ')      stats.inprogress++;
@@ -50,6 +50,22 @@ module.exports = async function handler(req, res) {
 
       if (category) stats.byCategory[category] = (stats.byCategory[category] || 0) + 1;
       if (custType) stats.byCustomer[custType] = (stats.byCustomer[custType] || 0) + 1;
+
+      // นับตามความเร่งด่วน
+      if      (priority === 'high')   stats.byPriority.high++;
+      else if (priority === 'medium') stats.byPriority.medium++;
+      else                            stats.byPriority.low++;
+
+      // เก็บ ticket เร่งด่วนที่ยังไม่เสร็จ
+      if (priority === 'high' && status !== 'เสร็จสิ้น' && status !== 'ปฏิเสธ') {
+        stats.urgentTickets.push({
+          ticketId: String(data[i][ticketIdIdx] || ''),
+          subject:  String(data[i][subjectIdx]  || ''),
+          status,
+          due:      String(data[i][dueIdx]      || ''),
+          assignee: String(data[i][assigneeIdx] || ''),
+        });
+      }
 
       if (dateStr.length >= 10) {
         const parts = dateStr.split('/');

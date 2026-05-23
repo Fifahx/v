@@ -1,5 +1,5 @@
 // api/submit.js
-// POST /api/submit — บันทึก ticket ใหม่ตามโครงสร้างคอลัมน์ใหม่
+// POST /api/submit — บันทึก ticket ใหม่ + ส่ง email แจ้งเตือน admin
 
 const {
   getSheetsClient, getSheetData, appendRow, generateUserID,
@@ -7,11 +7,9 @@ const {
   calcDueDate, formatDateThai, setCorsHeaders,
 } = require('./_sheets');
 
-// ── สร้าง Ticket ID (VOC-2568-XXXX) ──
 async function generateTicketId(sheets) {
   const thYear = String(new Date().getFullYear() + 543);
   const data   = await getSheetData(sheets, SHEET_COUNTERS);
-
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][0]) === thYear) {
       const n = Number(data[i][1]) + 1;
@@ -28,6 +26,30 @@ async function generateTicketId(sheets) {
   return `VOC-${thYear}-0001`;
 }
 
+// ── ส่ง email แจ้งเตือน (ถ้าตั้งค่าไว้) ──
+async function sendNotifyEmail(ticketId, payload) {
+  try {
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'https://v-xi-beryl.vercel.app';
+    await fetch(`${baseUrl}/api/notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action:       'sendAlert',
+        ticketId,
+        subject:      payload.subject || '',
+        priority:     payload.priority || 'medium',
+        customerType: payload.customerType || '',
+        detail:       payload.detail || '',
+      }),
+    });
+  } catch (e) {
+    // ไม่ให้ email error ทำให้ submit fail
+    console.error('notify error:', e.message);
+  }
+}
+
 module.exports = async function handler(req, res) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -36,37 +58,33 @@ module.exports = async function handler(req, res) {
   try {
     const payload  = req.body;
     const sheets   = await getSheetsClient();
-
-    // สร้าง UserID (primary key) และ Ticket ID พร้อมกัน
     const [userId, ticketId] = await Promise.all([
       generateUserID(sheets),
       generateTicketId(sheets),
     ]);
-
     const now     = new Date();
     const dueDate = calcDueDate(now, payload.priority);
 
-    // บันทึกตามลำดับคอลัมน์ใหม่:
-    // UserID | Ticket ID | Username | วันที่แจ้ง | ประเภทผู้แจ้ง | ชื่อ |
-    // รหัสนักศึกษา/หน่วยงาน | ประเภทเรื่อง | ความเร่งด่วน | หัวข้อ |
-    // รายละเอียด | สถานะ | ผู้รับผิดชอบ | กำหนดตอบกลับ | หมายเหตุ
-    await appendRow(sheets, 'VOC_Tickets', [
-      userId,                                                          // col 1  UserID
-      ticketId,                                                        // col 2  Ticket ID
-      payload.username || '',                                          // col 3  Username
-      formatDateThai(now),                                             // col 4  วันที่แจ้ง
-      payload.customerType || '',                                      // col 5  ประเภทผู้แจ้ง
-      payload.isAnon ? 'นิรนาม' : (payload.name     || ''),           // col 6  ชื่อ
-      payload.isAnon ? '-'      : (payload.studentId || ''),           // col 7  รหัสนักศึกษา/หน่วยงาน
-      (payload.categories || []).join(', '),                           // col 8  ประเภทเรื่อง
-      payload.priority  || 'medium',                                   // col 9  ความเร่งด่วน
-      payload.subject   || '',                                         // col 10 หัวข้อ
-      payload.detail    || '',                                         // col 11 รายละเอียด
-      'รอดำเนินการ',                                                   // col 12 สถานะ
-      '',                                                              // col 13 ผู้รับผิดชอบ
-      dueDate,                                                         // col 14 กำหนดตอบกลับ
-      '',                                                              // col 15 หมายเหตุ
+    await appendRow(sheets, SHEET_TICKETS, [
+      userId,
+      ticketId,
+      payload.username || '',
+      formatDateThai(now),
+      payload.customerType || '',
+      payload.isAnon ? 'นิรนาม' : (payload.name     || ''),
+      payload.isAnon ? '-'      : (payload.studentId || ''),
+      (payload.categories || []).join(', '),
+      payload.priority  || 'medium',
+      payload.subject   || '',
+      payload.detail    || '',
+      'รอดำเนินการ',
+      '',
+      dueDate,
+      '',
     ]);
+
+    // ส่ง email แจ้งเตือน (async ไม่บล็อก response)
+    sendNotifyEmail(ticketId, payload);
 
     res.json({ success: true, ticketId, userId });
   } catch (e) {

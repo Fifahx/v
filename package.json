@@ -1,12 +1,12 @@
 {
   "name": "voc-system",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "VOC System - คณะวิทยาศาสตร์ฯ มรย.",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "echo 'Static site - no build needed'"
+    "dev": "vercel dev"
   },
   "dependencies": {
-    "googleapis": "^140.0.0"
+    "googleapis": "^140.0.0",
+    "nodemailer": "^6.9.14"
   }
 }
