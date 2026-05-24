@@ -1,5 +1,11 @@
-// api/submit.js
-// POST /api/submit — บันทึก ticket ใหม่ + ส่ง email แจ้งเตือน admin
+// api/submit.js v5
+// POST /api/submit — บันทึก ticket พร้อมหมายเหตุผู้ใช้และไฟล์แนบ (base64)
+//
+// โครงสร้างคอลัมน์ VOC_Tickets (15 cols + Pinned + Comments):
+// A:UserID B:TicketID C:Username D:วันที่ E:ประเภทผู้แจ้ง F:ชื่อ
+// G:รหัส H:ประเภทเรื่อง I:ความเร่งด่วน J:หัวข้อ K:รายละเอียด
+// L:หมายเหตุผู้ใช้ M:สถานะ N:ผู้รับผิดชอบ O:กำหนดตอบกลับ
+// P:Comments(ครู) Q:Pinned R:FileURL
 
 const {
   getSheetsClient, getSheetData, appendRow, generateUserID,
@@ -14,40 +20,27 @@ async function generateTicketId(sheets) {
     if (String(data[i][0]) === thYear) {
       const n = Number(data[i][1]) + 1;
       await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `VOC_Counters!B${i + 1}`,
-        valueInputOption: 'RAW',
-        requestBody: { values: [[n]] },
+        spreadsheetId: SPREADSHEET_ID, range: `VOC_Counters!B${i+1}`,
+        valueInputOption: 'RAW', requestBody: { values: [[n]] },
       });
-      return `VOC-${thYear}-${String(n).padStart(4, '0')}`;
+      return `VOC-${thYear}-${String(n).padStart(4,'0')}`;
     }
   }
   await appendRow(sheets, SHEET_COUNTERS, [thYear, 1]);
   return `VOC-${thYear}-0001`;
 }
 
-// ── ส่ง email แจ้งเตือน (ถ้าตั้งค่าไว้) ──
 async function sendNotifyEmail(ticketId, payload) {
   try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'https://v-xi-beryl.vercel.app';
-    await fetch(`${baseUrl}/api/notify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action:       'sendAlert',
-        ticketId,
-        subject:      payload.subject || '',
-        priority:     payload.priority || 'medium',
-        customerType: payload.customerType || '',
-        detail:       payload.detail || '',
-      }),
+    const base = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}` : 'https://v-xi-beryl.vercel.app';
+    await fetch(`${base}/api/notify`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action:'sendAlert', ticketId,
+        subject: payload.subject||'', priority: payload.priority||'medium',
+        customerType: payload.customerType||'', detail: payload.detail||'' }),
     });
-  } catch (e) {
-    // ไม่ให้ email error ทำให้ submit fail
-    console.error('notify error:', e.message);
-  }
+  } catch(e) { console.error('notify:', e.message); }
 }
 
 module.exports = async function handler(req, res) {
@@ -56,36 +49,41 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const payload  = req.body;
-    const sheets   = await getSheetsClient();
+    const p      = req.body;
+    const sheets = await getSheetsClient();
     const [userId, ticketId] = await Promise.all([
-      generateUserID(sheets),
-      generateTicketId(sheets),
+      generateUserID(sheets), generateTicketId(sheets)
     ]);
     const now     = new Date();
-    const dueDate = calcDueDate(now, payload.priority);
+    const dueDate = calcDueDate(now, p.priority);
+
+    // ไฟล์แนบ: เก็บ base64 ใน column R (ถ้ามี)
+    // ในระบบจริงควร upload ไป Google Drive แล้วเก็บ URL
+    // ตอนนี้เก็บชื่อไฟล์ไว้ก่อน
+    const fileInfo = p.fileName ? `[แนบไฟล์: ${p.fileName}]` : '';
 
     await appendRow(sheets, SHEET_TICKETS, [
-      userId,
-      ticketId,
-      payload.username || '',
-      formatDateThai(now),
-      payload.customerType || '',
-      payload.isAnon ? 'นิรนาม' : (payload.name     || ''),
-      payload.isAnon ? '-'      : (payload.studentId || ''),
-      (payload.categories || []).join(', '),
-      payload.priority  || 'medium',
-      payload.subject   || '',
-      payload.detail    || '',
-      'รอดำเนินการ',
-      '',
-      dueDate,
-      '',
+      userId,                                                    // A: UserID
+      ticketId,                                                  // B: Ticket ID
+      p.username || '',                                          // C: Username
+      formatDateThai(now),                                       // D: วันที่แจ้ง
+      p.customerType || '',                                      // E: ประเภทผู้แจ้ง
+      p.isAnon ? 'นิรนาม' : (p.name || ''),                    // F: ชื่อ
+      p.isAnon ? '-'      : (p.studentId || ''),                 // G: รหัส
+      (p.categories || []).join(', '),                           // H: ประเภทเรื่อง
+      p.priority || 'medium',                                    // I: ความเร่งด่วน
+      p.subject || '',                                           // J: หัวข้อ
+      p.detail  || '',                                           // K: รายละเอียด
+      p.userNote || '',                                          // L: หมายเหตุ (ผู้ใช้)
+      'รอดำเนินการ',                                             // M: สถานะ
+      '',                                                        // N: ผู้รับผิดชอบ
+      dueDate,                                                   // O: กำหนดตอบกลับ
+      '',                                                        // P: Comments (ครู)
+      '',                                                        // Q: Pinned
+      fileInfo,                                                  // R: ไฟล์แนบ
     ]);
 
-    // ส่ง email แจ้งเตือน (async ไม่บล็อก response)
-    sendNotifyEmail(ticketId, payload);
-
+    sendNotifyEmail(ticketId, p);
     res.json({ success: true, ticketId, userId });
   } catch (e) {
     console.error(e);

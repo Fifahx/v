@@ -1,50 +1,44 @@
-// public/js/app.js — VOC System v4
+// public/js/app.js — VOC System v5
 'use strict';
 
-let currentStep = 1;
-let currentUser = null;
-let vocData = { cType:'นักศึกษา', priority:'medium', category:'ข้อเสนอแนะหลักสูตร' };
-let ratingSelection = 0;
-const ALL_PAGES = ['home','login','register','portal','tracking','admin-dashboard','admin-tickets','admin-reviews'];
+let currentStep=1, currentUser=null, ratingSelection=0;
+let vocData={cType:'นักศึกษา',priority:'medium',category:'ข้อเสนอแนะหลักสูตร'};
+let attachedFile=null;
 
-// ═══════════════════════════════════════
-//  API HELPER
-// ═══════════════════════════════════════
-const api = {
-  async post(url, body) {
-    const r = await fetch(url,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+const ALL_PAGES=['home','login','register','portal','tracking',
+  'faq','admin-dashboard','admin-tickets','admin-reviews','superadmin'];
+
+// ═══ API ═══
+const api={
+  async post(url,body){
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     return r.json();
   },
-  async patch(url, body) {
-    const r = await fetch(url,{ method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  async patch(url,body){
+    const r=await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     return r.json();
   },
-  async get(url) { return (await fetch(url)).json(); },
+  async get(url){return(await fetch(url)).json();},
 };
 
-// ═══════════════════════════════════════
-//  MODAL SYSTEM (ข้อ 9 — สวยงาม)
-// ═══════════════════════════════════════
-function showAlert(icon, title, msg) {
-  return new Promise(r => {
-    const o = document.createElement('div');
-    o.className = 'voc-overlay';
-    o.innerHTML = `<div class="voc-modal-box">
+// ═══ MODAL ═══
+function showAlert(icon,title,msg){
+  return new Promise(r=>{
+    const o=document.createElement('div'); o.className='voc-overlay';
+    o.innerHTML=`<div class="voc-modal-box">
       <span class="voc-modal-icon">${icon}</span>
       <div class="voc-modal-title">${title}</div>
       <div class="voc-modal-msg">${msg}</div>
       <div class="voc-modal-btns"><button class="voc-btn-ok" id="voc-ok">ตกลง</button></div>
     </div>`;
     document.body.appendChild(o);
-    document.getElementById('voc-ok').onclick = () => { document.body.removeChild(o); r(true); };
+    document.getElementById('voc-ok').onclick=()=>{document.body.removeChild(o);r(true);};
   });
 }
-
-function showConfirm(icon, title, msg, type='warning') {
-  return new Promise(r => {
-    const o = document.createElement('div');
-    o.className = 'voc-overlay';
-    o.innerHTML = `<div class="voc-modal-box">
+function showConfirm(icon,title,msg,type='warning'){
+  return new Promise(r=>{
+    const o=document.createElement('div'); o.className='voc-overlay';
+    o.innerHTML=`<div class="voc-modal-box">
       <span class="voc-modal-icon">${icon}</span>
       <div class="voc-modal-title">${title}</div>
       <div class="voc-modal-msg">${msg}</div>
@@ -54,134 +48,158 @@ function showConfirm(icon, title, msg, type='warning') {
       </div>
     </div>`;
     document.body.appendChild(o);
-    document.getElementById('voc-c').onclick  = () => { document.body.removeChild(o); r(false); };
-    document.getElementById('voc-ok').onclick = () => { document.body.removeChild(o); r(true); };
+    document.getElementById('voc-c').onclick=()=>{document.body.removeChild(o);r(false);};
+    document.getElementById('voc-ok').onclick=()=>{document.body.removeChild(o);r(true);};
   });
 }
 
-// ═══════════════════════════════════════
-//  NAVIGATION
-// ═══════════════════════════════════════
-function navigateTo(pageId) {
-  if (pageId==='portal' && !currentUser) pageId='login';
-  ALL_PAGES.forEach(p => { const e=document.getElementById('page-'+p); if(e) e.classList.add('hidden'); });
-  document.querySelectorAll('.nav-menu a').forEach(a => a.classList.remove('active'));
-  const page = document.getElementById('page-'+pageId);
-  if (page) page.classList.remove('hidden');
-  const nav = document.getElementById('nav-'+pageId);
-  if (nav) nav.classList.add('active');
-  if (pageId==='portal')           { setupPortalView(); changeStep(1); }
-  if (pageId==='admin-dashboard')  loadDashboard();
-  if (pageId==='admin-tickets')    loadAdminTickets('pending');
-  if (pageId==='admin-reviews')    loadReviews();
-  if (pageId==='tracking') {
+// ═══ NAVIGATION ═══
+function navigateTo(pageId){
+  if(pageId==='portal'&&!currentUser)pageId='login';
+  ALL_PAGES.forEach(p=>{const e=document.getElementById('page-'+p);if(e)e.classList.add('hidden');});
+  document.querySelectorAll('.nav-menu a').forEach(a=>a.classList.remove('active'));
+  const page=document.getElementById('page-'+pageId);
+  if(page)page.classList.remove('hidden');
+  const nav=document.getElementById('nav-'+pageId);
+  if(nav)nav.classList.add('active');
+  if(pageId==='portal'){setupPortalView();changeStep(1);}
+  if(pageId==='admin-dashboard')loadDashboard();
+  if(pageId==='admin-tickets')loadAdminTickets('pending');
+  if(pageId==='admin-reviews')loadReviews();
+  if(pageId==='superadmin')loadSuperAdmin();
+  if(pageId==='faq')loadFaq();
+  if(pageId==='tracking'){
     document.getElementById('track-result').innerHTML='';
     document.getElementById('track-input').value='';
-    if (currentUser && currentUser.role!=='admin') loadMyTickets();
+    if(currentUser&&currentUser.role!=='admin'&&currentUser.role!=='superadmin')loadMyTickets();
   }
-  if (pageId==='home') loadPinnedTickets();
+  if(pageId==='home'){loadPinnedTickets();loadNewsStrip();}
   window.scrollTo(0,0);
 }
-
-function setupPortalView() {
+function setupPortalView(){
   const w=document.getElementById('portal-login-warning');
   const f=document.getElementById('portal-form-content');
-  if (currentUser && currentUser.role!=='admin') {
+  if(currentUser&&currentUser.role==='user'){
     w.classList.add('hidden'); f.classList.remove('hidden');
     const nf=document.getElementById('v-name');
     if(nf&&currentUser.firstname) nf.value=(currentUser.firstname||'')+' '+(currentUser.lastname||'');
-  } else if (currentUser && currentUser.role==='admin') {
+  } else if(currentUser&&(currentUser.role==='admin'||currentUser.role==='superadmin')){
     w.classList.remove('hidden');
     w.innerHTML='<i class="fas fa-info-circle"></i><span>ผู้ดูแลระบบไม่สามารถแจ้งเรื่องได้</span>';
     f.classList.add('hidden');
   } else { w.classList.remove('hidden'); f.classList.add('hidden'); }
 }
 
-// ═══════════════════════════════════════
-//  SESSION
-// ═══════════════════════════════════════
-function saveSession(u)  { try{localStorage.setItem('voc_session',JSON.stringify(u));}catch(e){} }
-function clearSession()  { try{localStorage.removeItem('voc_session');}catch(e){} }
-function loadSession()   { try{const r=localStorage.getItem('voc_session');return r?JSON.parse(r):null;}catch(e){return null;} }
+// ═══ SESSION ═══
+function saveSession(u){try{localStorage.setItem('voc_session',JSON.stringify(u));}catch(e){}}
+function clearSession(){try{localStorage.removeItem('voc_session');}catch(e){}}
+function loadSession(){try{const r=localStorage.getItem('voc_session');return r?JSON.parse(r):null;}catch(e){return null;}}
 
-// ═══════════════════════════════════════
-//  AUTH LOGIN (ข้อ 7 — Enter key)
-// ═══════════════════════════════════════
-async function doLogin() {
+// ═══ AUTH ═══
+async function doLogin(){
   const u=document.getElementById('login-user').value.trim();
   const p=document.getElementById('login-pass').value;
-  if(!u||!p){await showAlert('⚠️','กรุณากรอกข้อมูล','กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบ');return;}
+  if(!u||!p){await showAlert('⚠️','กรุณากรอกข้อมูล','กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');return;}
   const btn=document.getElementById('btn-login');
   btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังเข้าสู่ระบบ...';
-  try {
+  try{
     const res=await api.post('/api/auth',{action:'loginUser',username:u,password:p});
     if(res.success){currentUser=res;saveSession(res);updateMenuForUser();navigateTo('home');}
     else await showAlert('❌','เข้าสู่ระบบไม่สำเร็จ',res.message);
-  } catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
   finally{btn.disabled=false;btn.innerHTML='ยืนยัน';}
 }
 
 function showAdminLoginModal(){document.getElementById('admin-modal').classList.remove('hidden');}
 function hideAdminLoginModal(){document.getElementById('admin-modal').classList.add('hidden');}
 
-async function doAdminLogin() {
+// superadmin modal
+function showSuperAdminLoginModal(){
+  const o=document.createElement('div'); o.className='voc-overlay'; o.id='sa-login-overlay';
+  o.innerHTML=`<div class="voc-modal-box">
+    <span class="voc-modal-icon">👑</span>
+    <div class="voc-modal-title">ผู้ดูแลระดับสูง</div>
+    <div style="margin-bottom:14px;">
+      <div class="form-group"><label>Username</label><input type="text" id="sa-user" placeholder="superadmin"></div>
+      <div class="form-group"><label>รหัสผ่าน</label><input type="password" id="sa-pass" placeholder="••••••••"></div>
+    </div>
+    <div class="voc-modal-btns">
+      <button class="voc-btn-cancel" onclick="document.body.removeChild(document.getElementById('sa-login-overlay'))">ยกเลิก</button>
+      <button class="voc-btn-ok" onclick="doSuperAdminLogin()">เข้าสู่ระบบ</button>
+    </div>
+  </div>`;
+  document.body.appendChild(o);
+  // Enter key
+  const sp=document.getElementById('sa-pass');
+  if(sp) sp.addEventListener('keydown',e=>{if(e.key==='Enter')doSuperAdminLogin();});
+}
+
+async function doSuperAdminLogin(){
+  const u=(document.getElementById('sa-user')||{}).value?.trim();
+  const p=(document.getElementById('sa-pass')||{}).value;
+  if(!u||!p){await showAlert('⚠️','กรุณากรอกข้อมูล','');return;}
+  try{
+    const res=await api.post('/api/auth',{action:'loginSuperAdmin',username:u,password:p});
+    if(res.success){
+      currentUser=res; saveSession(res);
+      const o=document.getElementById('sa-login-overlay');
+      if(o) document.body.removeChild(o);
+      updateMenuForSuperAdmin(); navigateTo('superadmin');
+    } else { await showAlert('❌','ไม่สำเร็จ',res.message); }
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+}
+
+async function doAdminLogin(){
   const u=document.getElementById('admin-user').value.trim();
   const p=document.getElementById('admin-pass').value;
-  if(!u||!p){await showAlert('⚠️','กรุณากรอกข้อมูล','กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');return;}
+  if(!u||!p){await showAlert('⚠️','กรุณากรอกข้อมูล','');return;}
   const btn=document.getElementById('btn-admin-login');
-  btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังตรวจสอบ...';
-  try {
+  btn.disabled=true; btn.innerHTML='กำลังตรวจสอบ...';
+  try{
     const res=await api.post('/api/auth',{action:'loginAdmin',username:u,password:p});
     if(res.success){currentUser=res;saveSession(res);hideAdminLoginModal();updateMenuForAdmin();navigateTo('admin-dashboard');}
-    else await showAlert('❌','เข้าสู่ระบบไม่สำเร็จ',res.message);
-  } catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+    else await showAlert('❌','ไม่สำเร็จ',res.message);
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
   finally{btn.disabled=false;btn.innerHTML='เข้าสู่ระบบ';}
 }
 
-// ═══════════════════════════════════════
-//  REGISTER + VALIDATION
-// ═══════════════════════════════════════
-function clearFieldErrors() {
+// ═══ REGISTER ═══
+function clearFieldErrors(){
   document.querySelectorAll('#page-register .field-err').forEach(e=>e.remove());
   document.querySelectorAll('#page-register input').forEach(e=>e.classList.remove('input-error'));
 }
-function showFieldError(id,msg) {
+function showFieldError(id,msg){
   const el=document.getElementById(id); if(!el)return;
   el.classList.add('input-error');
   const e=document.createElement('p'); e.className='field-err';
   e.innerHTML=`<i class="fas fa-exclamation-circle"></i>${msg}`;
   el.parentNode.appendChild(e); el.focus();
 }
-function checkPasswordStrength(pw) {
+function checkPasswordStrength(pw){
   let s=0;
   if(pw.length>=8)s++; if(pw.length>=12)s++;
   if(/[A-Z]/.test(pw))s++; if(/[0-9]/.test(pw))s++;
   if(/[^a-zA-Z0-9]/.test(pw))s++;
   return s;
 }
-function updateStrengthBar() {
-  const pw=document.getElementById('reg-pass').value;
-  const bar=document.getElementById('pw-bar'), lbl=document.getElementById('pw-label');
+function updateStrengthBar(){
+  const pw=document.getElementById('reg-pass')?.value||'';
+  const bar=document.getElementById('pw-bar'); const lbl=document.getElementById('pw-label');
   if(!bar)return;
   const s=checkPasswordStrength(pw);
-  const lv=[
-    {p:'0%',c:'#eee',t:''},
-    {p:'20%',c:'#d00000',t:'อ่อนมาก'},{p:'40%',c:'#f77f00',t:'อ่อน'},
-    {p:'60%',c:'#e7e71b',t:'พอใช้'},{p:'80%',c:'#40916c',t:'ดี'},
-    {p:'100%',c:'#2d6a4f',t:'แข็งแกร่ง'},
-  ][s]||{p:'0%',c:'#eee',t:''};
-  bar.style.width=lv.p; bar.style.background=lv.c;
-  lbl.innerText=lv.t; lbl.style.color=lv.c;
+  const lv=[{p:'0%',c:'#eee',t:''},{p:'20%',c:'#d00000',t:'อ่อนมาก'},{p:'40%',c:'#f77f00',t:'อ่อน'},
+    {p:'60%',c:'#e7e71b',t:'พอใช้'},{p:'80%',c:'#40916c',t:'ดี'},{p:'100%',c:'#2d6a4f',t:'แข็งแกร่ง'}][s]||{p:'0%',c:'#eee',t:''};
+  bar.style.width=lv.p; bar.style.background=lv.c; lbl.innerText=lv.t; lbl.style.color=lv.c;
 }
-function validateRegister() {
+function validateRegister(){
   clearFieldErrors();
-  const fn=document.getElementById('reg-firstname').value.trim();
-  const ln=document.getElementById('reg-lastname').value.trim();
-  const em=document.getElementById('reg-email').value.trim();
-  const ph=document.getElementById('reg-phone').value.trim();
-  const un=document.getElementById('reg-username').value.trim();
-  const pw=document.getElementById('reg-pass').value;
-  const p2=document.getElementById('reg-pass2').value;
+  const fn=document.getElementById('reg-firstname')?.value.trim();
+  const ln=document.getElementById('reg-lastname')?.value.trim();
+  const em=document.getElementById('reg-email')?.value.trim();
+  const ph=document.getElementById('reg-phone')?.value.trim();
+  const un=document.getElementById('reg-username')?.value.trim();
+  const pw=document.getElementById('reg-pass')?.value;
+  const p2=document.getElementById('reg-pass2')?.value;
   if(!fn){showFieldError('reg-firstname','กรุณากรอกชื่อ');return false;}
   if(!ln){showFieldError('reg-lastname','กรุณากรอกนามสกุล');return false;}
   if(!em||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){showFieldError('reg-email','รูปแบบอีเมลไม่ถูกต้อง');return false;}
@@ -199,11 +217,11 @@ function validateRegister() {
   if(pw!==p2){showFieldError('reg-pass2','รหัสผ่านไม่ตรงกัน');return false;}
   return true;
 }
-async function doRegister() {
+async function doRegister(){
   if(!validateRegister())return;
   const btn=document.getElementById('btn-register');
   btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังลงทะเบียน...';
-  try {
+  try{
     const res=await api.post('/api/auth',{
       action:'register',
       firstname:document.getElementById('reg-firstname').value.trim(),
@@ -216,138 +234,119 @@ async function doRegister() {
     });
     if(res.success){await showAlert('✅','ลงทะเบียนสำเร็จ','กรุณาเข้าสู่ระบบเพื่อใช้งาน');navigateTo('login');}
     else await showAlert('❌','ไม่สำเร็จ',res.message);
-  } catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
   finally{btn.disabled=false;btn.innerHTML='ยืนยันการลงทะเบียน';}
 }
 
-// ═══════════════════════════════════════
-//  MENU
-// ═══════════════════════════════════════
-function updateMenuForUser() {
+// ═══ MENU ═══
+function updateMenuForUser(){
   document.getElementById('main-nav').innerHTML=`
     <a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a>
     <a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a>
     <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
-    <a onclick="alert('คู่มืออยู่ด้านล่างหน้าแรก')">คู่มือ</a>`;
+    <a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>`;
   document.getElementById('right-menu').innerHTML=`
-    <span class="user-badge" onclick="showProfile()" title="ดูโปรไฟล์ของฉัน" style="cursor:pointer;">
+    <span class="user-badge" onclick="showProfile()" title="โปรไฟล์">
       <i class="fas fa-user-circle"></i>${currentUser.firstname} ${currentUser.lastname}
-      <i class="fas fa-chevron-down" style="font-size:.65rem;opacity:.7;margin-left:2px;"></i>
     </span>
-    <a onclick="doLogout()" style="color:#fff;cursor:pointer;font-size:13px;" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></a>`;
+    <a onclick="doLogout()" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a>`;
 }
-function updateMenuForAdmin() {
+function updateMenuForAdmin(){
   document.getElementById('main-nav').innerHTML=`
     <a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a>
     <a onclick="navigateTo('admin-dashboard')" id="nav-admin-dashboard">สถิติ</a>
     <a onclick="navigateTo('admin-tickets')" id="nav-admin-tickets">จัดการเรื่อง</a>
-    <a onclick="navigateTo('admin-reviews')" id="nav-admin-reviews">รีวิว</a>`;
+    <a onclick="navigateTo('admin-reviews')" id="nav-admin-reviews">รีวิว</a>
+    <a onclick="navigateTo('faq')" id="nav-faq">FAQ</a>`;
   document.getElementById('right-menu').innerHTML=`
     <span class="user-badge"><i class="fas fa-shield-alt"></i>${currentUser.fullname||'Admin'}</span>
     <a onclick="doLogout()" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a>`;
 }
-async function doLogout() {
+function updateMenuForSuperAdmin(){
+  document.getElementById('main-nav').innerHTML=`
+    <a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a>
+    <a onclick="navigateTo('admin-dashboard')" id="nav-admin-dashboard">สถิติ</a>
+    <a onclick="navigateTo('admin-tickets')" id="nav-admin-tickets">จัดการเรื่อง</a>
+    <a onclick="navigateTo('admin-reviews')" id="nav-admin-reviews">รีวิว</a>
+    <a onclick="navigateTo('superadmin')" id="nav-superadmin">⚙️ ระบบ</a>`;
+  document.getElementById('right-menu').innerHTML=`
+    <span class="user-badge superadmin-badge"><i class="fas fa-crown" style="color:#f0a500;"></i>${currentUser.fullname||'SuperAdmin'}</span>
+    <a onclick="doLogout()" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a>`;
+}
+async function doLogout(){
   if(!await showConfirm('🚪','ออกจากระบบ','ต้องการออกจากระบบใช่หรือไม่?'))return;
   currentUser=null; clearSession();
   document.getElementById('main-nav').innerHTML=`
     <a onclick="navigateTo('home')" id="nav-home" class="active">หน้าหลัก</a>
     <a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a>
     <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
-    <a onclick="alert('คู่มืออยู่ด้านล่างหน้าแรก')">คู่มือ</a>`;
+    <a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>`;
   document.getElementById('right-menu').innerHTML=`
     <a onclick="navigateTo('login')" class="nav-menu" style="color:#fff;">เข้าสู่ระบบ</a>
     <a onclick="navigateTo('register')" class="btn-nav-active nav-menu">ลงทะเบียน</a>`;
   navigateTo('home');
 }
 
-// ═══════════════════════════════════════
-//  PROFILE (ข้อ 8 — แก้ email/phone/line)
-// ═══════════════════════════════════════
-async function showProfile() {
+// ═══ PROFILE (แก้ email/phone/line) ═══
+async function showProfile(){
   if(!currentUser)return;
-  try {
+  try{
     const res=await api.get(`/api/profile?username=${encodeURIComponent(currentUser.username)}`);
     const p=res.success?res.profile:currentUser;
     const ini=(p.firstname||'?')[0].toUpperCase();
     const o=document.createElement('div'); o.className='voc-overlay'; o.id='profile-overlay';
-    o.innerHTML=`
-      <div class="voc-modal-box" style="max-width:500px;max-height:90vh;overflow-y:auto;">
-        <div class="profile-avatar">${ini}</div>
-        <div class="voc-modal-title">${p.firstname||''} ${p.lastname||''}</div>
-        <div style="text-align:center;margin-bottom:18px;">
-          <span style="background:#e8f5e9;color:#2d6a4f;padding:3px 14px;border-radius:20px;font-size:.8rem;font-weight:700;">
-            @${p.username||''}
-          </span>
+    o.innerHTML=`<div class="voc-modal-box" style="max-width:500px;">
+      <div class="profile-avatar">${ini}</div>
+      <div class="voc-modal-title">${p.firstname||''} ${p.lastname||''}</div>
+      <div style="text-align:center;margin-bottom:16px;">
+        <span style="background:#e8f5e9;color:#2d6a4f;padding:3px 14px;border-radius:20px;font-size:.8rem;font-weight:700;">@${p.username||''}</span>
+      </div>
+      <div style="background:#f8f8f8;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+        <div style="font-size:.72rem;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">ข้อมูลบัญชี</div>
+        <div class="profile-grid">
+          <div><div class="label">Username</div><div class="value">${p.username||'-'}</div></div>
+          <div><div class="label">สมัครเมื่อ</div><div class="value">${p.registeredAt||'-'}</div></div>
         </div>
-
-        <!-- ข้อมูลที่แก้ไม่ได้ -->
-        <div style="background:#f8f8f8;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
-          <div style="font-size:.74rem;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">ข้อมูลบัญชี</div>
-          <div class="profile-grid">
-            <div><div class="label">Username</div><div class="value">${p.username||'-'}</div></div>
-            <div><div class="label">สมัครเมื่อ</div><div class="value">${p.registeredAt||'-'}</div></div>
-            <div><div class="label">สถานะ</div><div class="value"><span style="color:#2d6a4f;">● ${p.status||'active'}</span></div></div>
-          </div>
+      </div>
+      <div style="border:1.5px solid #e0f0e8;border-radius:10px;padding:14px 16px;margin-bottom:18px;">
+        <div style="font-size:.72rem;color:#2d6a4f;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;"><i class="fas fa-edit"></i> แก้ไขได้</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div><div class="label" style="margin-bottom:4px;">📧 อีเมล</div><input class="profile-edit-field" id="pe-email" value="${p.email||''}" placeholder="email@example.com"></div>
+          <div><div class="label" style="margin-bottom:4px;">📱 เบอร์โทรศัพท์</div><input class="profile-edit-field" id="pe-phone" value="${p.phone||''}" placeholder="0xxxxxxxxx" maxlength="10"></div>
+          <div><div class="label" style="margin-bottom:4px;">💬 Line ID</div><input class="profile-edit-field" id="pe-line" value="${p.lineId||''}" placeholder="Line ID"></div>
         </div>
-
-        <!-- ข้อมูลที่แก้ได้ -->
-        <div style="border:1.5px solid #e0f0e8;border-radius:10px;padding:14px 16px;margin-bottom:18px;">
-          <div style="font-size:.74rem;color:#2d6a4f;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;">
-            <i class="fas fa-edit"></i> ข้อมูลที่แก้ไขได้
-          </div>
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <div>
-              <div class="label" style="margin-bottom:4px;">📧 อีเมล</div>
-              <input class="profile-edit-field" id="pe-email" value="${p.email||''}" placeholder="email@example.com">
-            </div>
-            <div>
-              <div class="label" style="margin-bottom:4px;">📱 เบอร์โทรศัพท์</div>
-              <input class="profile-edit-field" id="pe-phone" value="${p.phone||''}" placeholder="0xxxxxxxxx" maxlength="10">
-            </div>
-            <div>
-              <div class="label" style="margin-bottom:4px;">💬 Line ID</div>
-              <input class="profile-edit-field" id="pe-line" value="${p.lineId||''}" placeholder="Line ID">
-            </div>
-          </div>
-        </div>
-
-        <div class="voc-modal-btns">
-          <button class="voc-btn-cancel" onclick="document.body.removeChild(document.getElementById('profile-overlay'))">ปิด</button>
-          <button class="voc-btn-ok" onclick="saveProfile('${p.username||''}')"><i class="fas fa-save"></i> บันทึก</button>
-        </div>
-      </div>`;
+      </div>
+      <div class="voc-modal-btns">
+        <button class="voc-btn-cancel" onclick="document.body.removeChild(document.getElementById('profile-overlay'))">ปิด</button>
+        <button class="voc-btn-ok" onclick="saveProfile('${p.username||''}')"><i class="fas fa-save"></i> บันทึก</button>
+      </div>
+    </div>`;
     document.body.appendChild(o);
-  } catch(e){ await showAlert('❌','เกิดข้อผิดพลาด',e.message); }
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
 }
-
-async function saveProfile(username) {
-  const email  = document.getElementById('pe-email').value.trim();
-  const phone  = document.getElementById('pe-phone').value.trim();
-  const lineId = document.getElementById('pe-line').value.trim();
-  try {
-    const res = await api.patch('/api/profile',{username, email, phone, lineId});
+async function saveProfile(username){
+  const email=document.getElementById('pe-email').value.trim();
+  const phone=document.getElementById('pe-phone').value.trim();
+  const lineId=document.getElementById('pe-line').value.trim();
+  try{
+    const res=await api.patch('/api/profile',{username,email,phone,lineId});
     if(res.success){
       await showAlert('✅','บันทึกสำเร็จ','อัปเดตข้อมูลเรียบร้อยแล้ว');
-      const o=document.getElementById('profile-overlay');
-      if(o) document.body.removeChild(o);
-    } else {
-      await showAlert('❌','ไม่สำเร็จ',res.message);
-    }
-  } catch(e){ await showAlert('❌','เกิดข้อผิดพลาด',e.message); }
+      const o=document.getElementById('profile-overlay'); if(o)document.body.removeChild(o);
+    } else await showAlert('❌','ไม่สำเร็จ',res.message);
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
 }
 
-// ═══════════════════════════════════════
-//  VOC FORM
-// ═══════════════════════════════════════
-function changeStep(step) {
+// ═══ VOC FORM ═══
+function changeStep(step){
   currentStep=step;
   for(let i=1;i<=4;i++){
-    document.getElementById('step-content-'+i).classList.add('hidden');
-    document.getElementById('node'+i).classList.remove('active');
+    document.getElementById('step-content-'+i)?.classList.add('hidden');
+    document.getElementById('node'+i)?.classList.remove('active');
   }
-  document.getElementById('success-area').classList.add('hidden');
-  document.getElementById('step-content-'+step).classList.remove('hidden');
-  for(let i=1;i<=step;i++) document.getElementById('node'+i).classList.add('active');
+  document.getElementById('success-area')?.classList.add('hidden');
+  document.getElementById('step-content-'+step)?.classList.remove('hidden');
+  for(let i=1;i<=step;i++) document.getElementById('node'+i)?.classList.add('active');
 }
 function setOption(el,key,val){
   el.parentElement.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('selected'));
@@ -358,80 +357,106 @@ function toggleAnon(){
     document.getElementById('isAnon').checked?'0.3':'1';
 }
 
-// ── REVIEW CARD (ข้อ 5) ──
-function prepareReview() {
+// ── FILE ATTACH (ข้อ 2) ──
+function handleFileSelect(input){
+  const file=input.files[0];
+  if(!file){attachedFile=null; document.getElementById('file-info').innerText='';return;}
+  if(file.size>5*1024*1024){showAlert('⚠️','ไฟล์ใหญ่เกินไป','ขนาดไฟล์ต้องไม่เกิน 5 MB');input.value='';return;}
+  attachedFile=file;
+  document.getElementById('file-info').innerText=`📎 ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+}
+
+// ── REVIEW CARD (ข้อ 5 สวยงาม) ──
+function prepareReview(){
   const subject=document.getElementById('v-subject').value.trim();
   const detail =document.getElementById('v-detail').value.trim();
-  if(!subject){showAlert('⚠️','กรุณากรอกหัวข้อ','หัวข้อเรื่องเป็นข้อมูลจำเป็น');return;}
-  if(!detail) {showAlert('⚠️','กรุณากรอกรายละเอียด','รายละเอียดเป็นข้อมูลจำเป็น');return;}
+  const note   =document.getElementById('v-note')?.value.trim()||'';
+  if(!subject){showAlert('⚠️','กรุณากรอกหัวข้อ','');return;}
+  if(!detail) {showAlert('⚠️','กรุณากรอกรายละเอียด','');return;}
   const isAnon=document.getElementById('isAnon').checked;
   const name  =isAnon?'ไม่ระบุตัวตน':document.getElementById('v-name').value;
-  const pMap  ={high:{label:'🔴 เร่งด่วน',sub:'ภายใน 24 ชม.',cls:'high'},medium:{label:'🟡 ปานกลาง',sub:'ภายใน 3 วัน',cls:'medium'},low:{label:'🟢 ทั่วไป',sub:'ภายใน 7 วัน',cls:'low'}};
-  const pInfo =pMap[vocData.priority]||pMap.medium;
+  const pMap  ={high:{label:'🔴 เร่งด่วน',sub:'ภายใน 24 ชม.',cls:'high'},
+    medium:{label:'🟡 ปานกลาง',sub:'ภายใน 3 วัน',cls:'medium'},
+    low:{label:'🟢 ทั่วไป',sub:'ภายใน 7 วัน',cls:'low'}};
+  const pInfo=pMap[vocData.priority]||pMap.medium;
   document.getElementById('review-area').innerHTML=`
     <div class="review-card">
-      <div class="review-card-header">
-        <h3>📋 ตรวจสอบข้อมูลก่อนส่ง</h3>
-        <p>กรุณาตรวจสอบความถูกต้องของข้อมูลทั้งหมดก่อนยืนยันการส่ง</p>
-      </div>
+      <div class="review-card-header"><h3>📋 ตรวจสอบข้อมูลก่อนส่ง</h3><p>กรุณาตรวจสอบก่อนยืนยัน</p></div>
       <div class="review-section">
-        <div class="review-section-title">ข้อมูลผู้แจ้ง</div>
+        <div class="review-section-title">ผู้แจ้ง</div>
         <div class="review-row"><span class="ri">👤</span><span class="rl">ประเภท</span><span class="rv">${vocData.cType}</span></div>
         <div class="review-row"><span class="ri">🪪</span><span class="rl">ตัวตน</span><span class="rv">${name}</span></div>
       </div>
       <div class="review-section">
         <div class="review-section-title">รายละเอียดเรื่อง</div>
         <div class="review-row"><span class="ri">🏷️</span><span class="rl">ประเภท</span><span class="rv">${vocData.category}</span></div>
-        <div class="review-row"><span class="ri">⚡</span><span class="rl">ความด่วน</span><span class="rv"><span class="priority-pill ${pInfo.cls}">${pInfo.label}</span> <small style="color:#888;">${pInfo.sub}</small></span></div>
+        <div class="review-row"><span class="ri">⚡</span><span class="rl">ความด่วน</span><span class="rv"><span class="priority-pill ${pInfo.cls}">${pInfo.label}</span> <small style="color:#aaa;">${pInfo.sub}</small></span></div>
         <div class="review-row"><span class="ri">📌</span><span class="rl">หัวข้อ</span><span class="rv" style="font-weight:700;">${subject}</span></div>
       </div>
       <div class="review-section">
         <div class="review-section-title">รายละเอียด</div>
-        <div style="background:#f8faf9;border-radius:8px;padding:12px;font-size:.9rem;color:#444;line-height:1.65;">${detail}</div>
+        <div style="background:#f8faf9;border-radius:8px;padding:12px;font-size:.88rem;color:#444;line-height:1.65;">${detail}</div>
       </div>
+      ${note?`<div class="review-section">
+        <div class="review-section-title">หมายเหตุ (ข้อ 1)</div>
+        <div style="background:#fffbf0;border-radius:8px;padding:12px;font-size:.88rem;color:#555;border-left:3px solid #f77f00;">${note}</div>
+      </div>`:''}
+      ${attachedFile?`<div class="review-section">
+        <div class="review-section-title">ไฟล์แนบ</div>
+        <div style="font-size:.88rem;color:#2d6a4f;">📎 ${attachedFile.name}</div>
+      </div>`:''}
     </div>`;
   changeStep(4);
 }
 
-async function finalSubmit() {
-  if(!await showConfirm('📋','ยืนยันการส่งเรื่อง','ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้<br>ต้องการส่งเรื่องนี้ใช่หรือไม่?'))return;
+async function finalSubmit(){
+  if(!await showConfirm('📋','ยืนยันการส่งเรื่อง','ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้'))return;
   const btn=document.getElementById('btn-final');
   btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังส่ง...'; btn.disabled=true;
-  try {
+  try{
     const res=await api.post('/api/submit',{
       customerType:vocData.cType, isAnon:document.getElementById('isAnon').checked,
       name:document.getElementById('v-name').value, studentId:document.getElementById('v-sid').value,
       categories:[vocData.category], priority:vocData.priority,
-      subject:document.getElementById('v-subject').value, detail:document.getElementById('v-detail').value,
+      subject:document.getElementById('v-subject').value,
+      detail:document.getElementById('v-detail').value,
+      userNote:document.getElementById('v-note')?.value.trim()||'', // ข้อ 1
+      fileName:attachedFile?attachedFile.name:'',                    // ข้อ 2
       username:currentUser?currentUser.username:'',
     });
     if(res.success){
-      document.getElementById('step-content-4').classList.add('hidden');
-      document.getElementById('success-area').classList.remove('hidden');
+      document.getElementById('step-content-4')?.classList.add('hidden');
+      document.getElementById('success-area')?.classList.remove('hidden');
       document.getElementById('new-ticket-id').innerText=res.ticketId;
-    } else { await showAlert('❌','ส่งไม่สำเร็จ',res.error||'เกิดข้อผิดพลาด'); }
-  } catch(e){ await showAlert('❌','เกิดข้อผิดพลาด',e.message); }
-  finally{ btn.innerHTML='ยืนยันการส่งเรื่อง'; btn.disabled=false; }
+      attachedFile=null;
+    } else await showAlert('❌','ส่งไม่สำเร็จ',res.error||'เกิดข้อผิดพลาด');
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+  finally{btn.innerHTML='<i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่อง';btn.disabled=false;}
 }
 
-// ═══════════════════════════════════════
-//  PINNED TICKETS (ข้อ 1 — progress bar)
-// ═══════════════════════════════════════
-function buildProgressBar(status) {
-  const steps=['รอดำเนินการ','กำลังดำเนินการ','เสร็จสิ้น'];
-  const isRejected = status==='ปฏิเสธ';
-  if(isRejected){
-    return `<div style="margin-top:12px;padding:8px 12px;background:#fde8e8;border-radius:8px;color:#d00000;font-size:.82rem;font-weight:700;text-align:center;">
-      ❌ ปฏิเสธคำร้อง
+// ═══ PROGRESS BAR 5 ระดับ (ข้อ 3) ═══
+function buildProgressBar(status){
+  const steps=[
+    {label:'รับเรื่อง',key:'received'},
+    {label:'รอดำเนินการ',key:'pending'},
+    {label:'กำลังดำเนินการ',key:'inprogress'},
+    {label:'รอตรวจสอบ',key:'review'},
+    {label:'เสร็จสิ้น',key:'done'},
+  ];
+  const statusMap={
+    'รอดำเนินการ':1,'กำลังดำเนินการ':2,'รอตรวจสอบ':3,'เสร็จสิ้น':4,'ปฏิเสธ':-1,
+  };
+  if(status==='ปฏิเสธ')
+    return `<div style="margin-top:12px;padding:8px 12px;background:#fde8e8;border-radius:8px;color:#d00000;font-size:.82rem;font-weight:700;text-align:center;">❌ ปฏิเสธคำร้อง</div>`;
+  const cur=statusMap[status]??0;
+  const pct=cur<=0?0:Math.round((cur/4)*100);
+  const stepsHtml=steps.map((s,i)=>{
+    const isDone=i<cur, isActive=i===cur, cls=isDone?'done':isActive?'active':'';
+    return `<div class="prog-step">
+      <div class="prog-dot ${cls}">${isDone?'✓':(i+1)}</div>
+      <div class="prog-label ${cls}">${s.label}</div>
     </div>`;
-  }
-  const cur=steps.indexOf(status);
-  const pct=cur<0?0:Math.round((cur/(steps.length-1))*100);
-  const stepsHtml=steps.map((s,i)=>`
-    <div class="prog-step">
-      <div class="prog-dot ${i<cur?'done':i===cur?'active':''}">${i<cur?'✓':(i+1)}</div>
-      <div class="prog-label ${i===cur?'active':''}">${s}</div>
-    </div>`).join('');
+  }).join('');
   return `<div class="ticket-progress">
     <div class="progress-steps">
       <div class="progress-fill-bar" style="width:${pct}%"></div>
@@ -440,44 +465,79 @@ function buildProgressBar(status) {
   </div>`;
 }
 
-async function loadPinnedTickets() {
+// ═══ NEWS STRIP (หน้าหลัก) ═══
+async function loadNewsStrip(){
+  const container=document.getElementById('news-strip-section');
+  if(!container)return;
+  try{
+    const res=await api.get('/api/news');
+    if(res.success&&res.news&&res.news.length>0){
+      container.classList.remove('hidden');
+      const recent=res.news.slice(0,3);
+      const tagClass={ทั่วไป:'',ด่วน:'urgent',ข้อมูล:'info',กิจกรรม:'event'};
+      let html=`<div class="news-strip"><h3><i class="fas fa-newspaper"></i> ข่าวสารและประกาศ</h3>`;
+      recent.forEach(n=>{
+        const tc=tagClass[n.tag]||'';
+        // ข้อ 11: ตัดข้อความยาว
+        const shortContent=n.content.length>80?n.content.substring(0,80)+'...':n.content;
+        html+=`<div class="news-item">
+          <span class="news-tag ${tc}">${n.tag||'ทั่วไป'}</span>
+          <strong>${n.title}</strong>
+          <span class="news-date">${n.date||''}</span>
+          <div style="color:#666;font-size:.84rem;margin-top:4px;">${shortContent}</div>
+        </div>`;
+      });
+      html+=`</div>`;
+      container.innerHTML=html;
+    } else { container.classList.add('hidden'); }
+  }catch(e){ container.classList.add('hidden'); }
+}
+
+// ═══ PINNED TICKETS (ข้อ 6 — ไม่แสดงรหัส) ═══
+async function loadPinnedTickets(){
   const container=document.getElementById('pinned-tickets-section');
   if(!container)return;
-  try {
+  try{
     const res=await api.get('/api/tickets?action=pinned');
     if(res.success&&res.tickets&&res.tickets.length>0){
       container.classList.remove('hidden');
       const sc={'รอดำเนินการ':'status-pending','กำลังดำเนินการ':'status-inprogress','เสร็จสิ้น':'status-success','ปฏิเสธ':'status-reject'};
-      let html=`<div class="section-title" style="margin-bottom:14px;"><h2 style="font-size:1.05rem;"><i class="fas fa-thumbtack" style="color:var(--dgreen);"></i> ประกาศ / ติดตามสถานะ</h2></div>`;
+      let html=`<div class="section-title" style="margin-bottom:14px;"><h2 style="font-size:1.05rem;"><i class="fas fa-thumbtack" style="color:var(--dgreen);"></i> ประกาศ / สถานะที่น่าสนใจ</h2></div>`;
       res.tickets.forEach(t=>{
-        html+=`<div class="ticket-card" style="border-left-color:#e7e71b;">
+        // ข้อ 6: ไม่แสดง Ticket ID ในการ์ดปักหมุด
+        const comments=t['Comments']||'';
+        const lastComment=comments.split('\n---\n').pop();
+        html+=`<div class="ticket-card" style="border-left-color:#e7e71b;margin-bottom:12px;">
           <div class="ticket-card-header">
-            <div><span class="ticket-id">${t['Ticket ID']}</span></div>
+            <div>
+              <div style="font-weight:700;font-size:1rem;color:#222;">${t['หัวข้อ']||'-'}</div>
+              <div style="font-size:.8rem;color:#aaa;margin-top:3px;">${t['ประเภทเรื่อง']||''}</div>
+            </div>
             <span class="status ${sc[t['สถานะ']]||'status-pending'}">${t['สถานะ']}</span>
           </div>
           <div class="ticket-card-body">
-            <div class="ticket-subject">${t['หัวข้อ']||'-'}</div>
             ${buildProgressBar(t['สถานะ'])}
           </div>
           <div class="ticket-card-footer">
             <span><i class="fas fa-calendar-alt"></i>${t['วันที่แจ้ง']||''}</span>
             <span><i class="fas fa-user-tie"></i>${t['ผู้รับผิดชอบ']||'รอมอบหมาย'}</span>
           </div>
-          ${t['หมายเหตุ']?`<div class="ticket-feedback-box" style="margin:0 20px 14px;"><strong>💬 หมายเหตุ:</strong> ${t['หมายเหตุ']}</div>`:''}
+          ${lastComment?`<div class="ticket-card-body" style="padding-top:0;"><div class="comments-log">
+            <div class="comment-meta">💬 Comments (ล่าสุด)</div>
+            <div class="comment-text">${lastComment.replace(/\[.*?\]/,'').trim()}</div>
+          </div></div>`:''}
         </div>`;
       });
       container.innerHTML=html;
     } else { container.classList.add('hidden'); }
-  } catch(e){ container.classList.add('hidden'); }
+  }catch(e){ container.classList.add('hidden'); }
 }
 
-// ═══════════════════════════════════════
-//  TRACKING (ข้อ 4 — ticket card ใหม่)
-// ═══════════════════════════════════════
-async function loadMyTickets() {
+// ═══ TRACKING ═══
+async function loadMyTickets(){
   const resDiv=document.getElementById('track-result');
   resDiv.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
-  try {
+  try{
     const res=await api.get(`/api/tickets?action=byUsername&username=${encodeURIComponent(currentUser.username)}`);
     if(res.success&&res.tickets&&res.tickets.length>0) renderTicketCards(res.tickets,true);
     else resDiv.innerHTML=`<div style="text-align:center;padding:40px;color:#aaa;">
@@ -486,339 +546,291 @@ async function loadMyTickets() {
       <button onclick="navigateTo('portal')" style="padding:10px 24px;background:var(--dgreen);color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:700;">
         <i class="fas fa-bullhorn"></i> แจ้งเรื่องใหม่
       </button></div>`;
-  } catch(e){ resDiv.innerHTML=`<p style="color:red;">${e.message}</p>`; }
+  }catch(e){ resDiv.innerHTML=`<p style="color:red;">${e.message}</p>`; }
 }
-
-async function doTrack() {
+async function doTrack(){
   const val=document.getElementById('track-input').value.trim();
   if(!val){await showAlert('⚠️','กรุณากรอก Ticket ID','ตัวอย่าง: VOC-2568-0001');return;}
   if(!val.toUpperCase().startsWith('VOC-')){
-    await showAlert('⚠️','รูปแบบไม่ถูกต้อง','กรุณากรอก Ticket ID ที่ขึ้นต้นด้วย VOC-<br><small style="color:#888;">เพื่อความปลอดภัย ค้นหาได้เฉพาะ Ticket ID เท่านั้น</small>');
-    return;
-  }
+    await showAlert('⚠️','รูปแบบไม่ถูกต้อง','กรุณากรอก Ticket ID ที่ขึ้นต้นด้วย VOC-');return;}
   const resDiv=document.getElementById('track-result');
   resDiv.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังค้นหา...</p></div>';
-  try {
+  try{
     const res=await api.get(`/api/tickets?action=byId&id=${encodeURIComponent(val.toUpperCase())}`);
     if(res.success) renderTicketCards([res.ticket],false);
     else resDiv.innerHTML=`<p style="color:#d00000;text-align:center;padding:30px;"><i class="fas fa-search"></i> ไม่พบ Ticket ID นี้</p>`;
-  } catch(e){ resDiv.innerHTML=`<p style="color:red;">${e.message}</p>`; }
+  }catch(e){ resDiv.innerHTML=`<p style="color:red;">${e.message}</p>`; }
 }
 
-function renderTicketCards(tickets, showRating=false) {
-  const resDiv=document.getElementById('track-result');
-  const sc={'รอดำเนินการ':'status-pending','กำลังดำเนินการ':'status-inprogress','เสร็จสิ้น':'status-success','ปฏิเสธ':'status-reject'};
+// ── TICKET CARD v5 (ข้อ 4 หมวดหมู่ชัดเจน) ──
+function buildTicketCard(t, showRating=false){
+  const sc={'รอดำเนินการ':'status-pending','กำลังดำเนินการ':'status-inprogress','เสร็จสิ้น':'status-success','ปฏิเสธ':'status-reject','รอตรวจสอบ':'status-review'};
   const pLabel={'high':'🔴 เร่งด่วน','medium':'🟡 ปานกลาง','low':'🟢 ทั่วไป'};
-  const pChipCls={'high':'orange','medium':'orange','low':'green'};
-  let html=`<p style="color:#888;margin-bottom:16px;font-size:.88rem;">พบ ${tickets.length} รายการ</p>`;
-  tickets.forEach(t=>{
-    const isDone=t['สถานะ']==='เสร็จสิ้น';
-    const ratingHtml=showRating&&isDone?buildRatingBox(t['Ticket ID']):'';
-    html+=`<div class="ticket-card">
-      <div class="ticket-card-header">
-        <div>
-          <div class="ticket-id"><i class="fas fa-ticket-alt" style="font-size:.8rem;margin-right:4px;"></i>${t['Ticket ID']}</div>
-        </div>
-        <span class="status ${sc[t['สถานะ']]||'status-pending'}">${t['สถานะ']}</span>
+  const pChipCls={'high':'red','medium':'orange','low':'green'};
+  const isDone=t['สถานะ']==='เสร็จสิ้น';
+  const comments=t['Comments']||'';
+  const commentEntries=comments?comments.split('\n---\n').filter(c=>c.trim()):[];
+  const userNote=t['หมายเหตุผู้ใช้']||'';
+  const fileInfo=t['FileURL']||'';
+  // ข้อ 11: ตัดข้อความยาว
+  const detailShort=t['รายละเอียด']&&t['รายละเอียด'].length>150
+    ?t['รายละเอียด'].substring(0,150)+'...' : (t['รายละเอียด']||'');
+  const detailFull=t['รายละเอียด']||'';
+  const needExpand=t['รายละเอียด']&&t['รายละเอียด'].length>150;
+
+  return `<div class="ticket-card">
+    <!-- HEADER -->
+    <div class="ticket-card-header">
+      <div>
+        <div class="ticket-id"><i class="fas fa-ticket-alt" style="font-size:.75rem;margin-right:4px;"></i>${t['Ticket ID']||'-'}</div>
+        <div class="ticket-subject" style="margin-top:4px;">${t['หัวข้อ']||'-'}</div>
       </div>
-      <div class="ticket-card-body">
-        <div class="ticket-subject">${t['หัวข้อ']||'-'}</div>
-        <div class="ticket-detail">${t['รายละเอียด']||''}</div>
-        <div class="ticket-meta-chips" style="margin-top:10px;">
+      <span class="status ${sc[t['สถานะ']]||'status-pending'}">${t['สถานะ']||'-'}</span>
+    </div>
+
+    <!-- BODY -->
+    <div class="ticket-card-body">
+
+      <!-- หมวด: ข้อมูลการแจ้ง -->
+      <div class="ticket-card-section">
+        <div class="ticket-card-section-label"><i class="fas fa-info-circle"></i> ข้อมูลการแจ้ง</div>
+        <div class="ticket-meta-chips">
           ${t['ประเภทเรื่อง']?`<span class="chip blue"><i class="fas fa-tag"></i>${t['ประเภทเรื่อง']}</span>`:''}
-          ${t['ความเร่งด่วน']?`<span class="chip ${pChipCls[t['ความเร่งด่วน']]||''}">${pLabel[t['ความเร่งด่วน']]||t['ความเร่งด่วน']}</span>`:''}
-          ${t['ประเภทผู้แจ้ง']?`<span class="chip"><i class="fas fa-user"></i>${t['ประเภทผู้แจ้ง']}</span>`:''}
+          ${t['ความเร่งด่วน']?`<span class="chip ${pChipCls[t['ความเร่งด่วน']]||'gray'}">${pLabel[t['ความเร่งด่วน']]||t['ความเร่งด่วน']}</span>`:''}
+          ${t['ประเภทผู้แจ้ง']?`<span class="chip gray"><i class="fas fa-user"></i>${t['ประเภทผู้แจ้ง']}</span>`:''}
         </div>
+      </div>
+
+      <!-- หมวด: รายละเอียด (ข้อ 11 ตัดข้อความ) -->
+      <div class="ticket-card-section">
+        <div class="ticket-card-section-label"><i class="fas fa-align-left"></i> รายละเอียด</div>
+        <div class="ticket-detail-text" id="detail-${t['Ticket ID']}">${needExpand?detailShort:detailFull}</div>
+        ${needExpand?`<button class="btn-expand" onclick="expandDetail('${t['Ticket ID']}','${encodeURIComponent(detailFull)}')">ดูเพิ่มเติม ▼</button>`:''}
+      </div>
+
+      ${userNote?`<!-- หมวด: หมายเหตุผู้ใช้ (ข้อ 1) -->
+      <div class="ticket-card-section">
+        <div class="ticket-card-section-label"><i class="fas fa-sticky-note"></i> หมายเหตุจากผู้แจ้ง</div>
+        <div class="user-note-box">${userNote}</div>
+      </div>`:''}
+
+      ${fileInfo?`<div class="ticket-card-section">
+        <div class="ticket-card-section-label"><i class="fas fa-paperclip"></i> ไฟล์แนบ</div>
+        <div style="font-size:.86rem;color:#2d6a4f;">${fileInfo}</div>
+      </div>`:''}
+
+      <!-- หมวด: ความคืบหน้า (ข้อ 3 — 5 ระดับ) -->
+      <div class="ticket-card-section">
+        <div class="ticket-card-section-label"><i class="fas fa-tasks"></i> ความคืบหน้า</div>
         ${buildProgressBar(t['สถานะ'])}
       </div>
-      <div class="ticket-card-footer">
-        <span><i class="fas fa-calendar-alt"></i>${t['วันที่แจ้ง']||'-'}</span>
-        <span><i class="fas fa-clock"></i>กำหนด: ${t['กำหนดตอบกลับ']||'-'}</span>
-        <span><i class="fas fa-user-tie"></i>${t['ผู้รับผิดชอบ']||'รอมอบหมาย'}</span>
-      </div>
-      ${t['หมายเหตุ']?`<div class="ticket-feedback-box"><strong>💬 หมายเหตุ:</strong> ${t['หมายเหตุ']}</div>`:''}
-      ${ratingHtml}
-    </div>`;
-  });
+
+      <!-- หมวด: Comments ครู (ข้อ 7 — แสดงเป็นลำดับ) -->
+      ${commentEntries.length?`<div class="ticket-card-section">
+        <div class="ticket-card-section-label"><i class="fas fa-comment-dots"></i> Comments (ครู/อาจารย์)</div>
+        <div class="comments-log">
+          ${commentEntries.map(c=>{
+            const metaMatch=c.match(/^\[(.*?)\]\s*(.*?):/);
+            const meta=metaMatch?`${metaMatch[1]} — ${metaMatch[2]}`:'';
+            const text=c.replace(/^\[.*?\].*?:\s*/,'');
+            return `<div class="comment-entry">
+              ${meta?`<div class="comment-meta">${meta}</div>`:''}
+              <div class="comment-text">${text}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`:''}
+
+      <!-- Rating (ถ้าเสร็จแล้ว) -->
+      ${showRating&&isDone?buildRatingBox(t['Ticket ID']):''}
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="ticket-card-footer">
+      <span><i class="fas fa-calendar-alt"></i>${t['วันที่แจ้ง']||'-'}</span>
+      <span><i class="fas fa-clock"></i>กำหนด: ${t['กำหนดตอบกลับ']||'-'}</span>
+      <span><i class="fas fa-user-tie"></i>${t['ผู้รับผิดชอบ']||'รอมอบหมาย'}</span>
+    </div>
+  </div>`;
+}
+
+// ข้อ 11: ขยายข้อความ
+function expandDetail(ticketId, encodedText){
+  const el=document.getElementById('detail-'+ticketId);
+  if(!el)return;
+  el.innerText=decodeURIComponent(encodedText);
+  const btn=el.nextElementSibling;
+  if(btn&&btn.classList.contains('btn-expand')) btn.style.display='none';
+}
+
+function renderTicketCards(tickets,showRating=false){
+  const resDiv=document.getElementById('track-result');
+  let html=`<p style="color:#888;margin-bottom:16px;font-size:.88rem;">พบ ${tickets.length} รายการ</p>`;
+  tickets.forEach(t=>{ html+=buildTicketCard(t,showRating); });
   resDiv.innerHTML=html;
 }
 
-// ═══════════════════════════════════════
-//  RATING SYSTEM (ข้อ 2)
-// ═══════════════════════════════════════
-function buildRatingBox(ticketId) {
+// ═══ RATING (ข้อ 2) ═══
+function buildRatingBox(ticketId){
   return `<div class="rating-box" id="rbox-${ticketId}">
     <h4>⭐ ให้คะแนนการบริการ</h4>
     <div class="star-row" id="stars-${ticketId}">
-      ${[1,2,3,4,5].map(i=>`<button class="star-btn dim" data-score="${i}" onclick="selectStar('${ticketId}',${i})">⭐</button>`).join('')}
+      ${[1,2,3,4,5].map(i=>`<button class="star-btn dim" onclick="selectStar('${ticketId}',${i})">⭐</button>`).join('')}
     </div>
-    <textarea class="rating-comment" id="rc-${ticketId}" rows="2" placeholder="ความคิดเห็นเพิ่มเติม (ไม่บังคับ)"></textarea>
+    <textarea class="rating-comment" id="rc-${ticketId}" rows="2" placeholder="ความคิดเห็น (ไม่บังคับ)"></textarea>
     <button class="btn-rate" onclick="submitRating('${ticketId}')"><i class="fas fa-paper-plane"></i> ส่งคะแนน</button>
   </div>`;
 }
-function selectStar(ticketId, score) {
+function selectStar(tid,score){
   ratingSelection=score;
-  const row=document.getElementById('stars-'+ticketId);
-  if(!row)return;
+  const row=document.getElementById('stars-'+tid); if(!row)return;
   row.querySelectorAll('.star-btn').forEach((b,i)=>{
-    b.classList.toggle('lit',i<score);
-    b.classList.toggle('dim',i>=score);
+    b.classList.toggle('lit',i<score); b.classList.toggle('dim',i>=score);
     b.style.transform=i<score?'scale(1.1)':'scale(1)';
   });
 }
-async function submitRating(ticketId) {
-  if(!ratingSelection||ratingSelection<1){await showAlert('⚠️','กรุณาเลือกคะแนน','กรุณากดดาวก่อนส่งคะแนน');return;}
-  const comment=document.getElementById('rc-'+ticketId).value.trim();
-  try {
+async function submitRating(ticketId){
+  if(!ratingSelection){await showAlert('⚠️','กรุณาเลือกคะแนน','');return;}
+  const comment=document.getElementById('rc-'+ticketId)?.value.trim();
+  try{
     const res=await api.post('/api/ratings',{ticketId,username:currentUser?.username||'',score:ratingSelection,comment});
     if(res.success){
       const box=document.getElementById('rbox-'+ticketId);
       if(box) box.innerHTML=`<div style="text-align:center;padding:16px;color:#2d6a4f;font-weight:700;">
-        ✅ ขอบคุณสำหรับการให้คะแนน! คุณให้ ${'⭐'.repeat(ratingSelection)} สำหรับ Ticket นี้
-      </div>`;
+        ✅ ขอบคุณสำหรับ ${'⭐'.repeat(ratingSelection)} คะแนน</div>`;
       ratingSelection=0;
-    } else { await showAlert('ℹ️','แจ้งเตือน',res.message); }
-  } catch(e){ await showAlert('❌','เกิดข้อผิดพลาด',e.message); }
+    } else await showAlert('ℹ️','แจ้งเตือน',res.message);
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
 }
 
-// ═══════════════════════════════════════
-//  ADMIN REVIEWS (ข้อ 3)
-// ═══════════════════════════════════════
-async function loadReviews() {
-  const container=document.getElementById('review-content');
+// ═══ FAQ (ข้อ 8) ═══
+async function loadFaq(){
+  const container=document.getElementById('faq-content');
   if(!container)return;
-  container.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
-  try {
-    const [allRes, sumRes]=await Promise.all([
-      api.get('/api/ratings?action=all'),
-      api.get('/api/ratings?action=summary'),
-    ]);
-    renderReviews(allRes.ratings||[], sumRes.summary||{avg:0,total:0,dist:{}});
-  } catch(e){ container.innerHTML=`<p style="color:red;">${e.message}</p>`; }
+  container.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';
+  try{
+    const res=await api.get('/api/faq');
+    if(res.success) renderFaq(res.faqs||[]);
+    else container.innerHTML='<p style="color:red;">โหลด FAQ ไม่สำเร็จ</p>';
+  }catch(e){ container.innerHTML=`<p style="color:red;">${e.message}</p>`; }
 }
+function renderFaq(faqs,query=''){
+  const container=document.getElementById('faq-content');
+  const filtered=query?faqs.filter(f=>
+    f.question.toLowerCase().includes(query.toLowerCase())||
+    f.answer.toLowerCase().includes(query.toLowerCase())):faqs;
 
-function renderReviews(ratings, summary) {
-  const container=document.getElementById('review-content');
-  const avg=summary.avg||0;
-  const total=summary.total||0;
-  const dist=summary.dist||{};
-  const starsDisplay='⭐'.repeat(Math.round(avg))+'☆'.repeat(5-Math.round(avg));
-  let sumHtml=`
-    <div class="rating-summary" style="margin-bottom:20px;">
-      <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
-        <div style="text-align:center;">
-          <div class="rating-avg">${avg}</div>
-          <div class="rating-stars-display">${starsDisplay}</div>
-          <div style="font-size:.82rem;color:#888;">${total} รีวิวทั้งหมด</div>
-        </div>
-        <div style="flex:1;min-width:200px;">
-          ${[5,4,3,2,1].map(s=>{
-            const cnt=dist[s]||0;
-            const pct=total?Math.round(cnt/total*100):0;
-            return `<div class="rating-dist-row">
-              <div class="star-label">${s} ⭐</div>
-              <div class="bar-track"><div class="bar-fill orange" style="width:${pct}%"></div></div>
-              <div class="bar-count">${cnt}</div>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>
-    </div>`;
+  if(!filtered.length){container.innerHTML='<p style="text-align:center;color:#aaa;padding:30px;">ไม่พบคำถามที่ค้นหา</p>';return;}
 
-  if(!ratings.length){
-    container.innerHTML=sumHtml+'<div class="no-tickets"><i class="fas fa-star" style="font-size:2.5rem;color:#ddd;"></i><p style="margin-top:12px;">ยังไม่มีรีวิว</p></div>';
-    return;
-  }
-  let html=sumHtml;
-  ratings.forEach(r=>{
-    const stars='⭐'.repeat(r.score)+'☆'.repeat(5-r.score);
-    html+=`<div style="background:#fff;border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow);margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-        <div>
-          <span style="font-weight:700;color:var(--dgreen);font-family:monospace;">${r.ticketId}</span>
-          <span style="font-size:1.1rem;margin-left:8px;">${stars}</span>
-        </div>
-        <span style="font-size:.78rem;color:#aaa;">${r.date||''}</span>
-      </div>
-      <div style="font-size:.84rem;color:#888;margin-bottom:4px;"><i class="fas fa-user"></i> ${r.username||'ไม่ระบุ'}</div>
-      ${r.comment?`<div style="background:#f8f8f8;border-radius:8px;padding:10px 12px;font-size:.88rem;color:#444;margin-top:8px;border-left:3px solid #e0e0e0;">${r.comment}</div>`:''}
-    </div>`;
+  // จัดกลุ่มตาม category
+  const groups={};
+  filtered.forEach(f=>{
+    const cat=f.category||'ทั่วไป';
+    if(!groups[cat])groups[cat]=[];
+    groups[cat].push(f);
   });
+
+  let html='<div class="faq-list">';
+  Object.entries(groups).forEach(([cat,items])=>{
+    html+=`<div class="faq-category-label"><i class="fas fa-folder-open"></i> ${cat}</div>`;
+    items.forEach(f=>{
+      html+=`<div class="faq-item" id="faq-${f.faqId}">
+        <div class="faq-question" onclick="toggleFaq('${f.faqId}')">
+          <span>${f.question}</span>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="faq-answer">${f.answer}</div>
+      </div>`;
+    });
+  });
+  html+='</div>';
   container.innerHTML=html;
 }
-
-// ═══════════════════════════════════════
-//  ADMIN DASHBOARD (ข้อ 6)
-// ═══════════════════════════════════════
-async function loadDashboard() {
-  document.getElementById('dash-content').innerHTML=
-    '<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลดข้อมูล...</p></div>';
-  try {
-    const [dashRes, sumRes]=await Promise.all([
-      api.get('/api/dashboard'),
-      api.get('/api/ratings?action=summary'),
-    ]);
-    if(dashRes.success) renderDashboard(dashRes.stats, sumRes.summary||{avg:0,total:0});
-    else document.getElementById('dash-content').innerHTML='<p style="color:red;">โหลดไม่สำเร็จ</p>';
-  } catch(e){ document.getElementById('dash-content').innerHTML=`<p style="color:red;">${e.message}</p>`; }
+function toggleFaq(id){
+  const item=document.getElementById('faq-'+id);
+  if(item) item.classList.toggle('open');
+}
+function searchFaq(){
+  const q=document.getElementById('faq-search')?.value.trim()||'';
+  const container=document.getElementById('faq-content');
+  container.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';
+  api.get('/api/faq').then(res=>{
+    if(res.success) renderFaq(res.faqs||[],q);
+  });
 }
 
-function renderDashboard(s, ratingSummary) {
-  const maxCat=Math.max(...Object.values(s.byCategory),1);
-  const maxCus=Math.max(...Object.values(s.byCustomer),1);
-  const maxMon=Math.max(...Object.values(s.byMonth),1);
-  let catBars='',cusBars='',monBars='',urgentHtml='';
-
+// ═══ ADMIN DASHBOARD ═══
+async function loadDashboard(){
+  document.getElementById('dash-content').innerHTML=
+    '<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
+  try{
+    const [dr,sr]=await Promise.all([api.get('/api/dashboard'),api.get('/api/ratings?action=summary')]);
+    if(dr.success) renderDashboard(dr.stats,sr.summary||{avg:0,total:0});
+    else document.getElementById('dash-content').innerHTML='<p style="color:red;">โหลดไม่สำเร็จ</p>';
+  }catch(e){ document.getElementById('dash-content').innerHTML=`<p style="color:red;">${e.message}</p>`; }
+}
+function renderDashboard(s,rs){
+  const mxC=Math.max(...Object.values(s.byCategory),1);
+  const mxU=Math.max(...Object.values(s.byCustomer),1);
+  const mxM=Math.max(...Object.values(s.byMonth),1);
+  let catB='',cusB='',monB='',urgH='';
   Object.entries(s.byCategory).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
-    catBars+=`<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/maxCat*100)}%"></div></div><span class="bar-count">${v}</span></div>`;
+    catB+=`<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/mxC*100)}%"></div></div><span class="bar-count">${v}</span></div>`;
   });
   Object.entries(s.byCustomer).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
-    cusBars+=`<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill orange" style="width:${Math.round(v/maxCus*100)}%"></div></div><span class="bar-count">${v}</span></div>`;
+    cusB+=`<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill orange" style="width:${Math.round(v/mxU*100)}%"></div></div><span class="bar-count">${v}</span></div>`;
   });
   Object.entries(s.byMonth).sort().slice(-6).forEach(([k,v])=>{
-    monBars+=`<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill blue" style="width:${Math.round(v/maxMon*100)}%"></div></div><span class="bar-count">${v}</span></div>`;
+    monB+=`<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill blue" style="width:${Math.round(v/mxM*100)}%"></div></div><span class="bar-count">${v}</span></div>`;
   });
-
-  if(s.urgentTickets&&s.urgentTickets.length>0){
-    urgentHtml=`<div class="urgent-banner">
-      <h4><i class="fas fa-exclamation-triangle"></i> ⚠️ มี ${s.urgentTickets.length} เรื่องเร่งด่วนที่ยังไม่เสร็จ</h4>
-      ${s.urgentTickets.map(t=>`<div class="urgent-item">
-        <span class="priority-badge p-high">🔴 เร่งด่วน</span>
-        <strong>${t.ticketId}</strong>
-        <span style="flex:1;">${t.subject}</span>
-        <span style="color:#888;font-size:.79rem;">กำหนด: ${t.due||'-'}</span>
-      </div>`).join('')}
+  if(s.urgentTickets&&s.urgentTickets.length>0)
+    urgH=`<div class="urgent-banner"><h4><i class="fas fa-exclamation-triangle"></i> ⚠️ ${s.urgentTickets.length} เรื่องเร่งด่วนยังไม่เสร็จ</h4>
+      ${s.urgentTickets.map(t=>`<div class="urgent-item"><span class="priority-badge p-high">🔴 เร่งด่วน</span><strong>${t.ticketId}</strong><span style="flex:1;">${t.subject}</span><span style="color:#aaa;font-size:.79rem;">${t.due||''}</span></div>`).join('')}
     </div>`;
-  }
-
-  const successRate=s.total>0?Math.round(s.done/s.total*100):0;
-
-  document.getElementById('dash-content').innerHTML=`
-    ${urgentHtml}
-
-    <!-- stat cards -->
+  const sr2=s.total>0?Math.round(s.done/s.total*100):0;
+  document.getElementById('dash-content').innerHTML=`${urgH}
     <div class="dash-grid">
       <div class="stat-card"><div class="stat-num">${s.total}</div><div class="stat-label">📋 ทั้งหมด</div></div>
       <div class="stat-card orange"><div class="stat-num" style="color:#f77f00;">${s.pending}</div><div class="stat-label">⏳ รอดำเนินการ</div></div>
       <div class="stat-card blue"><div class="stat-num" style="color:#3a86ff;">${s.inprogress}</div><div class="stat-label">🔄 กำลังดำเนินการ</div></div>
       <div class="stat-card"><div class="stat-num" style="color:#2d6a4f;">${s.done}</div><div class="stat-label">✅ เสร็จสิ้น</div></div>
     </div>
-
-    <!-- ความเร่งด่วน -->
     <div class="priority-stat-grid">
-      <div class="pstat-card high"><div class="pstat-num" style="color:#d00000;">${s.byPriority.high||0}</div><div class="pstat-label" style="color:#d00000;">🔴 เร่งด่วน</div></div>
-      <div class="pstat-card medium"><div class="pstat-num" style="color:#b25f00;">${s.byPriority.medium||0}</div><div class="pstat-label" style="color:#b25f00;">🟡 ปานกลาง</div></div>
-      <div class="pstat-card low"><div class="pstat-num" style="color:#2d6a4f;">${s.byPriority.low||0}</div><div class="pstat-label" style="color:#2d6a4f;">🟢 ทั่วไป</div></div>
+      <div class="pstat-card high"><div class="pstat-num" style="color:#d00000;">${s.byPriority?.high||0}</div><div class="pstat-label" style="color:#d00000;">🔴 เร่งด่วน</div></div>
+      <div class="pstat-card medium"><div class="pstat-num" style="color:#b25f00;">${s.byPriority?.medium||0}</div><div class="pstat-label" style="color:#b25f00;">🟡 ปานกลาง</div></div>
+      <div class="pstat-card low"><div class="pstat-num" style="color:#2d6a4f;">${s.byPriority?.low||0}</div><div class="pstat-label" style="color:#2d6a4f;">🟢 ทั่วไป</div></div>
     </div>
-
-    <!-- overview + rating -->
-    <div class="dash-charts" style="margin-bottom:18px;">
+    <div class="dash-charts">
       <div class="chart-card">
-        <h4><i class="fas fa-tachometer-alt"></i> ภาพรวมระบบ</h4>
-        <div style="margin-bottom:12px;">
-          <div style="display:flex;justify-content:space-between;font-size:.83rem;color:#888;margin-bottom:5px;"><span>อัตราสำเร็จ</span><span style="font-weight:700;color:#2d6a4f;">${successRate}%</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width:${successRate}%"></div></div>
-        </div>
-        <div style="margin-bottom:12px;">
-          <div style="display:flex;justify-content:space-between;font-size:.83rem;color:#888;margin-bottom:5px;"><span>กำลังดำเนินการ</span><span style="font-weight:700;color:#3a86ff;">${s.total>0?Math.round((s.inprogress)/s.total*100):0}%</span></div>
-          <div class="bar-track"><div class="bar-fill blue" style="width:${s.total>0?Math.round(s.inprogress/s.total*100):0}%"></div></div>
-        </div>
-        <div>
-          <div style="display:flex;justify-content:space-between;font-size:.83rem;color:#888;margin-bottom:5px;"><span>ปฏิเสธ</span><span style="font-weight:700;color:#d00000;">${s.total>0?Math.round(s.rejected/s.total*100):0}%</span></div>
-          <div class="bar-track"><div class="bar-fill red" style="width:${s.total>0?Math.round(s.rejected/s.total*100):0}%"></div></div>
-        </div>
+        <h4><i class="fas fa-tachometer-alt"></i> ภาพรวม</h4>
+        <div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:.83rem;color:#888;margin-bottom:4px;"><span>อัตราสำเร็จ</span><span style="font-weight:700;color:#2d6a4f;">${sr2}%</span></div><div class="bar-track"><div class="bar-fill" style="width:${sr2}%"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:.83rem;color:#888;margin-bottom:4px;"><span>กำลังดำเนินการ</span><span style="font-weight:700;color:#3a86ff;">${s.total>0?Math.round(s.inprogress/s.total*100):0}%</span></div><div class="bar-track"><div class="bar-fill blue" style="width:${s.total>0?Math.round(s.inprogress/s.total*100):0}%"></div></div></div>
       </div>
       <div class="chart-card" style="text-align:center;">
-        <h4><i class="fas fa-star"></i> คะแนนความพึงพอใจ</h4>
-        <div style="font-size:3.5rem;font-weight:800;color:var(--dgreen);line-height:1;">${ratingSummary.avg||'-'}</div>
-        <div style="font-size:1.5rem;margin:6px 0;">${'⭐'.repeat(Math.round(ratingSummary.avg||0))}${'☆'.repeat(5-Math.round(ratingSummary.avg||0))}</div>
-        <div style="font-size:.83rem;color:#888;">${ratingSummary.total||0} รีวิวทั้งหมด</div>
-        <button onclick="navigateTo('admin-reviews')" style="margin-top:14px;padding:7px 18px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
-          ดูรีวิวทั้งหมด
-        </button>
+        <h4><i class="fas fa-star"></i> คะแนนพึงพอใจ</h4>
+        <div style="font-size:3.2rem;font-weight:800;color:var(--dgreen);line-height:1;">${rs.avg||'-'}</div>
+        <div style="font-size:1.4rem;margin:6px 0;">${'⭐'.repeat(Math.round(rs.avg||0))}${'☆'.repeat(5-Math.round(rs.avg||0))}</div>
+        <div style="font-size:.83rem;color:#888;">${rs.total||0} รีวิว</div>
+        <button onclick="navigateTo('admin-reviews')" style="margin-top:12px;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">ดูรีวิว</button>
       </div>
     </div>
-
-    <!-- charts -->
     <div class="dash-charts">
-      <div class="chart-card"><h4><i class="fas fa-tags"></i> แยกตามประเภทเรื่อง</h4>${catBars||'<p style="color:#bbb;font-size:.88rem;">ยังไม่มีข้อมูล</p>'}</div>
-      <div class="chart-card"><h4><i class="fas fa-users"></i> แยกตามประเภทผู้แจ้ง</h4>${cusBars||'<p style="color:#bbb;font-size:.88rem;">ยังไม่มีข้อมูล</p>'}</div>
+      <div class="chart-card"><h4><i class="fas fa-tags"></i> ประเภทเรื่อง</h4>${catB||'<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div>
+      <div class="chart-card"><h4><i class="fas fa-users"></i> ประเภทผู้แจ้ง</h4>${cusB||'<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div>
     </div>
-    <div class="chart-card" style="margin-bottom:18px;"><h4><i class="fas fa-calendar-alt"></i> รายเดือน (6 เดือนล่าสุด)</h4>${monBars||'<p style="color:#bbb;font-size:.88rem;">ยังไม่มีข้อมูล</p>'}</div>
-
-    <!-- ข้อ 4/5 — สรุปข้อมูลทั้งหมดแบบละเอียด -->
-    <div class="chart-card summary-table-card" style="margin-bottom:18px;">
-      <h4><i class="fas fa-table"></i> สรุปข้อมูลการส่งเรื่องร้องเรียนทั้งหมด</h4>
-      <div style="overflow-x:auto;">
-        <table class="summary-table">
-          <thead>
-            <tr>
-              <th>รายการ</th><th>จำนวน</th><th>สัดส่วน</th><th>แนวโน้ม</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td><span class="tbl-dot" style="background:#888;"></span>ทั้งหมด</td><td><strong>${s.total}</strong></td><td>100%</td><td>—</td></tr>
-            <tr><td><span class="tbl-dot" style="background:#f77f00;"></span>รอดำเนินการ</td><td><strong>${s.pending}</strong></td><td>${s.total?Math.round(s.pending/s.total*100):0}%</td><td><span style="color:#f77f00;">⏳</span></td></tr>
-            <tr><td><span class="tbl-dot" style="background:#3a86ff;"></span>กำลังดำเนินการ</td><td><strong>${s.inprogress}</strong></td><td>${s.total?Math.round(s.inprogress/s.total*100):0}%</td><td><span style="color:#3a86ff;">🔄</span></td></tr>
-            <tr class="tbl-success"><td><span class="tbl-dot" style="background:#2d6a4f;"></span>เสร็จสิ้น</td><td><strong>${s.done}</strong></td><td>${s.total?Math.round(s.done/s.total*100):0}%</td><td><span style="color:#2d6a4f;">✅</span></td></tr>
-            <tr><td><span class="tbl-dot" style="background:#d00000;"></span>ปฏิเสธ</td><td><strong>${s.rejected}</strong></td><td>${s.total?Math.round(s.rejected/s.total*100):0}%</td><td><span style="color:#d00000;">❌</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ข้อ 6 — สรุปความเร่งด่วนละเอียด -->
-    <div class="chart-card priority-detail-card" style="margin-bottom:18px;">
-      <h4><i class="fas fa-exclamation-circle"></i> สรุปความเร่งด่วนของ Tickets</h4>
-      <div class="priority-detail-grid">
-        <div class="priority-detail-box high">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-            <span style="font-size:1.4rem;">🔴</span>
-            <div>
-              <div style="font-weight:800;font-size:1.5rem;color:#d00000;">${s.byPriority.high||0}</div>
-              <div style="font-size:.78rem;color:#d00000;font-weight:700;">เร่งด่วน (ภายใน 24 ชม.)</div>
-            </div>
-          </div>
-          <div class="bar-track"><div class="bar-fill red" style="width:${s.total?Math.round((s.byPriority.high||0)/s.total*100):0}%"></div></div>
-          <div style="font-size:.75rem;color:#d00000;margin-top:4px;font-weight:700;">${s.total?Math.round((s.byPriority.high||0)/s.total*100):0}% ของทั้งหมด</div>
-        </div>
-        <div class="priority-detail-box medium">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-            <span style="font-size:1.4rem;">🟡</span>
-            <div>
-              <div style="font-weight:800;font-size:1.5rem;color:#b25f00;">${s.byPriority.medium||0}</div>
-              <div style="font-size:.78rem;color:#b25f00;font-weight:700;">ปานกลาง (ภายใน 3 วัน)</div>
-            </div>
-          </div>
-          <div class="bar-track"><div class="bar-fill orange" style="width:${s.total?Math.round((s.byPriority.medium||0)/s.total*100):0}%"></div></div>
-          <div style="font-size:.75rem;color:#b25f00;margin-top:4px;font-weight:700;">${s.total?Math.round((s.byPriority.medium||0)/s.total*100):0}% ของทั้งหมด</div>
-        </div>
-        <div class="priority-detail-box low">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-            <span style="font-size:1.4rem;">🟢</span>
-            <div>
-              <div style="font-weight:800;font-size:1.5rem;color:#2d6a4f;">${s.byPriority.low||0}</div>
-              <div style="font-size:.78rem;color:#2d6a4f;font-weight:700;">ทั่วไป (ภายใน 7 วัน)</div>
-            </div>
-          </div>
-          <div class="bar-track"><div class="bar-fill" style="width:${s.total?Math.round((s.byPriority.low||0)/s.total*100):0}%"></div></div>
-          <div style="font-size:.75rem;color:#2d6a4f;margin-top:4px;font-weight:700;">${s.total?Math.round((s.byPriority.low||0)/s.total*100):0}% ของทั้งหมด</div>
-        </div>
-      </div>
-    </div>`;
+    <div class="chart-card"><h4><i class="fas fa-calendar-alt"></i> รายเดือน (6 เดือนล่าสุด)</h4>${monB||'<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div>`;
 }
 
-// ═══════════════════════════════════════
-//  ADMIN TICKETS
-// ═══════════════════════════════════════
+// ═══ ADMIN TICKETS ═══
 function setFilter(id){
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  const e=document.getElementById('filter-'+id); if(e)e.classList.add('active');
+  const e=document.getElementById('filter-'+id); if(e) e.classList.add('active');
 }
 async function loadAdminTickets(filter){
   document.getElementById('admin-ticket-list').innerHTML=
     '<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
-  try {
+  try{
     const [tr,nr]=await Promise.all([
       api.get(`/api/tickets?action=all&filter=${encodeURIComponent(filter)}`),
       api.get('/api/notify?action=getEmail'),
@@ -826,80 +838,57 @@ async function loadAdminTickets(filter){
     const ce=nr.success?(nr.email||''):'';
     if(tr.success) renderAdminTickets(tr.tickets,ce);
     else document.getElementById('admin-ticket-list').innerHTML='<p style="color:red;">โหลดไม่สำเร็จ</p>';
-  } catch(e){ document.getElementById('admin-ticket-list').innerHTML=`<p style="color:red;">${e.message}</p>`; }
+  }catch(e){ document.getElementById('admin-ticket-list').innerHTML=`<p style="color:red;">${e.message}</p>`; }
 }
 async function saveNotifyEmail(){
-  const email=document.getElementById('notify-email-input').value.trim();
+  const email=document.getElementById('notify-email-input')?.value.trim();
   if(!email){await showAlert('⚠️','กรุณากรอก email','');return;}
   const btn=document.getElementById('btn-save-notify');
-  btn.disabled=true; btn.innerHTML='บันทึก...';
-  try {
+  if(btn){btn.disabled=true;btn.innerHTML='บันทึก...';}
+  try{
     const res=await api.post('/api/notify',{action:'setEmail',email});
     if(res.success) await showAlert('✅','บันทึกสำเร็จ',`จะส่งแจ้งเตือนไปที่ ${email}`);
     else await showAlert('❌','ไม่สำเร็จ',res.message);
-  } catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
-  finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-save"></i> บันทึก';}
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+  finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-save"></i> บันทึก';}}
 }
 
-function renderAdminTickets(tickets, currentEmail){
+function renderAdminTickets(tickets,currentEmail){
   const container=document.getElementById('admin-ticket-list');
   const po={'high':0,'medium':1,'low':2};
   tickets.sort((a,b)=>(po[a['ความเร่งด่วน']]??9)-(po[b['ความเร่งด่วน']]??9));
   const scColor={'รอดำเนินการ':'pending','กำลังดำเนินการ':'inprogress','เสร็จสิ้น':'done','ปฏิเสธ':'rejected'};
-  const scTag  ={'รอดำเนินการ':'status-pending','กำลังดำเนินการ':'status-inprogress','เสร็จสิ้น':'status-success','ปฏิเสธ':'status-reject'};
-  const pLabel ={'high':'🔴 เร่งด่วน','medium':'🟡 ปานกลาง','low':'🟢 ทั่วไป'};
-  const pClass ={'high':'p-high','medium':'p-medium','low':'p-low'};
-
-  // ข้อ 6 — นับ priority ของ tickets ที่แสดงอยู่
-  const pCount={high:0,medium:0,low:0};
-  tickets.forEach(t=>{ const p=t['ความเร่งด่วน']||'low'; if(pCount[p]!==undefined)pCount[p]++; });
-  const urgentActive=tickets.filter(t=>t['ความเร่งด่วน']==='high'&&t['สถานะ']!=='เสร็จสิ้น'&&t['สถานะ']!=='ปฏิเสธ').length;
-
+  const scTag={'รอดำเนินการ':'status-pending','กำลังดำเนินการ':'status-inprogress','เสร็จสิ้น':'status-success','ปฏิเสธ':'status-reject'};
+  const pLabel={'high':'🔴 เร่งด่วน','medium':'🟡 ปานกลาง','low':'🟢 ทั่วไป'};
+  const pClass={'high':'p-high','medium':'p-medium','low':'p-low'};
   let html=`<div class="notify-box">
-    <h4><i class="fas fa-bell"></i> ตั้งค่า Email รับแจ้งเตือน</h4>
+    <h4><i class="fas fa-bell"></i> Email แจ้งเตือน</h4>
     <div class="notify-row">
       <input type="email" id="notify-email-input" placeholder="admin@gmail.com" value="${currentEmail}">
       <button class="btn-notify" id="btn-save-notify" onclick="saveNotifyEmail()"><i class="fas fa-save"></i> บันทึก</button>
     </div>
-    ${currentEmail?`<p style="font-size:.8rem;color:#2d6a4f;margin-top:8px;"><i class="fas fa-check-circle"></i> ส่งแจ้งเตือนไปที่ ${currentEmail}</p>`:''}
-  </div>
-
-  <!-- ข้อ 6 — Priority Summary Bar -->
-  <div class="manage-priority-summary">
-    <div class="mps-title"><i class="fas fa-exclamation-circle"></i> สรุปความเร่งด่วน (${tickets.length} รายการ)</div>
-    <div class="mps-grid">
-      <div class="mps-box high ${urgentActive>0?'pulse':''}">
-        <div class="mps-icon">🔴</div>
-        <div class="mps-count">${pCount.high}</div>
-        <div class="mps-label">เร่งด่วน</div>
-        ${urgentActive>0?`<div class="mps-alert">${urgentActive} ยังไม่เสร็จ!</div>`:'<div class="mps-ok">✓ ครบแล้ว</div>'}
-      </div>
-      <div class="mps-box medium">
-        <div class="mps-icon">🟡</div>
-        <div class="mps-count">${pCount.medium}</div>
-        <div class="mps-label">ปานกลาง</div>
-      </div>
-      <div class="mps-box low">
-        <div class="mps-icon">🟢</div>
-        <div class="mps-count">${pCount.low}</div>
-        <div class="mps-label">ทั่วไป</div>
-      </div>
-    </div>
-    ${urgentActive>0?`<div class="mps-warning"><i class="fas fa-exclamation-triangle"></i> มี <strong>${urgentActive} รายการเร่งด่วน</strong> ที่ยังไม่ได้ดำเนินการ! กรุณาดำเนินการโดยด่วน</div>`:''}
+    ${currentEmail?`<p style="font-size:.8rem;color:#2d6a4f;margin-top:8px;"><i class="fas fa-check-circle"></i> ${currentEmail}</p>`:''}
   </div>`;
   if(!tickets.length){
-    container.innerHTML=html+'<div class="no-tickets"><i class="fas fa-inbox" style="font-size:2.5rem;color:#ddd;"></i><p style="margin-top:12px;">ไม่มีเรื่องในหมวดนี้</p></div>';
+    container.innerHTML=html+'<div class="no-tickets"><i class="fas fa-inbox" style="font-size:2.5rem;color:#ddd;"></i><p style="margin-top:12px;">ไม่มีเรื่อง</p></div>';
     return;
   }
-  html+=`<p style="color:#888;margin-bottom:14px;font-size:.86rem;">แสดง ${tickets.length} รายการ (เรียงตามความเร่งด่วน)</p>`;
+  html+=`<p style="color:#888;margin-bottom:14px;font-size:.85rem;">แสดง ${tickets.length} รายการ (เรียงตามความเร่งด่วน)</p>`;
   tickets.forEach(t=>{
     const tid=t['Ticket ID'], pr=t['ความเร่งด่วน']||'low', isHigh=pr==='high';
     const isPinned=String(t['Pinned']||'').toLowerCase()==='true';
+    const comments=t['Comments']||'';
+    const commentEntries=comments?comments.split('\n---\n').filter(c=>c.trim()):[];
+    // ข้อ 11: ตัดรายละเอียดยาว
+    const detail=t['รายละเอียด']||'(ไม่มีรายละเอียด)';
+    const detailShort=detail.length>200?detail.substring(0,200)+'...':detail;
+    const needExpand=detail.length>200;
+
     html+=`<div class="admin-ticket-card ${scColor[t['สถานะ']]||'pending'} ${isHigh?'priority-high':''}" id="card-${tid}">
       <div class="admin-card-top">
         <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-          ${isHigh?'<span title="เร่งด่วนมาก">🚨</span>':''}
-          <span class="ticket-id" style="font-size:.97rem;">${tid}</span>
+          ${isHigh?'<span>🚨</span>':''}
+          <span class="ticket-id" style="font-size:.96rem;">${tid}</span>
           <span style="font-size:.72rem;color:#bbb;">ID:${t['UserID']||'-'}</span>
           <span class="priority-badge ${pClass[pr]||'p-low'}">${pLabel[pr]||pr}</span>
         </div>
@@ -917,22 +906,44 @@ function renderAdminTickets(tickets, currentEmail){
       <div class="admin-card-meta">
         <span><strong>ประเภทผู้แจ้ง:</strong> ${t['ประเภทผู้แจ้ง']||'-'}</span>
         <span><strong>ชื่อ:</strong> ${t['ชื่อ']||'-'}</span>
-        <span><strong>รหัส/หน่วยงาน:</strong> ${t['รหัสนักศึกษา/หน่วยงาน']||'-'}</span>
         <span><strong>ประเภทเรื่อง:</strong> ${t['ประเภทเรื่อง']||'-'}</span>
         <span><strong>วันที่แจ้ง:</strong> ${t['วันที่แจ้ง']||'-'}</span>
         <span><strong>กำหนดตอบกลับ:</strong> ${t['กำหนดตอบกลับ']||'-'}</span>
+        <span><strong>ผู้รับผิดชอบ:</strong> ${t['ผู้รับผิดชอบ']||'-'}</span>
       </div>
-      <div class="detail-box">${t['รายละเอียด']||'(ไม่มีรายละเอียด)'}</div>
-      ${t['หมายเหตุ']?`<div class="ticket-feedback-box" style="margin-bottom:12px;"><strong>หมายเหตุเดิม:</strong> ${t['หมายเหตุ']}</div>`:''}
-      <div class="update-row">
+      ${t['หมายเหตุผู้ใช้']?`<div style="background:#fffbf0;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:.84rem;border-left:3px solid #f77f00;"><strong>📝 หมายเหตุผู้แจ้ง:</strong> ${t['หมายเหตุผู้ใช้']}</div>`:''}
+      <div class="detail-box" id="adm-detail-${tid}">
+        ${needExpand?detailShort:detail}
+        ${needExpand?`<button class="btn-expand" onclick="expandAdminDetail('${tid}','${encodeURIComponent(detail)}')">ดูเพิ่มเติม ▼</button>`:''}
+      </div>
+      <!-- Comments log (ข้อ 7) -->
+      ${commentEntries.length?`<div style="margin-bottom:12px;">
+        <div style="font-size:.75rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;"><i class="fas fa-comments"></i> Comments (ครู/อาจารย์)</div>
+        <div class="comments-log">
+          ${commentEntries.map(c=>{
+            const mm=c.match(/^\[(.*?)\]\s*(.*?):/);
+            const meta=mm?`${mm[1]} — ${mm[2]}`:'';
+            const text=c.replace(/^\[.*?\].*?:\s*/,'');
+            return `<div class="comment-entry">${meta?`<div class="comment-meta">${meta}</div>`:''}<div class="comment-text">${text}</div></div>`;
+          }).join('')}
+        </div>
+      </div>`:''}
+      <!-- เพิ่ม Comment ใหม่ (ข้อ 7 — append ไม่ overwrite) -->
+      <div class="comment-add-box">
+        <div style="font-size:.78rem;color:#2d6a4f;font-weight:700;margin-bottom:6px;"><i class="fas fa-plus-circle"></i> เพิ่ม Comment</div>
+        <textarea id="new-comment-${tid}" rows="2" placeholder="พิมพ์ comment..."></textarea>
+        <button class="btn-comment" onclick="addComment('${tid}')"><i class="fas fa-paper-plane"></i> ส่ง</button>
+      </div>
+      <!-- Update row -->
+      <div class="update-row" style="margin-top:10px;">
         <select id="status-${tid}">
           <option value="รอดำเนินการ"    ${t['สถานะ']==='รอดำเนินการ'    ?'selected':''}>รอดำเนินการ</option>
           <option value="กำลังดำเนินการ" ${t['สถานะ']==='กำลังดำเนินการ' ?'selected':''}>กำลังดำเนินการ</option>
+          <option value="รอตรวจสอบ"      ${t['สถานะ']==='รอตรวจสอบ'      ?'selected':''}>รอตรวจสอบ</option>
           <option value="เสร็จสิ้น"      ${t['สถานะ']==='เสร็จสิ้น'      ?'selected':''}>เสร็จสิ้น</option>
           <option value="ปฏิเสธ"         ${t['สถานะ']==='ปฏิเสธ'         ?'selected':''}>ปฏิเสธ</option>
         </select>
         <input type="text" id="assignee-${tid}" placeholder="ผู้รับผิดชอบ" value="${t['ผู้รับผิดชอบ']||''}">
-        <input type="text" id="feedback-${tid}" placeholder="หมายเหตุ" value="${t['หมายเหตุ']||''}">
         <button class="btn-update" onclick="submitUpdate('${tid}')"><i class="fas fa-save"></i> บันทึก</button>
       </div>
     </div>`;
@@ -940,10 +951,33 @@ function renderAdminTickets(tickets, currentEmail){
   container.innerHTML=html;
 }
 
+function expandAdminDetail(tid,enc){
+  const el=document.getElementById('adm-detail-'+tid); if(!el)return;
+  const btn=el.querySelector('.btn-expand');
+  el.innerHTML=decodeURIComponent(enc); // clear and set full text
+}
+
+// ── addComment (ข้อ 7 — append) ──
+async function addComment(ticketId){
+  const commentEl=document.getElementById('new-comment-'+ticketId);
+  const comment=commentEl?.value.trim();
+  if(!comment){await showAlert('⚠️','กรุณาพิมพ์ comment','');return;}
+  try{
+    const res=await api.post('/api/tickets',{
+      action:'addComment', ticketId, comment,
+      author: currentUser?.fullname||currentUser?.username||'ผู้ดูแล',
+    });
+    if(res.success){
+      if(commentEl) commentEl.value='';
+      await showAlert('✅','บันทึก Comment สำเร็จ','');
+      loadAdminTickets(document.querySelector('.filter-btn.active')?.id?.replace('filter-','')||'pending');
+    } else await showAlert('❌','ไม่สำเร็จ',res.message||'');
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+}
+
 async function togglePin(tid,ns){
-  if(!await showConfirm('📌',ns?'ปักหมุดบนหน้าหลัก':'ยกเลิกการปักหมุด',
-    ns?'ticket นี้จะแสดงให้ผู้ใช้ทั่วไปเห็น':'ยกเลิกการแสดงบนหน้าหลัก'))return;
-  try {
+  if(!await showConfirm('📌',ns?'ปักหมุด':'ยกเลิกปักหมุด',''))return;
+  try{
     const res=await api.post('/api/tickets',{action:'togglePin',ticketId:tid,pinned:ns});
     if(res.success){
       const btn=document.getElementById(`pin-btn-${tid}`);
@@ -955,72 +989,244 @@ async function togglePin(tid,ns){
         btn.setAttribute('onclick',`togglePin('${tid}',${!ns})`);
       }
     }
-  } catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
 }
 
 async function submitUpdate(tid){
   const ns=document.getElementById('status-'+tid).value;
   const as=document.getElementById('assignee-'+tid).value;
-  const fb=document.getElementById('feedback-'+tid).value;
-  if(!await showConfirm('💾','ยืนยันการบันทึก',`Ticket: <strong>${tid}</strong><br>สถานะใหม่: <strong>${ns}</strong>`))return;
+  if(!await showConfirm('💾','ยืนยันการบันทึก',`Ticket: <strong>${tid}</strong><br>สถานะ: <strong>${ns}</strong>`))return;
   const btn=document.querySelector(`#card-${tid} .btn-update`);
-  btn.innerHTML='<i class="fas fa-spinner fa-spin"></i>'; btn.disabled=true;
-  try {
-    const res=await api.post('/api/tickets',{action:'update',ticketId:tid,newStatus:ns,assignee:as,feedback:fb});
+  if(btn){btn.innerHTML='<i class="fas fa-spinner fa-spin"></i>';btn.disabled=true;}
+  try{
+    const res=await api.post('/api/tickets',{action:'update',ticketId:tid,newStatus:ns,assignee:as});
     if(res.success){
       const card=document.getElementById('card-'+tid);
-      card.style.transition='background .4s'; card.style.background='#d4edda';
-      setTimeout(()=>{card.style.background='';},1500);
-      const sTag={'รอดำเนินการ':'status-pending','กำลังดำเนินการ':'status-inprogress','เสร็จสิ้น':'status-success','ปฏิเสธ':'status-reject'};
-      const scTag={'รอดำเนินการ':'pending','กำลังดำเนินการ':'inprogress','เสร็จสิ้น':'done','ปฏิเสธ':'rejected'};
-      card.querySelector('.status').className='status '+(sTag[ns]||'status-pending');
-      card.querySelector('.status').innerText=ns;
-      card.className=`admin-ticket-card ${scTag[ns]||'pending'}`;
-    } else { await showAlert('❌','บันทึกไม่สำเร็จ',res.message||''); }
-  } catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
-  finally{btn.innerHTML='<i class="fas fa-save"></i> บันทึก'; btn.disabled=false;}
+      if(card){card.style.transition='background .4s';card.style.background='#d4edda';setTimeout(()=>{card.style.background='';},1500);}
+      const sTag={'รอดำเนินการ':'status-pending','กำลังดำเนินการ':'status-inprogress','เสร็จสิ้น':'status-success','ปฏิเสธ':'status-reject','รอตรวจสอบ':'status-review'};
+      const scTag={'รอดำเนินการ':'pending','กำลังดำเนินการ':'inprogress','เสร็จสิ้น':'done','ปฏิเสธ':'rejected','รอตรวจสอบ':'pending'};
+      card?.querySelector('.status')&&(card.querySelector('.status').className='status '+(sTag[ns]||'status-pending'));
+      card?.querySelector('.status')&&(card.querySelector('.status').innerText=ns);
+      if(card) card.className=`admin-ticket-card ${scTag[ns]||'pending'}`;
+    } else await showAlert('❌','บันทึกไม่สำเร็จ',res.message||'');
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+  finally{if(btn){btn.innerHTML='<i class="fas fa-save"></i> บันทึก';btn.disabled=false;}}
 }
 
-// ═══════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════
-window.onload = function() {
+// ═══ ADMIN REVIEWS ═══
+async function loadReviews(){
+  const container=document.getElementById('review-content');
+  if(!container)return;
+  container.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';
+  try{
+    const [ar,sr]=await Promise.all([api.get('/api/ratings?action=all'),api.get('/api/ratings?action=summary')]);
+    renderReviews(ar.ratings||[],sr.summary||{avg:0,total:0,dist:{}});
+  }catch(e){ container.innerHTML=`<p style="color:red;">${e.message}</p>`; }
+}
+function renderReviews(ratings,summary){
+  const container=document.getElementById('review-content');
+  const avg=summary.avg||0, total=summary.total||0, dist=summary.dist||{};
+  let sumHtml=`<div class="rating-summary">
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div class="rating-avg">${avg}</div>
+        <div style="font-size:1.4rem;margin:6px 0;">${'⭐'.repeat(Math.round(avg))}${'☆'.repeat(5-Math.round(avg))}</div>
+        <div style="font-size:.82rem;color:#888;">${total} รีวิว</div>
+      </div>
+      <div style="flex:1;min-width:200px;">
+        ${[5,4,3,2,1].map(s=>{const cnt=dist[s]||0;const pct=total?Math.round(cnt/total*100):0;
+          return `<div class="rating-dist-row"><div class="star-label">${s} ⭐</div><div class="bar-track"><div class="bar-fill orange" style="width:${pct}%"></div></div><div class="bar-count">${cnt}</div></div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+  if(!ratings.length){container.innerHTML=sumHtml+'<div class="no-tickets"><i class="fas fa-star" style="font-size:2.5rem;color:#ddd;"></i><p style="margin-top:12px;">ยังไม่มีรีวิว</p></div>';return;}
+  let html=sumHtml;
+  ratings.forEach(r=>{
+    const stars='⭐'.repeat(r.score)+'☆'.repeat(5-r.score);
+    html+=`<div style="background:#fff;border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow);margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+        <div><span style="font-weight:700;color:var(--dgreen);font-family:monospace;">${r.ticketId}</span><span style="font-size:1.1rem;margin-left:8px;">${stars}</span></div>
+        <span style="font-size:.78rem;color:#aaa;">${r.date||''}</span>
+      </div>
+      <div style="font-size:.83rem;color:#aaa;margin-bottom:4px;"><i class="fas fa-user"></i> ${r.username||'ไม่ระบุ'}</div>
+      ${r.comment?`<div style="background:#f8f8f8;border-radius:8px;padding:10px 12px;font-size:.87rem;color:#444;margin-top:8px;">${r.comment}</div>`:''}
+    </div>`;
+  });
+  container.innerHTML=html;
+}
+
+// ═══ SUPERADMIN (ข้อ 10) ═══
+async function loadSuperAdmin(){
+  const container=document.getElementById('superadmin-content');
+  if(!container)return;
+  container.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';
+  showSATab('news');
+}
+
+let currentSATab='news';
+function showSATab(tab){
+  currentSATab=tab;
+  document.querySelectorAll('.sa-tab').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('sa-tab-'+tab); if(btn) btn.classList.add('active');
+  if(tab==='news') loadSANews();
+  if(tab==='faq')  loadSAFaq();
+}
+
+// ── Superadmin: News Manager ──
+async function loadSANews(){
+  const container=document.getElementById('superadmin-content'); if(!container)return;
+  try{
+    const res=await api.get('/api/news');
+    renderSANews(res.news||[]);
+  }catch(e){ container.innerHTML=`<p style="color:red;">${e.message}</p>`; }
+}
+function renderSANews(news){
+  const container=document.getElementById('superadmin-content');
+  const tagOpts=['ทั่วไป','ด่วน','ข้อมูล','กิจกรรม'];
+  let html=`<div class="superadmin-banner"><i class="fas fa-crown"></i><div><strong>ผู้ดูแลระดับสูง</strong><br><small>จัดการข่าวสาร FAQ และการตั้งค่าระบบ</small></div></div>
+  <div class="sa-tabs">
+    <button class="sa-tab ${currentSATab==='news'?'active':''}" id="sa-tab-news" onclick="showSATab('news')"><i class="fas fa-newspaper"></i> ข่าวสาร</button>
+    <button class="sa-tab ${currentSATab==='faq'?'active':''}" id="sa-tab-faq" onclick="showSATab('faq')"><i class="fas fa-question-circle"></i> FAQ</button>
+  </div>
+  <div class="news-manager-form">
+    <h4><i class="fas fa-plus-circle"></i> เพิ่มข่าวสารใหม่</h4>
+    <div class="form-group"><label>หัวเรื่อง *</label><input type="text" id="news-title" placeholder="หัวเรื่องข่าว"></div>
+    <div class="form-group"><label>เนื้อหา *</label><textarea id="news-content" rows="4" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:.93rem;resize:vertical;"></textarea></div>
+    <div class="form-group"><label>Tag</label><select id="news-tag" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;">
+      ${tagOpts.map(t=>`<option value="${t}">${t}</option>`).join('')}
+    </select></div>
+    <button class="btn-add-news" onclick="addNews()"><i class="fas fa-plus"></i> เพิ่มข่าว</button>
+  </div>
+  <p style="font-size:.85rem;color:#888;margin-bottom:14px;">ข่าวทั้งหมด ${news.length} รายการ</p>`;
+  news.forEach(n=>{
+    const shortContent=n.content.length>100?n.content.substring(0,100)+'...':n.content;
+    html+=`<div class="news-manager-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+        <div><span class="news-tag">${n.tag||'ทั่วไป'}</span><strong>${n.title}</strong><span class="news-date">${n.date||''}</span></div>
+        <button class="btn-delete" onclick="deleteNews('${n.newsId}')"><i class="fas fa-trash"></i> ลบ</button>
+      </div>
+      <div style="font-size:.86rem;color:#666;">${shortContent}</div>
+    </div>`;
+  });
+  container.innerHTML=html;
+}
+async function addNews(){
+  const title=document.getElementById('news-title')?.value.trim();
+  const content=document.getElementById('news-content')?.value.trim();
+  const tag=document.getElementById('news-tag')?.value;
+  if(!title||!content){await showAlert('⚠️','กรุณากรอกข้อมูล','กรุณากรอกหัวเรื่องและเนื้อหา');return;}
+  try{
+    const res=await api.post('/api/news',{action:'add',title,content,tag,author:currentUser?.username||'superadmin'});
+    if(res.success){await showAlert('✅','เพิ่มข่าวสำเร็จ','');loadSANews();}
+    else await showAlert('❌','ไม่สำเร็จ',res.message);
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+}
+async function deleteNews(newsId){
+  if(!await showConfirm('🗑️','ลบข่าว','ต้องการลบข่าวนี้ใช่หรือไม่?','danger'))return;
+  try{
+    const res=await api.post('/api/news',{action:'delete',newsId});
+    if(res.success) loadSANews();
+    else await showAlert('❌','ลบไม่สำเร็จ',res.message);
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+}
+
+// ── Superadmin: FAQ Manager ──
+async function loadSAFaq(){
+  const container=document.getElementById('superadmin-content'); if(!container)return;
+  try{
+    const res=await api.get('/api/faq');
+    renderSAFaq(res.faqs||[]);
+  }catch(e){ container.innerHTML=`<p style="color:red;">${e.message}</p>`; }
+}
+function renderSAFaq(faqs){
+  const container=document.getElementById('superadmin-content');
+  const catOpts=['การใช้งาน','ความเร่งด่วน','ความปลอดภัย','ระบบ','ทั่วไป'];
+  let html=`<div class="superadmin-banner"><i class="fas fa-crown"></i><div><strong>ผู้ดูแลระดับสูง</strong><br><small>จัดการข่าวสาร FAQ และการตั้งค่าระบบ</small></div></div>
+  <div class="sa-tabs">
+    <button class="sa-tab ${currentSATab==='news'?'active':''}" id="sa-tab-news" onclick="showSATab('news')"><i class="fas fa-newspaper"></i> ข่าวสาร</button>
+    <button class="sa-tab ${currentSATab==='faq'?'active':''}" id="sa-tab-faq" onclick="showSATab('faq')"><i class="fas fa-question-circle"></i> FAQ</button>
+  </div>
+  <div class="news-manager-form">
+    <h4><i class="fas fa-plus-circle"></i> เพิ่มคำถามใหม่</h4>
+    <div class="form-group"><label>หมวดหมู่</label><select id="faq-cat-new" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;">
+      ${catOpts.map(c=>`<option>${c}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label>คำถาม *</label><input type="text" id="faq-q-new" placeholder="คำถาม..."></div>
+    <div class="form-group"><label>คำตอบ *</label><textarea id="faq-a-new" rows="3" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:.93rem;resize:vertical;" placeholder="คำตอบ..."></textarea></div>
+    <button class="btn-add-news" onclick="addFaq()"><i class="fas fa-plus"></i> เพิ่มคำถาม</button>
+  </div>
+  <p style="font-size:.85rem;color:#888;margin-bottom:14px;">FAQ ทั้งหมด ${faqs.length} รายการ</p>`;
+  faqs.forEach(f=>{
+    html+=`<div class="news-manager-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+        <div><span class="chip gray" style="margin-right:6px;">${f.category}</span><strong>${f.question}</strong></div>
+        <button class="btn-delete" onclick="deleteFaq('${f.faqId}')"><i class="fas fa-trash"></i> ลบ</button>
+      </div>
+      <div style="font-size:.86rem;color:#666;">${f.answer}</div>
+    </div>`;
+  });
+  container.innerHTML=html;
+}
+async function addFaq(){
+  const cat=document.getElementById('faq-cat-new')?.value;
+  const q=document.getElementById('faq-q-new')?.value.trim();
+  const a=document.getElementById('faq-a-new')?.value.trim();
+  if(!q||!a){await showAlert('⚠️','กรุณากรอกข้อมูล','กรุณากรอกคำถามและคำตอบ');return;}
+  try{
+    const res=await api.post('/api/faq',{action:'add',category:cat,question:q,answer:a});
+    if(res.success){await showAlert('✅','เพิ่มสำเร็จ','');loadSAFaq();}
+    else await showAlert('❌','ไม่สำเร็จ',res.message);
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+}
+async function deleteFaq(faqId){
+  if(!await showConfirm('🗑️','ลบคำถาม','','danger'))return;
+  try{
+    const res=await api.post('/api/faq',{action:'delete',faqId});
+    if(res.success) loadSAFaq();
+    else await showAlert('❌','ลบไม่สำเร็จ',res.message);
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+}
+
+// ═══ INIT ═══
+window.onload=function(){
   const saved=loadSession();
   if(saved&&saved.success){
     currentUser=saved;
-    if(saved.role==='admin') updateMenuForAdmin();
+    if(saved.role==='superadmin') updateMenuForSuperAdmin();
+    else if(saved.role==='admin') updateMenuForAdmin();
     else updateMenuForUser();
   }
 
-  // ข้อ 7 — Enter key สำหรับ login และ register
-  const loginSetup=()=>{
-    const lu=document.getElementById('login-user');
-    const lp=document.getElementById('login-pass');
-    if(lu) lu.addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('login-pass').focus(); });
-    if(lp) lp.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
-    const au=document.getElementById('admin-user');
-    const ap=document.getElementById('admin-pass');
-    if(au) au.addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('admin-pass').focus(); });
-    if(ap) ap.addEventListener('keydown',e=>{ if(e.key==='Enter') doAdminLogin(); });
-  };
+  // ข้อ 5 — Enter key ทุกที่
+  const pairs=[
+    ['login-user','login-pass',null,doLogin],
+    ['admin-user','admin-pass',null,doAdminLogin],
+  ];
+  pairs.forEach(([f1,f2,f3,fn])=>{
+    const e1=document.getElementById(f1);
+    const e2=document.getElementById(f2);
+    if(e1) e1.addEventListener('keydown',e=>{if(e.key==='Enter'&&e2)e2.focus();});
+    if(e2) e2.addEventListener('keydown',e=>{if(e.key==='Enter'){if(f3&&document.getElementById(f3)){document.getElementById(f3).focus();}else fn();}});
+  });
+  // Register enter
+  const regFields=['reg-firstname','reg-lastname','reg-email','reg-phone','reg-username','reg-pass','reg-pass2'];
+  regFields.forEach((id,idx)=>{
+    const el=document.getElementById(id); if(!el)return;
+    el.addEventListener('input',clearFieldErrors);
+    if(idx<regFields.length-1)
+      el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const nx=document.getElementById(regFields[idx+1]);if(nx)nx.focus();}});
+  });
+  const lastReg=document.getElementById('reg-pass2');
+  if(lastReg) lastReg.addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});
+  const pw=document.getElementById('reg-pass');
+  if(pw) pw.addEventListener('input',updateStrengthBar);
+  // Track enter
+  const ti=document.getElementById('track-input');
+  if(ti) ti.addEventListener('keydown',e=>{if(e.key==='Enter')doTrack();});
+  // FAQ search enter
+  const fs=document.getElementById('faq-search');
+  if(fs) fs.addEventListener('keydown',e=>{if(e.key==='Enter')searchFaq();});
 
-  const regSetup=()=>{
-    const fields=['reg-firstname','reg-lastname','reg-email','reg-phone','reg-username','reg-pass','reg-pass2'];
-    fields.forEach((id,idx)=>{
-      const el=document.getElementById(id);
-      if(!el)return;
-      el.addEventListener('input',clearFieldErrors);
-      if(idx<fields.length-1){
-        el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); const next=document.getElementById(fields[idx+1]); if(next) next.focus(); }});
-      }
-    });
-    const last=document.getElementById('reg-pass2');
-    if(last) last.addEventListener('keydown',e=>{ if(e.key==='Enter') doRegister(); });
-    const pw=document.getElementById('reg-pass');
-    if(pw) pw.addEventListener('input',updateStrengthBar);
-  };
-
-  loginSetup();
-  regSetup();
   navigateTo('home');
 };

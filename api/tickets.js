@@ -1,78 +1,64 @@
-// api/tickets.js
+// api/tickets.js v5
 // GET  /api/tickets?action=byUsername&username=xxx
-// GET  /api/tickets?action=byId&id=VOC-2568-0001
-// GET  /api/tickets?action=byUserId&userId=5
-// GET  /api/tickets?action=search&q=ชื่อหรือรหัส
+// GET  /api/tickets?action=byId&id=VOC-xxx
 // GET  /api/tickets?action=all&filter=pending
-// GET  /api/tickets?action=pinned          ← ticket ที่ admin pin ให้แสดงหน้าหลัก
-// POST /api/tickets  { action:'update', ticketId, newStatus, assignee, feedback, pinned }
-// POST /api/tickets  { action:'togglePin', ticketId, pinned:true|false }
+// GET  /api/tickets?action=pinned
+// POST /api/tickets { action:'update', ticketId, newStatus, assignee, comment }
+// POST /api/tickets { action:'addComment', ticketId, comment, author }  ← append
+// POST /api/tickets { action:'togglePin', ticketId, pinned }
+//
+// Column map (0-based index):
+// 0:UserID 1:TicketID 2:Username 3:วันที่ 4:ประเภทผู้แจ้ง 5:ชื่อ
+// 6:รหัส 7:ประเภทเรื่อง 8:ความเร่งด่วน 9:หัวข้อ 10:รายละเอียด
+// 11:หมายเหตุผู้ใช้ 12:สถานะ 13:ผู้รับผิดชอบ 14:กำหนดตอบกลับ
+// 15:Comments(ครู) 16:Pinned 17:FileURL
 
 const {
   getSheetsClient, getSheetData, batchUpdate,
-  SHEET_TICKETS, SPREADSHEET_ID,
-  setCorsHeaders,
+  SHEET_TICKETS, SPREADSHEET_ID, setCorsHeaders, formatDateThai,
 } = require('./_sheets');
 
-// ── แปลงแถว → object ตาม headers ──
-function rowToObject(headers, row) {
-  const obj = {};
-  headers.forEach((h, i) => {
-    obj[h] = row[i] !== undefined ? String(row[i]) : '';
-  });
-  return obj;
+function rowToObj(headers, row) {
+  const o = {};
+  headers.forEach((h, i) => { o[h] = row[i] !== undefined ? String(row[i]) : ''; });
+  return o;
 }
 
-// ── mapping คอลัมน์ตำแหน่งใหม่ (1-based → letter) ──
-// UserID=A(1), TicketID=B(2), Username=C(3), วันที่=D(4), ประเภทผู้แจ้ง=E(5)
-// ชื่อ=F(6), รหัส=G(7), ประเภทเรื่อง=H(8), ความเร่งด่วน=I(9), หัวข้อ=J(10)
-// รายละเอียด=K(11), สถานะ=L(12), ผู้รับผิดชอบ=M(13), กำหนดตอบกลับ=N(14)
-// หมายเหตุ=O(15), Pinned=P(16) ← เพิ่มอัตโนมัติถ้ายังไม่มี
+// column letters (1-based col number → letter)
+const COL = {
+  STATUS:    'M', // 13
+  ASSIGNEE:  'N', // 14
+  COMMENTS:  'P', // 16
+  PINNED:    'Q', // 17
+};
 
 module.exports = async function handler(req, res) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const sheets = await getSheetsClient();
-    const data   = await getSheetData(sheets, SHEET_TICKETS);
+    const sheets  = await getSheetsClient();
+    const data    = await getSheetData(sheets, SHEET_TICKETS);
     if (!data.length) return res.json({ success: true, tickets: [] });
-
     const headers = data[0];
 
-    // ── ตรวจสอบและเพิ่ม column "Pinned" ถ้ายังไม่มี ──
-    let pinnedColIdx = headers.indexOf('Pinned');
-    if (pinnedColIdx === -1) {
-      pinnedColIdx = headers.length;
-      const colLetter = String.fromCharCode(65 + pinnedColIdx);
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${SHEET_TICKETS}!${colLetter}1`,
-        valueInputOption: 'RAW',
-        requestBody: { values: [['Pinned']] },
-      });
-      headers.push('Pinned');
-    }
-
-    // ════════════════════════════════════════
-    //  GET
-    // ════════════════════════════════════════
+    // ─── GET ───────────────────────────────────────────────
     if (req.method === 'GET') {
-      const { action, username, id, userId, q, filter } = req.query;
+      const { action, username, id, filter } = req.query;
 
-      // ── ticket ที่ pin ให้แสดงหน้าหลัก ──
+      // pinned tickets (หน้าหลัก)
       if (action === 'pinned') {
-        const results = [];
+        const pinnedIdx = headers.indexOf('Pinned');
+        const results   = [];
         for (let i = 1; i < data.length; i++) {
           if (!data[i][0]) continue;
-          if (String(data[i][pinnedColIdx] || '').toLowerCase() === 'true') {
-            results.push(rowToObject(headers, data[i]));
-          }
+          if (String(data[i][pinnedIdx]||'').toLowerCase() === 'true')
+            results.push(rowToObj(headers, data[i]));
         }
         return res.json({ success: true, tickets: results });
       }
 
-      // ── ดึงด้วย Username ──
+      // by username
       if (action === 'byUsername') {
         if (!username) return res.json({ success: false, message: 'ไม่พบ username' });
         const colIdx = headers.indexOf('Username');
@@ -80,56 +66,24 @@ module.exports = async function handler(req, res) {
         const results = [];
         for (let i = 1; i < data.length; i++) {
           if (!data[i][0]) continue;
-          if (String(data[i][colIdx] || '').toLowerCase().trim() !== username.toLowerCase().trim()) continue;
-          results.push(rowToObject(headers, data[i]));
+          if (String(data[i][colIdx]||'').toLowerCase().trim() !== username.toLowerCase().trim()) continue;
+          results.push(rowToObj(headers, data[i]));
         }
         results.reverse();
         return res.json({ success: true, tickets: results });
       }
 
-      // ── ดึงด้วย Ticket ID ──
+      // by ticket ID
       if (action === 'byId') {
         const colIdx = headers.indexOf('Ticket ID');
         for (let i = 1; i < data.length; i++) {
-          if (String(data[i][colIdx]) === String(id)) {
-            return res.json({ success: true, ticket: rowToObject(headers, data[i]) });
-          }
+          if (String(data[i][colIdx]) === String(id))
+            return res.json({ success: true, ticket: rowToObj(headers, data[i]) });
         }
         return res.json({ success: false, message: 'ไม่พบ Ticket ID นี้' });
       }
 
-      // ── ดึงด้วย UserID (primary key) ──
-      if (action === 'byUserId') {
-        const colIdx = headers.indexOf('UserID');
-        const results = [];
-        for (let i = 1; i < data.length; i++) {
-          if (String(data[i][colIdx]) === String(userId)) {
-            results.push(rowToObject(headers, data[i]));
-          }
-        }
-        return res.json({ success: true, tickets: results });
-      }
-
-      // ── ค้นหาด้วยชื่อ/รหัส ──
-      if (action === 'search') {
-        const nameColIdx = headers.indexOf('ชื่อ');
-        const sidColIdx  = headers.indexOf('รหัสนักศึกษา/หน่วยงาน');
-        const results    = [];
-        for (let i = 1; i < data.length; i++) {
-          const rowName = String(data[i][nameColIdx] || '');
-          const rowSid  = String(data[i][sidColIdx]  || '');
-          if (
-            rowName.toLowerCase().includes(q.toLowerCase()) ||
-            rowSid.toLowerCase().includes(q.toLowerCase())
-          ) {
-            results.push(rowToObject(headers, data[i]));
-          }
-        }
-        results.reverse();
-        return res.json({ success: true, tickets: results });
-      }
-
-      // ── ดึงทั้งหมด (admin) ──
+      // all (admin)
       if (action === 'all') {
         const statusColIdx = headers.indexOf('สถานะ');
         const results      = [];
@@ -140,7 +94,7 @@ module.exports = async function handler(req, res) {
             (filter === 'pending' && (status === 'รอดำเนินการ' || status === 'กำลังดำเนินการ')) ||
             status === filter;
           if (include) {
-            const t = rowToObject(headers, data[i]);
+            const t = rowToObj(headers, data[i]);
             t['_row'] = i + 1;
             results.push(t);
           }
@@ -152,48 +106,61 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'Unknown action' });
     }
 
-    // ════════════════════════════════════════
-    //  POST
-    // ════════════════════════════════════════
+    // ─── POST ──────────────────────────────────────────────
     if (req.method === 'POST') {
-      const { action, ticketId, newStatus, assignee, feedback, pinned } = req.body;
-
+      const { action, ticketId, newStatus, assignee, comment, author, pinned } = req.body;
       const ticketColIdx = headers.indexOf('Ticket ID');
 
-      // ── อัปเดต ticket (admin) ──
-      if (action === 'update') {
+      // หาแถวของ ticket
+      function findRow(tid) {
         for (let i = 1; i < data.length; i++) {
-          if (String(data[i][ticketColIdx]) === String(ticketId)) {
-            const row     = i + 1;
-            const updates = [];
-            // ตำแหน่งคอลัมน์ใหม่:
-            // สถานะ=L(12), ผู้รับผิดชอบ=M(13), หมายเหตุ=O(15), Pinned=P(16)
-            if (newStatus !== undefined) updates.push({ range: `${SHEET_TICKETS}!L${row}`, value: newStatus });
-            if (assignee  !== undefined) updates.push({ range: `${SHEET_TICKETS}!M${row}`, value: assignee });
-            if (feedback  !== undefined) updates.push({ range: `${SHEET_TICKETS}!O${row}`, value: feedback });
-            if (pinned    !== undefined) updates.push({ range: `${SHEET_TICKETS}!P${row}`, value: String(pinned) });
-
-            if (updates.length) await batchUpdate(sheets, updates);
-            return res.json({ success: true });
-          }
+          if (String(data[i][ticketColIdx]) === String(tid)) return i + 1; // 1-based
         }
-        return res.json({ success: false, message: 'ไม่พบ Ticket' });
+        return -1;
       }
 
-      // ── toggle pin (admin) ──
+      // update ticket (สถานะ / ผู้รับผิดชอบ)
+      if (action === 'update') {
+        const row = findRow(ticketId);
+        if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
+        const updates = [];
+        if (newStatus !== undefined) updates.push({ range: `${SHEET_TICKETS}!${COL.STATUS}${row}`,   value: newStatus });
+        if (assignee  !== undefined) updates.push({ range: `${SHEET_TICKETS}!${COL.ASSIGNEE}${row}`, value: assignee  });
+        if (updates.length) await batchUpdate(sheets, updates);
+        return res.json({ success: true });
+      }
+
+      // addComment — APPEND
+      if (action === 'addComment') {
+        const row = findRow(ticketId);
+        if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
+
+        // ดึง comment เดิม
+        const commentsColIdx = headers.indexOf('Comments');
+        const oldComments    = commentsColIdx >= 0
+          ? String(data[row - 1][commentsColIdx] || '') : '';
+
+        const timestamp   = formatDateThai(new Date());
+        const authorLabel = author || 'ผู้ดูแล';
+        const newEntry    = `[${timestamp}] ${authorLabel}: ${comment}`;
+        const merged      = oldComments
+          ? oldComments + '\n---\n' + newEntry
+          : newEntry;
+
+        await batchUpdate(sheets, [{
+          range: `${SHEET_TICKETS}!${COL.COMMENTS}${row}`, value: merged,
+        }]);
+        return res.json({ success: true, comments: merged });
+      }
+
+      // togglePin
       if (action === 'togglePin') {
-        for (let i = 1; i < data.length; i++) {
-          if (String(data[i][ticketColIdx]) === String(ticketId)) {
-            const row        = i + 1;
-            const colLetter  = String.fromCharCode(65 + pinnedColIdx);
-            await batchUpdate(sheets, [{
-              range: `${SHEET_TICKETS}!${colLetter}${row}`,
-              value: String(pinned),
-            }]);
-            return res.json({ success: true });
-          }
-        }
-        return res.json({ success: false, message: 'ไม่พบ Ticket' });
+        const row = findRow(ticketId);
+        if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
+        await batchUpdate(sheets, [{
+          range: `${SHEET_TICKETS}!${COL.PINNED}${row}`, value: String(pinned),
+        }]);
+        return res.json({ success: true });
       }
 
       return res.status(400).json({ error: 'Unknown action' });

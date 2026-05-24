@@ -16,11 +16,11 @@
     <div class="logos">
       <div class="logo-circle">
         <img src="/img/yru_logo.png" alt="YRU"
-             onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'color:#fff;font-weight:700;font-size:.75rem;\'>YRU</span>'">
+             onerror="this.src='https://placehold.co/40x40/2d6a4f/fff?text=YRU'">
       </div>
       <div class="logo-circle">
         <img src="/img/Logo faculty of sta_yru.png" alt="SCI"
-             onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'color:#fff;font-weight:700;font-size:.75rem;\'>SCI</span>'">
+             onerror="this.src='https://placehold.co/40x40/40916c/fff?text=SCI'">
       </div>
     </div>
     <div class="nav-menu" id="main-nav">
@@ -28,6 +28,7 @@
       <a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a>
       <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
       <a onclick="alert('คู่มืออยู่ด้านล่างหน้าแรก')">คู่มือ</a>
+      <a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>
     </div>
     <div class="right-menu" id="right-menu">
       <a onclick="navigateTo('login')" class="nav-menu" style="color:#fff;">เข้าสู่ระบบ</a>
@@ -55,7 +56,9 @@
         <i class="fas fa-search"></i>ติดตามสถานะ
       </div>
     </div>
-    <!-- ปักหมุด + progress bar -->
+    <!-- ข่าวสาร -->
+    <div id="news-strip-section" class="hidden"></div>
+    <!-- Pinned tickets -->
     <div id="pinned-tickets-section" class="hidden"></div>
     <div class="manual-section">
       <h3>คู่มือการใช้งาน</h3>
@@ -67,7 +70,7 @@
     </div>
   </div>
 
-  <!-- PAGE: LOGIN  -->
+  <!-- PAGE: LOGIN -->
   <div id="page-login" class="hidden" style="padding-top:50px;">
     <div class="auth-container">
       <div class="auth-header">เข้าสู่ระบบ</div>
@@ -85,6 +88,9 @@
       </p>
       <a class="admin-login-link" onclick="showAdminLoginModal()">
         <i class="fas fa-shield-alt"></i> เข้าสู่ระบบในฐานะผู้ดูแลระบบ
+      </a>
+      <a class="admin-login-link" onclick="showSuperAdminLoginModal()" style="color:#f0a500;margin-top:6px;">
+        <i class="fas fa-crown"></i> ผู้ดูแลระดับสูง (SuperAdmin)
       </a>
     </div>
   </div>
@@ -114,8 +120,8 @@
         </div>
         <div class="form-group">
           <label>เบอร์โทรศัพท์</label>
-          <input type="tel" id="reg-phone" placeholder="0xxxxxxxxx" maxlength="10" autocomplete="tel">
-          <small style="color:#aaa;font-size:.76rem;">ตัวเลข 9-10 หลักเท่านั้น</small>
+          <input type="tel" id="reg-phone" placeholder="0xxxxxxxxx" maxlength="10">
+          <small style="color:#aaa;font-size:.75rem;">ตัวเลข 9-10 หลักเท่านั้น</small>
         </div>
       </div>
       <div class="form-group">
@@ -126,7 +132,6 @@
         <div class="form-group">
           <label>รหัสผ่าน <span style="color:#d00000;">*</span></label>
           <input type="password" id="reg-pass" placeholder="อย่างน้อย 8 ตัว" autocomplete="new-password">
-          <!-- password strength bar -->
           <div class="pw-strength-wrap">
             <div class="pw-strength-bar"><div class="pw-strength-fill" id="pw-bar"></div></div>
             <div class="pw-strength-label" id="pw-label"></div>
@@ -145,7 +150,7 @@
     </div>
   </div>
 
-  <!-- PAGE: PORTAL (VOC form) -->
+  <!-- PAGE: PORTAL -->
   <div id="page-portal" class="hidden">
     <div id="portal-login-warning" class="login-required-banner hidden">
       <i class="fas fa-exclamation-triangle"></i>
@@ -171,7 +176,7 @@
             <div class="opt-btn" onclick="setOption(this,'cType','ผู้ปกครอง')"> ผู้ปกครอง</div>
             <div class="opt-btn" onclick="setOption(this,'cType','ศิษย์เก่า')"> ศิษย์เก่า</div>
             <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้บัณฑิต/หน่วยงาน')"> ผู้ใช้บัณฑิต/หน่วยงาน</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้ทั่วไป/บุคคลภายนอก')"> ผู้ใช้ทั่วไป/บุคคลภายนอก</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้ทั่วไป/บุคคลภายนอก')"> ผู้ใช้ทั่วไป/บุคคลภายนอก</div>          
           </div>
         </div>
         <div class="voc-panel">
@@ -216,9 +221,19 @@
         <div class="voc-panel">
           <span class="voc-title">รายละเอียดเรื่องที่ร้องเรียน</span>
           <label style="font-size:.87rem;color:#555;font-weight:600;">หัวข้อ <span style="color:#d00000;">*</span></label>
-          <input type="text" id="v-subject" class="voc-input" style="margin-top:6px;" placeholder="ระบุหัวข้อเรื่องที่ต้องการแจ้ง">
+          <input type="text" id="v-subject" class="voc-input" style="margin-top:6px;" placeholder="ระบุหัวข้อเรื่องที่ต้องการร้องเรียน">
           <label style="font-size:.87rem;color:#555;font-weight:600;">รายละเอียด <span style="color:#d00000;">*</span></label>
-          <textarea id="v-detail" class="voc-input" style="height:130px;resize:vertical;margin-top:6px;" placeholder="อธิบายรายละเอียดของเรื่องที่ต้องการแจ้ง"></textarea>
+          <textarea id="v-detail" class="voc-input" style="height:120px;resize:vertical;margin-top:6px;" placeholder="อธิบายรายละเอียดของเรื่องที่ต้องการร้องเรียน"></textarea>
+          <!-- หมายเหตุผู้ใช้ -->
+          <label style="font-size:.87rem;color:#555;font-weight:600;">หมายเหตุเพิ่มเติม (ไม่บังคับ)</label>
+          <input type="text" id="v-note" class="voc-input" style="margin-top:6px;" placeholder="ข้อมูลเพิ่มเติมที่ต้องการแจ้งผู้ดูแล">
+          <!-- แนบไฟล์ -->
+          <div class="file-upload-wrap" style="margin-top:4px;">
+            <div style="margin-bottom:8px;font-size:.85rem;color:#777;"><i class="fas fa-paperclip"></i> แนบไฟล์ประกอบ (ไม่บังคับ, สูงสุด 5 MB)</div>
+            <input type="file" id="v-file" onchange="handleFileSelect(this)" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx">
+            <label class="file-upload-label" for="v-file"><i class="fas fa-folder-open"></i> เลือกไฟล์</label>
+            <div class="file-info" id="file-info"></div>
+          </div>
         </div>
         <div style="display:flex;">
           <button class="btn-back" onclick="changeStep(2)">← ย้อนกลับ</button>
@@ -226,7 +241,7 @@
         </div>
       </div>
 
-      <!-- Step 4 — Review card -->
+      <!-- Step 4 — Review Card -->
       <div id="step-content-4" class="hidden">
         <div id="review-area"></div>
         <div style="display:flex;margin-top:16px;">
@@ -245,7 +260,7 @@
           <p style="color:#777;margin-top:8px;">ทีมงานได้รับเรื่องของคุณเรียบร้อยแล้ว</p>
           <div class="ticket-id-box" id="new-ticket-id">VOC-2568-0001</div>
           <p style="font-size:.86rem;color:#aaa;margin-bottom:22px;">บันทึกหมายเลข Ticket ไว้เพื่อติดตามสถานะ</p>
-          <button class="btn-submit" style="width:auto;padding:12px 36px;" onclick="navigateTo('tracking')">
+          <button class="btn-submit" style="width:auto;padding:12px 32px;" onclick="navigateTo('tracking')">
             <i class="fas fa-list-alt"></i> ติดตามสถานะ
           </button>
           <button class="btn-back" style="margin-left:10px;" onclick="navigateTo('home')">กลับหน้าหลัก</button>
@@ -254,7 +269,7 @@
     </div>
   </div>
 
-  <!-- PAGE: TRACKING (ticket ID only) -->
+  <!-- PAGE: TRACKING -->
   <div id="page-tracking" class="hidden">
     <div class="section-title">
       <h2><i class="fas fa-list-alt"></i> ติดตามสถานะ</h2>
@@ -266,6 +281,22 @@
     <div id="track-result"></div>
   </div>
 
+  <!-- PAGE: FAQ -->
+  <div id="page-faq" class="hidden">
+    <div class="section-title">
+      <h2><i class="fas fa-question-circle"></i> คำถามที่พบบ่อย (FAQ)</h2>
+    </div>
+    <div class="faq-search-bar">
+      <input type="text" id="faq-search" placeholder="ค้นหาคำถาม...">
+      <button onclick="searchFaq()" style="padding:11px 20px;background:var(--dgreen);color:#fff;border:none;border-radius:12px;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:700;">
+        <i class="fas fa-search"></i>
+      </button>
+    </div>
+    <div id="faq-content">
+      <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>
+    </div>
+  </div>
+
   <!-- PAGE: ADMIN DASHBOARD -->
   <div id="page-admin-dashboard" class="hidden">
     <div class="section-title">
@@ -275,7 +306,7 @@
       </button>
     </div>
     <div id="dash-content">
-      <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลดข้อมูล...</p></div>
+      <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>
     </div>
   </div>
 
@@ -294,11 +325,11 @@
       <button class="filter-btn" id="filter-done" onclick="loadAdminTickets('เสร็จสิ้น');setFilter('done')">เสร็จสิ้น</button>
     </div>
     <div id="admin-ticket-list">
-      <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลดข้อมูล...</p></div>
+      <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>
     </div>
   </div>
 
-  <!-- PAGE: ADMIN REVIEWS (ข้อ 3) -->
+  <!-- PAGE: ADMIN REVIEWS -->
   <div id="page-admin-reviews" class="hidden">
     <div class="section-title">
       <h2><i class="fas fa-star"></i> ผลการให้คะแนนและรีวิว</h2>
@@ -307,6 +338,19 @@
       </button>
     </div>
     <div id="review-content">
+      <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>
+    </div>
+  </div>
+
+  <!-- PAGE: SUPERADMIN -->
+  <div id="page-superadmin" class="hidden">
+    <div class="section-title">
+      <h2><i class="fas fa-crown" style="color:#f0a500;"></i> จัดการระบบ (SuperAdmin)</h2>
+      <button onclick="loadSuperAdmin()" style="margin-left:auto;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
+        <i class="fas fa-sync-alt"></i> รีเฟรช
+      </button>
+    </div>
+    <div id="superadmin-content">
       <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>
     </div>
   </div>
@@ -346,7 +390,8 @@
       <p>
         <a onclick="navigateTo('home')">หน้าหลัก</a><br>
         <a onclick="navigateTo('portal')">แจ้งเรื่อง</a><br>
-        <a onclick="navigateTo('tracking')">ติดตามสถานะ</a>
+        <a onclick="navigateTo('tracking')">ติดตามสถานะ</a><br>
+        <a onclick="navigateTo('faq')">คำถามที่พบบ่อย</a>
       </p>
     </div>
   </div>

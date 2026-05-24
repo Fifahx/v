@@ -34,21 +34,24 @@ const SHEET_ADMINS   = 'VOC_Admins';
 // headers ใหม่ตามลำดับที่กำหนด
 function getTicketHeaders() {
   return [
-    'UserID',                      // col 1  ← primary key
-    'Ticket ID',                   // col 2
-    'Username',                    // col 3
-    'วันที่แจ้ง',                  // col 4
-    'ประเภทผู้แจ้ง',               // col 5
-    'ชื่อ',                        // col 6
-    'รหัสนักศึกษา/หน่วยงาน',      // col 7
-    'ประเภทเรื่อง',                // col 8
-    'ความเร่งด่วน',                // col 9
-    'หัวข้อ',                      // col 10
-    'รายละเอียด',                  // col 11
-    'สถานะ',                       // col 12
-    'ผู้รับผิดชอบ',                // col 13
-    'กำหนดตอบกลับ',               // col 14
-    'หมายเหตุ',                    // col 15
+    'UserID',               // A col1  primary key
+    'Ticket ID',            // B col2
+    'Username',             // C col3
+    'วันที่แจ้ง',           // D col4
+    'ประเภทผู้แจ้ง',        // E col5
+    'ชื่อ',                 // F col6
+    'รหัสนักศึกษา/หน่วยงาน', // G col7
+    'ประเภทเรื่อง',         // H col8
+    'ความเร่งด่วน',         // I col9
+    'หัวข้อ',               // J col10
+    'รายละเอียด',           // K col11
+    'หมายเหตุผู้ใช้',       // L col12 user note
+    'สถานะ',                // M col13
+    'ผู้รับผิดชอบ',         // N col14
+    'กำหนดตอบกลับ',        // O col15
+    'Comments',             // P col16 ครู/อาจารย์
+    'Pinned',               // Q col17 ปักหมุด
+    'FileURL',              // R col18 ไฟล์แนบ
   ];
 }
 
