@@ -381,7 +381,7 @@ function prepareReview() {
       <div class="review-section">
         <div class="review-section-title">รายละเอียดเรื่อง</div>
         <div class="review-row"><span class="ri">🏷️</span><span class="rl">ประเภท</span><span class="rv">${vocData.category}</span></div>
-        <div class="review-row"><span class="ri">⚡</span><span class="rl">ความเร่งด่วน</span><span class="rv"><span class="priority-pill ${pInfo.cls}">${pInfo.label}</span> <small style="color:#888;">${pInfo.sub}</small></span></div>
+        <div class="review-row"><span class="ri">⚡</span><span class="rl">ความด่วน</span><span class="rv"><span class="priority-pill ${pInfo.cls}">${pInfo.label}</span> <small style="color:#888;">${pInfo.sub}</small></span></div>
         <div class="review-row"><span class="ri">📌</span><span class="rl">หัวข้อ</span><span class="rv" style="font-weight:700;">${subject}</span></div>
       </div>
       <div class="review-section">

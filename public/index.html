@@ -15,11 +15,11 @@
   <div class="nav-container">
     <div class="logos">
       <div class="logo-circle">
-        <img src="/img/yru_logo.png" alt="YRU"
+        <img src="/public/img/yru_logo.png" alt="YRU"
              onerror="this.src='https://placehold.co/40x40/2d6a4f/fff?text=YRU'">
       </div>
       <div class="logo-circle">
-        <img src="/img/Logo faculty of sta_yru.png" alt="SCI"
+        <img src="/public/img/Logo faculty of sta_yru.png" alt="SCI"
              onerror="this.src='https://placehold.co/40x40/40916c/fff?text=SCI'">
       </div>
     </div>
@@ -67,7 +67,7 @@
     </div>
   </div>
 
-  <!-- PAGE: LOGIN -->
+  <!-- PAGE: LOGIN  -->
   <div id="page-login" class="hidden" style="padding-top:50px;">
     <div class="auth-container">
       <div class="auth-header">เข้าสู่ระบบ</div>
@@ -165,13 +165,13 @@
         <div class="voc-panel">
           <span class="voc-title">คุณคือ</span>
           <div class="grid-options">
-            <div class="opt-btn selected" onclick="setOption(this,'cType','นักศึกษา')">นักศึกษา</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','บัณฑิตศึกษา')">บัณฑิตศึกษา</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','นักเรียน/ผู้สนใจ')">นักเรียน/ผู้สนใจ</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ปกครอง')">ผู้ปกครอง</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ศิษย์เก่า')">ศิษย์เก่า</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้บัณฑิต/หน่วยงาน')">ผู้ใช้บัณฑิต/หน่วยงาน</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้ทั่วไป/บุคคลภายนอก')">ผู้ใช้ทั่วไป/บุคคลภายนอก</div>
+            <div class="opt-btn selected" onclick="setOption(this,'cType','นักศึกษา')"> นักศึกษา</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','บัณฑิตศึกษา')"> บัณฑิตศึกษา</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','นักเรียน/ผู้สนใจ')"> นักเรียน/ผู้สนใจ</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ปกครอง')"> ผู้ปกครอง</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','ศิษย์เก่า')"> ศิษย์เก่า</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้บัณฑิต/หน่วยงาน')"> ผู้ใช้บัณฑิต/หน่วยงาน</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้ทั่วไป/บุคคลภายนอก')"> ผู้ใช้ทั่วไป/บุคคลภายนอก</div>
           </div>
         </div>
         <div class="voc-panel">
@@ -214,11 +214,11 @@
       <!-- Step 3 -->
       <div id="step-content-3" class="hidden">
         <div class="voc-panel">
-          <span class="voc-title">รายละเอียดเรื่องร้องเรียน</span>
+          <span class="voc-title">รายละเอียดเรื่องที่ร้องเรียน</span>
           <label style="font-size:.87rem;color:#555;font-weight:600;">หัวข้อ <span style="color:#d00000;">*</span></label>
-          <input type="text" id="v-subject" class="voc-input" style="margin-top:6px;" placeholder="ระบุหัวข้อเรื่องที่ต้องการร้องเรียน">
+          <input type="text" id="v-subject" class="voc-input" style="margin-top:6px;" placeholder="ระบุหัวข้อเรื่องที่ต้องการแจ้ง">
           <label style="font-size:.87rem;color:#555;font-weight:600;">รายละเอียด <span style="color:#d00000;">*</span></label>
-          <textarea id="v-detail" class="voc-input" style="height:130px;resize:vertical;margin-top:6px;" placeholder="อธิบายรายละเอียดของเรื่องที่ต้องการร้องเรียน"></textarea>
+          <textarea id="v-detail" class="voc-input" style="height:130px;resize:vertical;margin-top:6px;" placeholder="อธิบายรายละเอียดของเรื่องที่ต้องการแจ้ง"></textarea>
         </div>
         <div style="display:flex;">
           <button class="btn-back" onclick="changeStep(2)">← ย้อนกลับ</button>
@@ -226,7 +226,7 @@
         </div>
       </div>
 
-      <!-- Review card -->
+      <!-- Step 4 — Review card -->
       <div id="step-content-4" class="hidden">
         <div id="review-area"></div>
         <div style="display:flex;margin-top:16px;">
@@ -288,17 +288,17 @@
       </button>
     </div>
     <div class="admin-filters">
-      <button class="filter-btn active" id="filter-pending" onclick="loadAdminTickets('pending');setFilter('pending')">⏳ รอดำเนินการ</button>
-      <button class="filter-btn" id="filter-inprogress" onclick="loadAdminTickets('กำลังดำเนินการ');setFilter('inprogress')">🔄 กำลังดำเนินการ</button>
-      <button class="filter-btn" id="filter-all" onclick="loadAdminTickets('all');setFilter('all')">📋 ทั้งหมด</button>
-      <button class="filter-btn" id="filter-done" onclick="loadAdminTickets('เสร็จสิ้น');setFilter('done')">✅ เสร็จสิ้น</button>
+      <button class="filter-btn active" id="filter-pending" onclick="loadAdminTickets('pending');setFilter('pending')">รอดำเนินการ</button>
+      <button class="filter-btn" id="filter-inprogress" onclick="loadAdminTickets('กำลังดำเนินการ');setFilter('inprogress')">กำลังดำเนินการ</button>
+      <button class="filter-btn" id="filter-all" onclick="loadAdminTickets('all');setFilter('all')">ทั้งหมด</button>
+      <button class="filter-btn" id="filter-done" onclick="loadAdminTickets('เสร็จสิ้น');setFilter('done')">เสร็จสิ้น</button>
     </div>
     <div id="admin-ticket-list">
       <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลดข้อมูล...</p></div>
     </div>
   </div>
 
-  <!-- PAGE: ADMIN REVIEWS -->
+  <!-- PAGE: ADMIN REVIEWS (ข้อ 3) -->
   <div id="page-admin-reviews" class="hidden">
     <div class="section-title">
       <h2><i class="fas fa-star"></i> ผลการให้คะแนนและรีวิว</h2>
@@ -345,7 +345,7 @@
       <h3>เมนู</h3>
       <p>
         <a onclick="navigateTo('home')">หน้าหลัก</a><br>
-        <a onclick="navigateTo('portal')">ร้องเรียน</a><br>
+        <a onclick="navigateTo('portal')">แจ้งเรื่อง</a><br>
         <a onclick="navigateTo('tracking')">ติดตามสถานะ</a>
       </p>
     </div>
