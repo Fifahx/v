@@ -230,10 +230,11 @@ function updateMenuForUser() {
     <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
     <a onclick="alert('คู่มืออยู่ด้านล่างหน้าแรก')">คู่มือ</a>`;
   document.getElementById('right-menu').innerHTML=`
-    <span class="user-badge" onclick="showProfile()" title="โปรไฟล์">
+    <span class="user-badge" onclick="showProfile()" title="ดูโปรไฟล์ของฉัน" style="cursor:pointer;">
       <i class="fas fa-user-circle"></i>${currentUser.firstname} ${currentUser.lastname}
+      <i class="fas fa-chevron-down" style="font-size:.65rem;opacity:.7;margin-left:2px;"></i>
     </span>
-    <a onclick="doLogout()" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a>`;
+    <a onclick="doLogout()" style="color:#fff;cursor:pointer;font-size:13px;" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></a>`;
 }
 function updateMenuForAdmin() {
   document.getElementById('main-nav').innerHTML=`
@@ -743,7 +744,68 @@ function renderDashboard(s, ratingSummary) {
       <div class="chart-card"><h4><i class="fas fa-tags"></i> แยกตามประเภทเรื่อง</h4>${catBars||'<p style="color:#bbb;font-size:.88rem;">ยังไม่มีข้อมูล</p>'}</div>
       <div class="chart-card"><h4><i class="fas fa-users"></i> แยกตามประเภทผู้แจ้ง</h4>${cusBars||'<p style="color:#bbb;font-size:.88rem;">ยังไม่มีข้อมูล</p>'}</div>
     </div>
-    <div class="chart-card"><h4><i class="fas fa-calendar-alt"></i> รายเดือน (6 เดือนล่าสุด)</h4>${monBars||'<p style="color:#bbb;font-size:.88rem;">ยังไม่มีข้อมูล</p>'}</div>`;
+    <div class="chart-card" style="margin-bottom:18px;"><h4><i class="fas fa-calendar-alt"></i> รายเดือน (6 เดือนล่าสุด)</h4>${monBars||'<p style="color:#bbb;font-size:.88rem;">ยังไม่มีข้อมูล</p>'}</div>
+
+    <!-- ข้อ 4/5 — สรุปข้อมูลทั้งหมดแบบละเอียด -->
+    <div class="chart-card summary-table-card" style="margin-bottom:18px;">
+      <h4><i class="fas fa-table"></i> สรุปข้อมูลการส่งเรื่องร้องเรียนทั้งหมด</h4>
+      <div style="overflow-x:auto;">
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>รายการ</th><th>จำนวน</th><th>สัดส่วน</th><th>แนวโน้ม</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="tbl-dot" style="background:#888;"></span>ทั้งหมด</td><td><strong>${s.total}</strong></td><td>100%</td><td>—</td></tr>
+            <tr><td><span class="tbl-dot" style="background:#f77f00;"></span>รอดำเนินการ</td><td><strong>${s.pending}</strong></td><td>${s.total?Math.round(s.pending/s.total*100):0}%</td><td><span style="color:#f77f00;">⏳</span></td></tr>
+            <tr><td><span class="tbl-dot" style="background:#3a86ff;"></span>กำลังดำเนินการ</td><td><strong>${s.inprogress}</strong></td><td>${s.total?Math.round(s.inprogress/s.total*100):0}%</td><td><span style="color:#3a86ff;">🔄</span></td></tr>
+            <tr class="tbl-success"><td><span class="tbl-dot" style="background:#2d6a4f;"></span>เสร็จสิ้น</td><td><strong>${s.done}</strong></td><td>${s.total?Math.round(s.done/s.total*100):0}%</td><td><span style="color:#2d6a4f;">✅</span></td></tr>
+            <tr><td><span class="tbl-dot" style="background:#d00000;"></span>ปฏิเสธ</td><td><strong>${s.rejected}</strong></td><td>${s.total?Math.round(s.rejected/s.total*100):0}%</td><td><span style="color:#d00000;">❌</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ข้อ 6 — สรุปความเร่งด่วนละเอียด -->
+    <div class="chart-card priority-detail-card" style="margin-bottom:18px;">
+      <h4><i class="fas fa-exclamation-circle"></i> สรุปความเร่งด่วนของ Tickets</h4>
+      <div class="priority-detail-grid">
+        <div class="priority-detail-box high">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <span style="font-size:1.4rem;">🔴</span>
+            <div>
+              <div style="font-weight:800;font-size:1.5rem;color:#d00000;">${s.byPriority.high||0}</div>
+              <div style="font-size:.78rem;color:#d00000;font-weight:700;">เร่งด่วน (ภายใน 24 ชม.)</div>
+            </div>
+          </div>
+          <div class="bar-track"><div class="bar-fill red" style="width:${s.total?Math.round((s.byPriority.high||0)/s.total*100):0}%"></div></div>
+          <div style="font-size:.75rem;color:#d00000;margin-top:4px;font-weight:700;">${s.total?Math.round((s.byPriority.high||0)/s.total*100):0}% ของทั้งหมด</div>
+        </div>
+        <div class="priority-detail-box medium">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <span style="font-size:1.4rem;">🟡</span>
+            <div>
+              <div style="font-weight:800;font-size:1.5rem;color:#b25f00;">${s.byPriority.medium||0}</div>
+              <div style="font-size:.78rem;color:#b25f00;font-weight:700;">ปานกลาง (ภายใน 3 วัน)</div>
+            </div>
+          </div>
+          <div class="bar-track"><div class="bar-fill orange" style="width:${s.total?Math.round((s.byPriority.medium||0)/s.total*100):0}%"></div></div>
+          <div style="font-size:.75rem;color:#b25f00;margin-top:4px;font-weight:700;">${s.total?Math.round((s.byPriority.medium||0)/s.total*100):0}% ของทั้งหมด</div>
+        </div>
+        <div class="priority-detail-box low">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <span style="font-size:1.4rem;">🟢</span>
+            <div>
+              <div style="font-weight:800;font-size:1.5rem;color:#2d6a4f;">${s.byPriority.low||0}</div>
+              <div style="font-size:.78rem;color:#2d6a4f;font-weight:700;">ทั่วไป (ภายใน 7 วัน)</div>
+            </div>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${s.total?Math.round((s.byPriority.low||0)/s.total*100):0}%"></div></div>
+          <div style="font-size:.75rem;color:#2d6a4f;margin-top:4px;font-weight:700;">${s.total?Math.round((s.byPriority.low||0)/s.total*100):0}% ของทั้งหมด</div>
+        </div>
+      </div>
+    </div>`;
 }
 
 // ═══════════════════════════════════════
@@ -787,6 +849,12 @@ function renderAdminTickets(tickets, currentEmail){
   const scTag  ={'รอดำเนินการ':'status-pending','กำลังดำเนินการ':'status-inprogress','เสร็จสิ้น':'status-success','ปฏิเสธ':'status-reject'};
   const pLabel ={'high':'🔴 เร่งด่วน','medium':'🟡 ปานกลาง','low':'🟢 ทั่วไป'};
   const pClass ={'high':'p-high','medium':'p-medium','low':'p-low'};
+
+  // ข้อ 6 — นับ priority ของ tickets ที่แสดงอยู่
+  const pCount={high:0,medium:0,low:0};
+  tickets.forEach(t=>{ const p=t['ความเร่งด่วน']||'low'; if(pCount[p]!==undefined)pCount[p]++; });
+  const urgentActive=tickets.filter(t=>t['ความเร่งด่วน']==='high'&&t['สถานะ']!=='เสร็จสิ้น'&&t['สถานะ']!=='ปฏิเสธ').length;
+
   let html=`<div class="notify-box">
     <h4><i class="fas fa-bell"></i> ตั้งค่า Email รับแจ้งเตือน</h4>
     <div class="notify-row">
@@ -794,6 +862,30 @@ function renderAdminTickets(tickets, currentEmail){
       <button class="btn-notify" id="btn-save-notify" onclick="saveNotifyEmail()"><i class="fas fa-save"></i> บันทึก</button>
     </div>
     ${currentEmail?`<p style="font-size:.8rem;color:#2d6a4f;margin-top:8px;"><i class="fas fa-check-circle"></i> ส่งแจ้งเตือนไปที่ ${currentEmail}</p>`:''}
+  </div>
+
+  <!-- ข้อ 6 — Priority Summary Bar -->
+  <div class="manage-priority-summary">
+    <div class="mps-title"><i class="fas fa-exclamation-circle"></i> สรุปความเร่งด่วน (${tickets.length} รายการ)</div>
+    <div class="mps-grid">
+      <div class="mps-box high ${urgentActive>0?'pulse':''}">
+        <div class="mps-icon">🔴</div>
+        <div class="mps-count">${pCount.high}</div>
+        <div class="mps-label">เร่งด่วน</div>
+        ${urgentActive>0?`<div class="mps-alert">${urgentActive} ยังไม่เสร็จ!</div>`:'<div class="mps-ok">✓ ครบแล้ว</div>'}
+      </div>
+      <div class="mps-box medium">
+        <div class="mps-icon">🟡</div>
+        <div class="mps-count">${pCount.medium}</div>
+        <div class="mps-label">ปานกลาง</div>
+      </div>
+      <div class="mps-box low">
+        <div class="mps-icon">🟢</div>
+        <div class="mps-count">${pCount.low}</div>
+        <div class="mps-label">ทั่วไป</div>
+      </div>
+    </div>
+    ${urgentActive>0?`<div class="mps-warning"><i class="fas fa-exclamation-triangle"></i> มี <strong>${urgentActive} รายการเร่งด่วน</strong> ที่ยังไม่ได้ดำเนินการ! กรุณาดำเนินการโดยด่วน</div>`:''}
   </div>`;
   if(!tickets.length){
     container.innerHTML=html+'<div class="no-tickets"><i class="fas fa-inbox" style="font-size:2.5rem;color:#ddd;"></i><p style="margin-top:12px;">ไม่มีเรื่องในหมวดนี้</p></div>';

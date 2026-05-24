@@ -38,7 +38,7 @@ header { background: var(--dgreen); padding: 12px 0; position: sticky; top: 0; z
 /* ══════════════════════════════════════════
    HERO
 ══════════════════════════════════════════ */
-.faculty-title { text-align: center; background: linear-gradient(135deg, rgba(27,67,50,0.92) 0%, rgba(45,106,79,0.85) 100%), url('/public/img/bg.png') center/cover no-repeat; padding: 7rem 20px; color: #fff; position: relative; overflow: hidden; }
+.faculty-title { text-align: center; background: linear-gradient(135deg, rgba(27,67,50,0.92) 0%, rgba(45,106,79,0.85) 100%), url('/img/bg.png') center/cover no-repeat; padding: 7rem 20px; color: #fff; position: relative; overflow: hidden; }
 .faculty-title::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.3) 100%); }
 .faculty-title h1, .faculty-title p { position: relative; z-index: 1; }
 .faculty-title h1 { font-size: 2rem; margin-bottom: 8px; letter-spacing: .5px; }
@@ -345,12 +345,74 @@ footer { background: #1b4332; color: #fff; padding: 44px 20px 32px; margin-top: 
   .faculty-title { padding: 4rem 16px; }
   .faculty-title h1 { font-size: 1.35rem; }
   .faculty-title p  { font-size: .95rem; }
+  /* ข้อ 10 — logo mobile fix */
   .logo-circle { width: 38px; height: 38px; min-width: 38px; }
+  .logo-circle img { width: 80%; height: 80%; object-fit: contain; display: block; max-width: 100%; }
   .container { margin: 24px auto; }
   .auth-container { padding: 44px 18px 28px; }
   .voc-modal-box { padding: 24px 16px; border-radius: 16px; }
+  .summary-table th, .summary-table td { padding: 8px 10px; font-size: .82rem; }
+  .priority-detail-grid { grid-template-columns: 1fr; }
+  .mps-grid { grid-template-columns: 1fr; gap: 8px; }
+  .manage-priority-summary { padding: 14px; }
 }
 @media (max-width: 380px) {
+  /* ข้อ 10 — logo mobile fix เล็กมาก */
   .logo-circle { width: 32px; height: 32px; min-width: 32px; }
+  .logo-circle img { width: 75%; height: 75%; object-fit: contain; }
   .nav-menu { gap: 6px; font-size: 12px; }
 }
+/* ข้อ 10 — logo ทุก breakpoint */
+.logo-circle img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  display: block;
+  max-width: 100%;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* ══════════════════════════════════════════
+   ข้อ 4/5 — SUMMARY TABLE
+══════════════════════════════════════════ */
+.summary-table-card { }
+.summary-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.summary-table thead tr { background: linear-gradient(135deg, var(--dgreen), var(--mgreen)); color: #fff; }
+.summary-table th { padding: 10px 16px; text-align: left; font-weight: 700; font-size: .82rem; }
+.summary-table td { padding: 10px 16px; border-bottom: 1px solid #f0f0f0; color: #444; }
+.summary-table tbody tr:hover { background: #f8faf9; }
+.summary-table tbody tr:last-child td { border-bottom: none; }
+.summary-table .tbl-success td { background: #f0faf4; }
+.tbl-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+
+/* ══════════════════════════════════════════
+   ข้อ 5 — PRIORITY DETAIL CARD
+══════════════════════════════════════════ */
+.priority-detail-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 14px; }
+.priority-detail-box { border-radius: var(--radius); padding: 18px; }
+.priority-detail-box.high   { background: linear-gradient(135deg,#fff5f5,#fde8e8); border: 1.5px solid #f5c6c6; }
+.priority-detail-box.medium { background: linear-gradient(135deg,#fffbf0,#fff7e6); border: 1.5px solid #f5dfa6; }
+.priority-detail-box.low    { background: linear-gradient(135deg,#f0faf4,#e8f5e9); border: 1.5px solid #c8e6c9; }
+
+/* ══════════════════════════════════════════
+   ข้อ 6 — MANAGE PRIORITY SUMMARY BAR
+══════════════════════════════════════════ */
+.manage-priority-summary { background: #fff; border-radius: var(--radius); padding: 18px 20px; margin-bottom: 18px; box-shadow: var(--shadow); border: 1.5px solid #e0e0e0; }
+.mps-title { font-size: .9rem; font-weight: 700; color: #444; margin-bottom: 14px; display: flex; align-items: center; gap: 7px; }
+.mps-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.mps-box { border-radius: 12px; padding: 14px; text-align: center; transition: .3s; }
+.mps-box:hover { transform: translateY(-2px); }
+.mps-box.high   { background: linear-gradient(135deg,#fff5f5,#fde8e8); border: 2px solid #f5c6c6; }
+.mps-box.medium { background: linear-gradient(135deg,#fffbf0,#fff7e6); border: 2px solid #f5dfa6; }
+.mps-box.low    { background: linear-gradient(135deg,#f0faf4,#e8f5e9); border: 2px solid #c8e6c9; }
+.mps-box.pulse  { animation: pulseBorder 1.5s infinite; }
+@keyframes pulseBorder { 0%,100% { box-shadow: 0 0 0 0 rgba(208,0,0,.25); } 50% { box-shadow: 0 0 0 6px rgba(208,0,0,0); } }
+.mps-icon  { font-size: 1.5rem; margin-bottom: 4px; }
+.mps-count { font-size: 2rem; font-weight: 800; line-height: 1; }
+.mps-box.high   .mps-count { color: #d00000; }
+.mps-box.medium .mps-count { color: #b25f00; }
+.mps-box.low    .mps-count { color: #2d6a4f; }
+.mps-label { font-size: .78rem; font-weight: 600; margin-top: 2px; color: #666; }
+.mps-alert { margin-top: 5px; font-size: .72rem; background: #d00000; color: #fff; border-radius: 8px; padding: 2px 8px; font-weight: 700; }
+.mps-ok    { margin-top: 5px; font-size: .72rem; color: #2d6a4f; font-weight: 700; }
+.mps-warning { margin-top: 14px; background: #fff5f5; border: 1.5px solid #f5c6c6; border-radius: 10px; padding: 10px 14px; color: #d00000; font-size: .85rem; display: flex; align-items: center; gap: 8px; }
