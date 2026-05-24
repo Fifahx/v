@@ -55,7 +55,7 @@
         <i class="fas fa-search"></i>ติดตามสถานะ
       </div>
     </div>
-    <!-- ปักหมุด + progress bar (ข้อ 1) -->
+    <!-- ปักหมุด + progress bar -->
     <div id="pinned-tickets-section" class="hidden"></div>
     <div class="manual-section">
       <h3>คู่มือการใช้งาน</h3>
@@ -67,7 +67,7 @@
     </div>
   </div>
 
-  <!-- PAGE: LOGIN (ข้อ 7 — Enter key ผ่าน JS) -->
+  <!-- PAGE: LOGIN -->
   <div id="page-login" class="hidden" style="padding-top:50px;">
     <div class="auth-container">
       <div class="auth-header">เข้าสู่ระบบ</div>
@@ -165,12 +165,12 @@
         <div class="voc-panel">
           <span class="voc-title">คุณคือ</span>
           <div class="grid-options">
-            <div class="opt-btn selected" onclick="setOption(this,'cType','นักศึกษา')">🎓 นักศึกษา</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','บัณฑิตศึกษา')">📚 บัณฑิตศึกษา</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','นักเรียน/ผู้สนใจ')">🔍 นักเรียน/ผู้สนใจ</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ปกครอง')">👨‍👩‍👧 ผู้ปกครอง</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ศิษย์เก่า')">🏫 ศิษย์เก่า</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้บัณฑิต/หน่วยงาน')">🏢 ผู้ใช้บัณฑิต/หน่วยงาน</div>
+            <div class="opt-btn selected" onclick="setOption(this,'cType','นักศึกษา')">นักศึกษา</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','บัณฑิตศึกษา')">บัณฑิตศึกษา</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','นักเรียน/ผู้สนใจ')">นักเรียน/ผู้สนใจ</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ปกครอง')">ผู้ปกครอง</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','ศิษย์เก่า')">ศิษย์เก่า</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้บัณฑิต/หน่วยงาน')">ผู้ใช้บัณฑิต/หน่วยงาน</div>
           </div>
         </div>
         <div class="voc-panel">
@@ -181,7 +181,7 @@
             <div>รหัสนักศึกษา/หน่วยงาน<input type="text" id="v-sid" class="voc-input" style="margin-top:6px;"></div>
           </div>
         </div>
-        <button class="btn-submit" onclick="changeStep(2)">ถัดไป — ระบุเรื่องที่แจ้ง →</button>
+        <button class="btn-submit" onclick="changeStep(2)">ถัดไป - ระบุเรื่องที่แจ้ง →</button>
       </div>
 
       <!-- Step 2 -->
@@ -189,10 +189,11 @@
         <div class="voc-panel">
           <span class="voc-title">ประเภทของเรื่อง</span>
           <div class="grid-options" style="grid-template-columns:1fr 1fr;">
-            <div class="opt-btn selected" onclick="setOption(this,'category','ข้อเสนอแนะหลักสูตร')">📖 ข้อเสนอแนะหลักสูตร</div>
-            <div class="opt-btn" onclick="setOption(this,'category','การเรียนการสอน')">🎒 การเรียนการสอน</div>
-            <div class="opt-btn" onclick="setOption(this,'category','สิ่งอำนวยความสะดวก')">🏗️ สิ่งอำนวยความสะดวก</div>
-            <div class="opt-btn" onclick="setOption(this,'category','บริการนักศึกษา')">🤝 บริการนักศึกษา</div>
+            <div class="opt-btn selected" onclick="setOption(this,'category','ข้อเสนอแนะหลักสูตร')">ข้อเสนอแนะหลักสูตร</div>
+            <div class="opt-btn" onclick="setOption(this,'category','การเรียนการสอน')">การเรียนการสอน</div>
+            <div class="opt-btn" onclick="setOption(this,'category','สิ่งอำนวยความสะดวก')">สิ่งอำนวยความสะดวก</div>
+            <div class="opt-btn" onclick="setOption(this,'category','บริการนักศึกษา')">บริการนักศึกษา</div>
+            <div class="opt-btn" onclick="setOption(this,'category','อื่นๆ')">อื่นๆ</div>
           </div>
         </div>
         <div class="voc-panel">
@@ -205,7 +206,7 @@
         </div>
         <div style="display:flex;">
           <button class="btn-back" onclick="changeStep(1)">← ย้อนกลับ</button>
-          <button class="btn-submit" onclick="changeStep(3)">ถัดไป — กรอกรายละเอียด →</button>
+          <button class="btn-submit" onclick="changeStep(3)">ถัดไป - กรอกรายละเอียด →</button>
         </div>
       </div>
 
@@ -220,17 +221,17 @@
         </div>
         <div style="display:flex;">
           <button class="btn-back" onclick="changeStep(2)">← ย้อนกลับ</button>
-          <button class="btn-submit" onclick="prepareReview()">ถัดไป — ตรวจสอบข้อมูล →</button>
+          <button class="btn-submit" onclick="prepareReview()">ถัดไป - ตรวจสอบข้อมูล →</button>
         </div>
       </div>
 
-      <!-- Step 4 — Review card (ข้อ 5) -->
+      <!-- Review card -->
       <div id="step-content-4" class="hidden">
         <div id="review-area"></div>
         <div style="display:flex;margin-top:16px;">
           <button class="btn-back" onclick="changeStep(3)">← ย้อนกลับ</button>
           <button class="btn-submit" id="btn-final" onclick="finalSubmit()">
-            <i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่อง
+            <i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่องร้องเรียน
           </button>
         </div>
       </div>
@@ -252,13 +253,10 @@
     </div>
   </div>
 
-  <!-- PAGE: TRACKING (ข้อ 4 — card ใหม่, ข้อ 8 — ticket ID only) -->
+  <!-- PAGE: TRACKING (ticket ID only) -->
   <div id="page-tracking" class="hidden">
     <div class="section-title">
       <h2><i class="fas fa-list-alt"></i> ติดตามสถานะ</h2>
-    </div>
-    <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:11px 16px;margin-bottom:20px;font-size:.86rem;color:#856404;">
-      <i class="fas fa-lock"></i> เพื่อความปลอดภัยของข้อมูลส่วนบุคคล ค้นหาได้เฉพาะ <strong>Ticket ID</strong> เท่านั้น
     </div>
     <div class="track-bar">
       <input type="text" id="track-input" placeholder="VOC-2568-XXXX">
@@ -267,7 +265,7 @@
     <div id="track-result"></div>
   </div>
 
-  <!-- PAGE: ADMIN DASHBOARD (ข้อ 6) -->
+  <!-- PAGE: ADMIN DASHBOARD -->
   <div id="page-admin-dashboard" class="hidden">
     <div class="section-title">
       <h2><i class="fas fa-chart-bar"></i> สรุปสถิติการร้องเรียน</h2>
@@ -299,7 +297,7 @@
     </div>
   </div>
 
-  <!-- PAGE: ADMIN REVIEWS (ข้อ 3) -->
+  <!-- PAGE: ADMIN REVIEWS -->
   <div id="page-admin-reviews" class="hidden">
     <div class="section-title">
       <h2><i class="fas fa-star"></i> ผลการให้คะแนนและรีวิว</h2>
@@ -346,7 +344,7 @@
       <h3>เมนู</h3>
       <p>
         <a onclick="navigateTo('home')">หน้าหลัก</a><br>
-        <a onclick="navigateTo('portal')">แจ้งเรื่อง</a><br>
+        <a onclick="navigateTo('portal')">ร้องเรียน</a><br>
         <a onclick="navigateTo('tracking')">ติดตามสถานะ</a>
       </p>
     </div>
