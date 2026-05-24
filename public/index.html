@@ -10,21 +10,22 @@
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- ══ HEADER ══ -->
 <header>
   <div class="nav-container">
     <div class="logos">
-      <!-- ข้อ 10: ใช้รูปจาก /public/img/ ที่มีอยู่ในเซิร์ฟเวอร์ กัน Discord link หมดอายุ -->
       <div class="logo-circle">
-        <img src="/img/yru_logo.png" alt="Logo YRU">
+        <img src="/public/img/yru_logo.png" alt="YRU"
+             onerror="this.src='https://placehold.co/40x40/2d6a4f/fff?text=YRU'">
       </div>
       <div class="logo-circle">
-        <img src="/img/Logo faculty of sta_yru.png" alt="Logo Faculty">
+        <img src="/public/img/Logo faculty of sta_yru.png" alt="SCI"
+             onerror="this.src='https://placehold.co/40x40/40916c/fff?text=SCI'">
       </div>
     </div>
     <div class="nav-menu" id="main-nav">
       <a onclick="navigateTo('home')" id="nav-home" class="active">หน้าหลัก</a>
-      <a onclick="navigateTo('portal')" id="nav-portal">ร้องเรียน</a>
+      <a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a>
       <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
       <a onclick="alert('คู่มืออยู่ด้านล่างหน้าแรก')">คู่มือ</a>
     </div>
@@ -35,26 +36,27 @@
   </div>
 </header>
 
-<!-- HERO -->
+<!-- ══ HERO ══ -->
 <div class="faculty-title">
   <h1>ระบบรับฟังเสียงจากลูกค้า VOC</h1>
   <p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</p>
 </div>
 
-<!-- MAIN -->
+<!-- ══ MAIN ══ -->
 <div class="container">
 
-  <!-- HOME -->
+  <!-- PAGE: HOME -->
   <div id="page-home">
     <div class="home-grid">
       <div class="main-card" onclick="navigateTo('portal')">
-        <i class="fas fa-bullhorn"></i>ร้องเรื่อง
+        <i class="fas fa-bullhorn"></i>แจ้งเรื่องร้องเรียน
       </div>
       <div class="main-card" onclick="navigateTo('tracking')">
         <i class="fas fa-search"></i>ติดตามสถานะ
       </div>
     </div>
-    <div id="pinned-tickets-section" class="hidden" style="margin-top:28px;"></div>
+    <!-- ปักหมุด + progress bar (ข้อ 1) -->
+    <div id="pinned-tickets-section" class="hidden"></div>
     <div class="manual-section">
       <h3>คู่มือการใช้งาน</h3>
       <div class="manual-grid">
@@ -65,7 +67,7 @@
     </div>
   </div>
 
-  <!-- LOGIN -->
+  <!-- PAGE: LOGIN (ข้อ 7 — Enter key ผ่าน JS) -->
   <div id="page-login" class="hidden" style="padding-top:50px;">
     <div class="auth-container">
       <div class="auth-header">เข้าสู่ระบบ</div>
@@ -78,8 +80,8 @@
         <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
       </div>
       <button class="btn-auth" id="btn-login" onclick="doLogin()">ยืนยัน</button>
-      <p style="margin-top:18px;font-size:.8rem;text-align:center;">ยังไม่มีบัญชี
-        <a onclick="navigateTo('register')" style="color:var(--dgreen);cursor:pointer;font-weight:600;">ลงทะเบียน</a>
+      <p style="margin-top:16px;font-size:.82rem;text-align:center;">ยังไม่มีบัญชี
+        <a onclick="navigateTo('register')" style="color:var(--dgreen);cursor:pointer;font-weight:700;">ลงทะเบียน</a>
       </p>
       <a class="admin-login-link" onclick="showAdminLoginModal()">
         <i class="fas fa-shield-alt"></i> เข้าสู่ระบบในฐานะผู้ดูแลระบบ
@@ -87,7 +89,7 @@
     </div>
   </div>
 
-  <!-- REGISTER -->
+  <!-- PAGE: REGISTER -->
   <div id="page-register" class="hidden" style="padding-top:50px;">
     <div class="auth-container" style="max-width:620px;">
       <div class="auth-header">ลงทะเบียน</div>
@@ -111,44 +113,39 @@
           <input type="text" id="reg-line" placeholder="Line ID (ไม่บังคับ)">
         </div>
         <div class="form-group">
-          <!-- ข้อ 1: เบอร์โทรต้องเป็นตัวเลข 9-10 หลัก -->
           <label>เบอร์โทรศัพท์</label>
-          <input type="tel" id="reg-phone" placeholder="0xxxxxxxxx (9-10 หลัก)"
-                 maxlength="10" autocomplete="tel">
-          <small style="color:#888;font-size:.76rem;">ตัวเลขเท่านั้น 9-10 หลัก</small>
+          <input type="tel" id="reg-phone" placeholder="0xxxxxxxxx" maxlength="10" autocomplete="tel">
+          <small style="color:#aaa;font-size:.76rem;">ตัวเลข 9-10 หลักเท่านั้น</small>
         </div>
       </div>
       <div class="form-group">
-        <label>กำหนดชื่อผู้ใช้ <span style="color:#d00000;">*</span></label>
-        <input type="text" id="reg-username" placeholder="a-z, 0-9, _ อย่างน้อย 4 ตัว"
-               autocomplete="username">
-        <small style="color:#888;font-size:.76rem;">ตัวอักษรภาษาอังกฤษ ตัวเลข และ _ เท่านั้น</small>
+        <label>ชื่อผู้ใช้ <span style="color:#d00000;">*</span></label>
+        <input type="text" id="reg-username" placeholder="a-z, 0-9, _ อย่างน้อย 4 ตัว" autocomplete="username">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="form-group">
-          <!-- ข้อ 2: password strength -->
           <label>รหัสผ่าน <span style="color:#d00000;">*</span></label>
           <input type="password" id="reg-pass" placeholder="อย่างน้อย 8 ตัว" autocomplete="new-password">
+          <!-- password strength bar -->
           <div class="pw-strength-wrap">
             <div class="pw-strength-bar"><div class="pw-strength-fill" id="pw-bar"></div></div>
             <div class="pw-strength-label" id="pw-label"></div>
           </div>
-          <small style="color:#888;font-size:.76rem;">ต้องมีตัวอักษรและตัวเลขอย่างน้อย 8 ตัว</small>
         </div>
         <div class="form-group">
           <label>ยืนยันรหัสผ่าน <span style="color:#d00000;">*</span></label>
-          <input type="password" id="reg-pass2" placeholder="พิมพ์รหัสผ่านอีกครั้ง" autocomplete="new-password">
+          <input type="password" id="reg-pass2" placeholder="พิมพ์อีกครั้ง" autocomplete="new-password">
         </div>
       </div>
-      <p style="font-size:.76rem;color:#888;margin-bottom:14px;"><span style="color:#d00000;">*</span> จำเป็นต้องกรอก</p>
+      <p style="font-size:.77rem;color:#aaa;margin-bottom:14px;"><span style="color:#d00000;">*</span> จำเป็นต้องกรอก</p>
       <button class="btn-auth" id="btn-register" onclick="doRegister()">ยืนยันการลงทะเบียน</button>
-      <p style="margin-top:14px;font-size:.8rem;text-align:center;">มีบัญชีอยู่แล้ว
-        <a onclick="navigateTo('login')" style="color:var(--dgreen);cursor:pointer;font-weight:600;">เข้าสู่ระบบ</a>
+      <p style="margin-top:14px;font-size:.82rem;text-align:center;">มีบัญชีอยู่แล้ว
+        <a onclick="navigateTo('login')" style="color:var(--dgreen);cursor:pointer;font-weight:700;">เข้าสู่ระบบ</a>
       </p>
     </div>
   </div>
 
-  <!-- PORTAL -->
+  <!-- PAGE: PORTAL (VOC form) -->
   <div id="page-portal" class="hidden">
     <div id="portal-login-warning" class="login-required-banner hidden">
       <i class="fas fa-exclamation-triangle"></i>
@@ -158,22 +155,22 @@
     <div id="portal-form-content" class="hidden">
       <div class="step-progress">
         <div class="step-node active" id="node1">1<span>ระบุตัวตน</span></div>
-        <div class="step-node" id="node2">2<span>เรื่องที่ร้องเรียน</span></div>
+        <div class="step-node" id="node2">2<span>เรื่องที่แจ้ง</span></div>
         <div class="step-node" id="node3">3<span>รายละเอียด</span></div>
         <div class="step-node" id="node4">4<span>ยืนยัน</span></div>
       </div>
+
       <!-- Step 1 -->
       <div id="step-content-1">
         <div class="voc-panel">
           <span class="voc-title">คุณคือ</span>
           <div class="grid-options">
-            <div class="opt-btn selected" onclick="setOption(this,'cType','นักศึกษา')">นักศึกษา</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','บัณฑิตศึกษา')">บัณฑิตศึกษา</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','นักเรียน/ผู้สนใจ')">นักเรียน/ผู้สนใจ</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ปกครอง')">ผู้ปกครอง</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ศิษย์เก่า')">ศิษย์เก่า</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้บัณฑิต/หน่วยงาน')">ผู้ใช้บัณฑิต/หน่วยงาน</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้ทั่วไป/บุคคลทั่วไป')">ผู้ใช้ทั่วไป/บุคคลทั่วไป</div>
+            <div class="opt-btn selected" onclick="setOption(this,'cType','นักศึกษา')">🎓 นักศึกษา</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','บัณฑิตศึกษา')">📚 บัณฑิตศึกษา</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','นักเรียน/ผู้สนใจ')">🔍 นักเรียน/ผู้สนใจ</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ปกครอง')">👨‍👩‍👧 ผู้ปกครอง</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','ศิษย์เก่า')">🏫 ศิษย์เก่า</div>
+            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้บัณฑิต/หน่วยงาน')">🏢 ผู้ใช้บัณฑิต/หน่วยงาน</div>
           </div>
         </div>
         <div class="voc-panel">
@@ -184,73 +181,84 @@
             <div>รหัสนักศึกษา/หน่วยงาน<input type="text" id="v-sid" class="voc-input" style="margin-top:6px;"></div>
           </div>
         </div>
-        <button class="btn-submit" onclick="changeStep(2)">ถัดไป - ระบุเรื่องที่แจ้ง</button>
+        <button class="btn-submit" onclick="changeStep(2)">ถัดไป — ระบุเรื่องที่แจ้ง →</button>
       </div>
+
       <!-- Step 2 -->
       <div id="step-content-2" class="hidden">
         <div class="voc-panel">
           <span class="voc-title">ประเภทของเรื่อง</span>
-          <div class="grid-options" style="grid-template-columns:repeat(2,1fr);">
-            <div class="opt-btn selected" onclick="setOption(this,'category','ข้อเสนอแนะหลักสูตร')">ข้อเสนอแนะหลักสูตร</div>
-            <div class="opt-btn" onclick="setOption(this,'category','การเรียนการสอน')">การเรียนการสอน</div>
-            <div class="opt-btn" onclick="setOption(this,'category','สิ่งอำนวยความสะดวก')">สิ่งอำนวยความสะดวก</div>
-            <div class="opt-btn" onclick="setOption(this,'category','บริการนักศึกษา')">บริการนักศึกษา</div>
-            <div class="opt-btn" onclick="setOption(this,'category','เรื่องอื่นๆ')">อื่นๆ</div>
+          <div class="grid-options" style="grid-template-columns:1fr 1fr;">
+            <div class="opt-btn selected" onclick="setOption(this,'category','ข้อเสนอแนะหลักสูตร')">📖 ข้อเสนอแนะหลักสูตร</div>
+            <div class="opt-btn" onclick="setOption(this,'category','การเรียนการสอน')">🎒 การเรียนการสอน</div>
+            <div class="opt-btn" onclick="setOption(this,'category','สิ่งอำนวยความสะดวก')">🏗️ สิ่งอำนวยความสะดวก</div>
+            <div class="opt-btn" onclick="setOption(this,'category','บริการนักศึกษา')">🤝 บริการนักศึกษา</div>
           </div>
         </div>
         <div class="voc-panel">
           <span class="voc-title">ระดับความเร่งด่วน</span>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
-            <div class="opt-btn" onclick="setOption(this,'priority','low')">🟢 ทั่วไป<br><small>ภายใน 7 วัน</small></div>
-            <div class="opt-btn selected" onclick="setOption(this,'priority','medium')">🟡 ปานกลาง<br><small>ภายใน 3 วัน</small></div>
-            <div class="opt-btn" onclick="setOption(this,'priority','high')">🔴 เร่งด่วน<br><small>ภายใน 24 ชม.</small></div>
+            <div class="opt-btn" onclick="setOption(this,'priority','low')">🟢 ทั่วไป<br><small style="color:inherit;opacity:.75;">ภายใน 7 วัน</small></div>
+            <div class="opt-btn selected" onclick="setOption(this,'priority','medium')">🟡 ปานกลาง<br><small style="color:inherit;opacity:.75;">ภายใน 3 วัน</small></div>
+            <div class="opt-btn" onclick="setOption(this,'priority','high')">🔴 เร่งด่วน<br><small style="color:inherit;opacity:.75;">ภายใน 24 ชม.</small></div>
           </div>
         </div>
         <div style="display:flex;">
-          <button class="btn-back" onclick="changeStep(1)">ย้อนกลับ</button>
-          <button class="btn-submit" onclick="changeStep(3)">ถัดไป - กรอกรายละเอียด</button>
+          <button class="btn-back" onclick="changeStep(1)">← ย้อนกลับ</button>
+          <button class="btn-submit" onclick="changeStep(3)">ถัดไป — กรอกรายละเอียด →</button>
         </div>
       </div>
+
       <!-- Step 3 -->
       <div id="step-content-3" class="hidden">
         <div class="voc-panel">
-          <span class="voc-title">รายละเอียดเรื่องที่ร้องเรียน</span>
-          หัวข้อ <span style="color:#d00000;">*</span>
-          <input type="text" id="v-subject" class="voc-input" style="margin-top:6px;" placeholder="ระบุหัวข้อ">
-          รายละเอียด <span style="color:#d00000;">*</span>
-          <textarea id="v-detail" class="voc-input" style="height:120px;resize:vertical;margin-top:6px;" placeholder="อธิบายรายละเอียด"></textarea>
+          <span class="voc-title">รายละเอียดเรื่องที่แจ้ง</span>
+          <label style="font-size:.87rem;color:#555;font-weight:600;">หัวข้อ <span style="color:#d00000;">*</span></label>
+          <input type="text" id="v-subject" class="voc-input" style="margin-top:6px;" placeholder="ระบุหัวข้อเรื่องที่ต้องการแจ้ง">
+          <label style="font-size:.87rem;color:#555;font-weight:600;">รายละเอียด <span style="color:#d00000;">*</span></label>
+          <textarea id="v-detail" class="voc-input" style="height:130px;resize:vertical;margin-top:6px;" placeholder="อธิบายรายละเอียดของเรื่องที่ต้องการแจ้ง"></textarea>
         </div>
         <div style="display:flex;">
-          <button class="btn-back" onclick="changeStep(2)">ย้อนกลับ</button>
-          <button class="btn-submit" onclick="prepareReview()">ถัดไป - ตรวจสอบข้อมูล</button>
+          <button class="btn-back" onclick="changeStep(2)">← ย้อนกลับ</button>
+          <button class="btn-submit" onclick="prepareReview()">ถัดไป — ตรวจสอบข้อมูล →</button>
         </div>
       </div>
-      <!-- Step 4 -->
+
+      <!-- Step 4 — Review card (ข้อ 5) -->
       <div id="step-content-4" class="hidden">
-        <div class="voc-panel" id="review-area" style="line-height:2;"></div>
-        <div style="display:flex;">
-          <button class="btn-back" onclick="changeStep(3)">ย้อนกลับ</button>
-          <button class="btn-submit" id="btn-final" onclick="finalSubmit()">ยืนยันการส่งเรื่องร้องเรียน</button>
+        <div id="review-area"></div>
+        <div style="display:flex;margin-top:16px;">
+          <button class="btn-back" onclick="changeStep(3)">← ย้อนกลับ</button>
+          <button class="btn-submit" id="btn-final" onclick="finalSubmit()">
+            <i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่อง
+          </button>
         </div>
       </div>
+
       <!-- Success -->
       <div id="success-area" class="hidden">
         <div class="success-wrap">
           <div class="success-icon"><i class="fas fa-check"></i></div>
-          <h2>รับเรื่องแล้ว!</h2>
-          <p style="color:#555;margin-top:8px;">ทีมงานได้รับเรื่องของคุณเรียบร้อยแล้ว</p>
+          <h2 style="color:var(--dgreen);">รับเรื่องแล้ว! 🎉</h2>
+          <p style="color:#777;margin-top:8px;">ทีมงานได้รับเรื่องของคุณเรียบร้อยแล้ว</p>
           <div class="ticket-id-box" id="new-ticket-id">VOC-2568-0001</div>
-          <p style="font-size:.88rem;color:#777;margin-bottom:20px;">บันทึกหมายเลข Ticket ไว้เพื่อติดตามสถานะ</p>
-          <button class="btn-submit" style="width:auto;padding:12px 36px;" onclick="navigateTo('home')">กลับหน้าหลัก</button>
+          <p style="font-size:.86rem;color:#aaa;margin-bottom:22px;">บันทึกหมายเลข Ticket ไว้เพื่อติดตามสถานะ</p>
+          <button class="btn-submit" style="width:auto;padding:12px 36px;" onclick="navigateTo('tracking')">
+            <i class="fas fa-list-alt"></i> ติดตามสถานะ
+          </button>
+          <button class="btn-back" style="margin-left:10px;" onclick="navigateTo('home')">กลับหน้าหลัก</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- TRACKING (ข้อ 8: ค้นหาเฉพาะ Ticket ID) -->
+  <!-- PAGE: TRACKING (ข้อ 4 — card ใหม่, ข้อ 8 — ticket ID only) -->
   <div id="page-tracking" class="hidden">
     <div class="section-title">
-      <h2><i class="fas fa-list-alt"></i> ติดตามสถานะเรื่องร้องเรียน</h2>
+      <h2><i class="fas fa-list-alt"></i> ติดตามสถานะ</h2>
+    </div>
+    <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:11px 16px;margin-bottom:20px;font-size:.86rem;color:#856404;">
+      <i class="fas fa-lock"></i> เพื่อความปลอดภัยของข้อมูลส่วนบุคคล ค้นหาได้เฉพาะ <strong>Ticket ID</strong> เท่านั้น
     </div>
     <div class="track-bar">
       <input type="text" id="track-input" placeholder="VOC-2568-XXXX">
@@ -259,7 +267,7 @@
     <div id="track-result"></div>
   </div>
 
-  <!-- ADMIN DASHBOARD -->
+  <!-- PAGE: ADMIN DASHBOARD (ข้อ 6) -->
   <div id="page-admin-dashboard" class="hidden">
     <div class="section-title">
       <h2><i class="fas fa-chart-bar"></i> สรุปสถิติการร้องเรียน</h2>
@@ -268,11 +276,11 @@
       </button>
     </div>
     <div id="dash-content">
-      <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>
+      <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลดข้อมูล...</p></div>
     </div>
   </div>
 
-  <!-- ADMIN TICKETS -->
+  <!-- PAGE: ADMIN TICKETS -->
   <div id="page-admin-tickets" class="hidden">
     <div class="section-title">
       <h2><i class="fas fa-inbox"></i> จัดการเรื่องร้องเรียน</h2>
@@ -281,25 +289,44 @@
       </button>
     </div>
     <div class="admin-filters">
-      <button class="filter-btn active" id="filter-pending" onclick="loadAdminTickets('pending');setFilter('pending')">รอดำเนินการ</button>
-      <button class="filter-btn" id="filter-inprogress" onclick="loadAdminTickets('กำลังดำเนินการ');setFilter('inprogress')">กำลังดำเนินการ</button>
-      <button class="filter-btn" id="filter-all" onclick="loadAdminTickets('all');setFilter('all')">ทั้งหมด</button>
-      <button class="filter-btn" id="filter-done" onclick="loadAdminTickets('เสร็จสิ้น');setFilter('done')">เสร็จสิ้น</button>
+      <button class="filter-btn active" id="filter-pending" onclick="loadAdminTickets('pending');setFilter('pending')">⏳ รอดำเนินการ</button>
+      <button class="filter-btn" id="filter-inprogress" onclick="loadAdminTickets('กำลังดำเนินการ');setFilter('inprogress')">🔄 กำลังดำเนินการ</button>
+      <button class="filter-btn" id="filter-all" onclick="loadAdminTickets('all');setFilter('all')">📋 ทั้งหมด</button>
+      <button class="filter-btn" id="filter-done" onclick="loadAdminTickets('เสร็จสิ้น');setFilter('done')">✅ เสร็จสิ้น</button>
     </div>
     <div id="admin-ticket-list">
+      <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลดข้อมูล...</p></div>
+    </div>
+  </div>
+
+  <!-- PAGE: ADMIN REVIEWS (ข้อ 3) -->
+  <div id="page-admin-reviews" class="hidden">
+    <div class="section-title">
+      <h2><i class="fas fa-star"></i> ผลการให้คะแนนและรีวิว</h2>
+      <button onclick="loadReviews()" style="margin-left:auto;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
+        <i class="fas fa-sync-alt"></i> รีเฟรช
+      </button>
+    </div>
+    <div id="review-content">
       <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>
     </div>
   </div>
 
 </div><!-- /container -->
 
-<!-- ADMIN MODAL -->
+<!-- ADMIN LOGIN MODAL -->
 <div id="admin-modal" class="modal-overlay hidden">
   <div class="modal-box">
     <button class="modal-close" onclick="hideAdminLoginModal()">✕</button>
     <h3><i class="fas fa-shield-alt" style="color:var(--dgreen);"></i> เข้าสู่ระบบผู้ดูแล</h3>
-    <div class="form-group"><label>Username</label><input type="text" id="admin-user" placeholder="admin"></div>
-    <div class="form-group"><label>รหัสผ่าน</label><input type="password" id="admin-pass" placeholder="••••••••"></div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="admin-user" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>รหัสผ่าน</label>
+      <input type="password" id="admin-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
     <button class="btn-auth" id="btn-admin-login" onclick="doAdminLogin()">เข้าสู่ระบบ</button>
   </div>
 </div>
@@ -309,8 +336,7 @@
   <div class="footer-container">
     <div class="footer-col">
       <h3>เกี่ยวกับคณะ</h3>
-      <p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร
-        <br>มหาวิทยาลัยราชภัฏยะลา</p>
+      <p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร<br>มหาวิทยาลัยราชภัฏยะลา</p>
     </div>
     <div class="footer-col">
       <h3>ติดต่อ</h3>
@@ -320,7 +346,7 @@
       <h3>เมนู</h3>
       <p>
         <a onclick="navigateTo('home')">หน้าหลัก</a><br>
-        <a onclick="navigateTo('portal')">ร้องเรียน</a><br>
+        <a onclick="navigateTo('portal')">แจ้งเรื่อง</a><br>
         <a onclick="navigateTo('tracking')">ติดตามสถานะ</a>
       </p>
     </div>
