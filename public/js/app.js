@@ -497,13 +497,14 @@ async function loadNewsStrip(){
         const tc=tagClass[n.tag]||'news-tag-default';
         const shortContent=n.content.length>120?n.content.substring(0,120)+'...':n.content;
         const imgHtml=n.imageUrl?`<div class="news-card-img"><img src="${n.imageUrl}" alt="${n.title}" onerror="this.parentElement.style.display='none'"></div>`:'';
-        html+=`<div class="news-card">
+        html+=`<div class="news-card" onclick="showNewsDetail(${JSON.stringify(n).replace(/`/g,String.fromCharCode(96))})" style="cursor:pointer;">
           ${imgHtml}
           <div class="news-card-body">
             <span class="news-tag-pill ${tc}">${n.tag||'ทั่วไป'}</span>
             <div class="news-card-title">${n.title}</div>
             <div class="news-card-date"><i class="fas fa-clock"></i> ${n.date||''}</div>
             <div class="news-card-content">${shortContent}</div>
+            <div class="news-read-more"><i class="fas fa-arrow-right"></i> อ่านเพิ่มเติม</div>
           </div>
         </div>`;
       });
@@ -513,6 +514,30 @@ async function loadNewsStrip(){
   }catch(e){ container.classList.add('hidden'); }
 }
 
+
+// ═══ NEWS DETAIL MODAL ═══
+function showNewsDetail(n){
+  const overlay=document.createElement('div');
+  overlay.className='voc-overlay';
+  overlay.id='news-detail-overlay';
+  const imgBlock=n.imageUrl?
+    `<div style="text-align:center;margin-bottom:18px;"><img src="${n.imageUrl}" alt="${n.title}" style="max-width:100%;max-height:280px;border-radius:10px;object-fit:cover;" onerror="this.style.display='none'"></div>`:'';
+  const contentHtml=n.content.replace(/\n/g,'<br>');
+  overlay.innerHTML=`<div class="voc-modal-box" style="max-width:680px;max-height:85vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+      <div>
+        <span class="news-tag">${n.tag||'ทั่วไป'}</span>
+        <div style="font-size:.8rem;color:#aaa;margin-top:6px;"><i class="fas fa-clock"></i> ${n.date||''}</div>
+      </div>
+      <button onclick="document.body.removeChild(document.getElementById('news-detail-overlay'))"
+        style="background:none;border:none;font-size:1.3rem;color:#aaa;cursor:pointer;padding:0 4px;">✕</button>
+    </div>
+    ${imgBlock}
+    <h3 style="font-size:1.15rem;color:var(--dgreen);margin-bottom:14px;line-height:1.5;">${n.title}</h3>
+    <div style="font-size:.93rem;color:#444;line-height:1.85;white-space:pre-wrap;word-break:break-word;">${contentHtml}</div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
 // ═══ PINNED TICKETS ═══
 async function loadPinnedTickets(){
   const container=document.getElementById('pinned-tickets-section');
@@ -532,16 +557,34 @@ async function loadPinnedTickets(){
         // แยก timestamp และข้อความออกจาก comment
         const commentText = lastEntry ? lastEntry.replace(/^\[.*?\]\s*.*?:\s*/,'').trim() : '';
         const commentMeta = lastEntry ? (lastEntry.match(/^\[(.*?)\]/)||['',''])[1] : '';
+        const pLabel={'high':'🔴 เร่งด่วน','medium':'🟡 ปานกลาง','low':'🟢 ทั่วไป'};
+        const pChip={'high':'red','medium':'orange','low':'green'};
+        const priority=t['ความเร่งด่วน']||'medium';
+        const detailText=t['รายละเอียด']||'';
+        const detailShortPinned=detailText.length>200?detailText.substring(0,200)+'...':detailText;
         html+=`<div class="pinned-card">
           <div class="pinned-card-header">
-            <div class="pinned-card-title">${t['หัวข้อ']||'-'}</div>
+            <div>
+              <div class="pinned-card-title">${t['หัวข้อ']||'-'}</div>
+              <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;">
+                ${t['ประเภทเรื่อง']?`<span class="chip blue" style="font-size:.73rem;"><i class="fas fa-tag"></i>${t['ประเภทเรื่อง']}</span>`:''}
+                ${priority?`<span class="chip ${pChip[priority]||'gray'}" style="font-size:.73rem;">${pLabel[priority]||priority}</span>`:''}
+                ${t['ประเภทผู้แจ้ง']?`<span class="chip gray" style="font-size:.73rem;">${t['ประเภทผู้แจ้ง']}</span>`:''}
+              </div>
+            </div>
             <span class="status ${sc[t['สถานะ']]||'status-pending'}">${t['สถานะ']||'-'}</span>
           </div>
+          ${detailText?`<div class="pinned-detail-box">
+            <div class="pinned-detail-label"><i class="fas fa-align-left"></i> รายละเอียด</div>
+            <div class="pinned-detail-text" id="pin-detail-${t['Ticket ID']}">${detailShortPinned.replace(/\n/g,'<br>')}</div>
+            ${detailText.length>200?`<button class="btn-expand" onclick="expandPinDetail('${t['Ticket ID']}', this)">ดูเพิ่มเติม ▼</button>`:''}
+          </div>`:''}
           <div class="pinned-card-body">
             ${buildProgressBar(t['สถานะ'])}
           </div>
           <div class="pinned-card-footer">
             <span><i class="fas fa-calendar-alt"></i>${t['วันที่แจ้ง']||''}</span>
+            <span><i class="fas fa-clock"></i>กำหนด: ${t['กำหนดตอบกลับ']||'-'}</span>
             <span><i class="fas fa-user-tie"></i>${t['ผู้รับผิดชอบ']||'รอมอบหมาย'}</span>
           </div>
           ${commentText ? `<div class="pinned-comment-box">
@@ -637,12 +680,15 @@ function buildTicketCard(t, showRating=false){
       ${userNote?`<!-- หมวด: หมายเหตุผู้ใช้ (ข้อ 1) -->
       <div class="ticket-card-section">
         <div class="ticket-card-section-label"><i class="fas fa-sticky-note"></i> หมายเหตุจากผู้แจ้ง</div>
-        <div class="user-note-box">${userNote}</div>
+        <div class="user-note-box" style="white-space:pre-wrap;line-height:1.75;word-break:break-word;">${userNote}</div>
       </div>`:''}
 
       ${fileInfo?`<div class="ticket-card-section">
         <div class="ticket-card-section-label"><i class="fas fa-paperclip"></i> ไฟล์แนบ</div>
-        <div style="font-size:.86rem;color:#2d6a4f;">${fileInfo}</div>
+        <div class="file-attach-display">
+          <i class="fas fa-file-alt" style="color:var(--dgreen);font-size:1.1rem;"></i>
+          <span style="font-size:.9rem;color:#333;">${fileInfo.replace(/\[แนบไฟล์:\s*/,'').replace(/\]$/,'')}</span>
+        </div>
       </div>`:''}
 
       <!-- หมวด: ความคืบหน้า (ข้อ 3 — 5 ระดับ) -->
@@ -688,6 +734,18 @@ function buildTicketCard(t, showRating=false){
 }
 
 // ข้อ 11: ขยายข้อความ
+// expand pinned detail
+function expandPinDetail(ticketId, btn){
+  const el=document.getElementById('pin-detail-'+ticketId);
+  if(!el)return;
+  // fetch full detail from server
+  api.get('/api/tickets?action=byId&id='+encodeURIComponent(ticketId)).then(res=>{
+    if(res.success&&res.ticket){
+      el.innerHTML=(res.ticket['รายละเอียด']||'').replace(/\n/g,'<br>');
+      if(btn)btn.style.display='none';
+    }
+  });
+}
 function expandDetail(ticketId, encodedText){
   const el=document.getElementById('detail-'+ticketId);
   if(!el)return;
@@ -1270,7 +1328,10 @@ function renderSANews(news){
       <div style="flex:1;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
           <div><span class="news-tag">${n.tag||'ทั่วไป'}</span><strong>${n.title}</strong><span class="news-date">${n.date||''}</span></div>
-          <button class="btn-delete" onclick="deleteNews('${n.newsId}')"><i class="fas fa-trash"></i> ลบ</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-edit-news" onclick="editNews(${JSON.stringify(n).replace(/'/g,'&#39;')})"><i class="fas fa-edit"></i> แก้ไข</button>
+            <button class="btn-delete" onclick="deleteNews('${n.newsId}')"><i class="fas fa-trash"></i> ลบ</button>
+          </div>
         </div>
         <div style="font-size:.86rem;color:#666;">${shortContent}</div>
       </div>
@@ -1288,6 +1349,46 @@ async function addNews(){
     const res=await api.post('/api/news',{action:'add',title,content,tag,imageUrl,author:currentUser?.username||'admin'});
     if(res.success){await showAlert('✅','เพิ่มข่าวสำเร็จ','');loadSANews();}
     else await showAlert('❌','ไม่สำเร็จ',res.message);
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+}
+
+// ── editNews: เปิด modal แก้ไขข่าว ──
+function editNews(n){
+  const tagOpts=['ทั่วไป','ด่วน','ข้อมูล','กิจกรรม'];
+  const overlay=document.createElement('div');
+  overlay.className='voc-overlay';
+  overlay.id='edit-news-overlay';
+  overlay.innerHTML=`<div class="voc-modal-box" style="max-width:600px;">
+    <div class="voc-modal-title"><i class="fas fa-edit"></i> แก้ไขข่าวสาร</div>
+    <div class="form-group"><label>หัวเรื่อง <span style="color:#d00000;">*</span></label>
+      <input type="text" id="edit-news-title" value="${(n.title||'').replace(/"/g,'&quot;')}" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div>
+    <div class="form-group"><label>เนื้อหา <span style="color:#d00000;">*</span></label>
+      <textarea id="edit-news-content" rows="5" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:.93rem;resize:vertical;box-sizing:border-box;">${n.content||''}</textarea></div>
+    <div class="form-group"><label>URL รูปภาพ</label>
+      <input type="url" id="edit-news-image" value="${n.imageUrl||''}" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;"></div>
+    <div class="form-group"><label>Tag</label>
+      <select id="edit-news-tag" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;">
+        ${tagOpts.map(t=>`<option value="${t}" ${t===n.tag?'selected':''}>${t}</option>`).join('')}
+      </select></div>
+    <div class="voc-modal-btns">
+      <button class="voc-btn-cancel" onclick="document.body.removeChild(document.getElementById('edit-news-overlay'))">ยกเลิก</button>
+      <button class="voc-btn-ok" onclick="updateNews('${n.newsId}')"><i class="fas fa-save"></i> บันทึก</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+async function updateNews(newsId){
+  const title=document.getElementById('edit-news-title')?.value.trim();
+  const content=document.getElementById('edit-news-content')?.value.trim();
+  const tag=document.getElementById('edit-news-tag')?.value;
+  if(!title||!content){await showAlert('⚠️','กรุณากรอกข้อมูล','หัวเรื่องและเนื้อหาจำเป็นต้องกรอก');return;}
+  try{
+    const res=await api.post('/api/news',{action:'update',newsId,title,content,tag});
+    if(res.success){
+      const o=document.getElementById('edit-news-overlay');if(o)document.body.removeChild(o);
+      await showAlert('✅','แก้ไขสำเร็จ','อัปเดตข่าวเรียบร้อยแล้ว');
+      loadSANews();
+    } else await showAlert('❌','ไม่สำเร็จ',res.message);
   }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
 }
 async function deleteNews(newsId){

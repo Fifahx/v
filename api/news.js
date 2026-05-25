@@ -86,14 +86,22 @@ module.exports = async function handler(req, res) {
       }
 
       if (action === 'update') {
+        const { imageUrl } = req.body;
         for (let i = 1; i < data.length; i++) {
           if (String(data[i][0]) === String(newsId)) {
             const row = i + 1;
+            // อัปเดต C:G (title, content, tag, author, imageUrl)
             await sheets.spreadsheets.values.update({
               spreadsheetId: SPREADSHEET_ID,
-              range: `${SHEET_NEWS}!C${row}:E${row}`,
+              range: `${SHEET_NEWS}!C${row}:G${row}`,
               valueInputOption: 'RAW',
-              requestBody: { values: [[title||data[i][2], content||data[i][3], tag||data[i][4]]] },
+              requestBody: { values: [[
+                title    || data[i][2],
+                content  || data[i][3],
+                tag      || data[i][4],
+                data[i][5] || '',        // author ไม่เปลี่ยน
+                imageUrl !== undefined ? imageUrl : (data[i][6] || ''),
+              ]] },
             });
             return res.json({ success: true });
           }
