@@ -89,9 +89,6 @@
       <a class="admin-login-link" onclick="showAdminLoginModal()">
         <i class="fas fa-shield-alt"></i> เข้าสู่ระบบในฐานะผู้ดูแลระบบ
       </a>
-      <a class="admin-login-link" onclick="showSuperAdminLoginModal()" style="color:#f0a500;margin-top:6px;">
-        <i class="fas fa-crown"></i> ผู้ดูแลระดับสูง (SuperAdmin)
-      </a>
     </div>
   </div>
 
@@ -357,14 +354,15 @@
 
 </div><!-- /container -->
 
-<!-- ADMIN LOGIN MODAL -->
+<!-- ADMIN LOGIN MODAL — รองรับทั้ง Admin และ SuperAdmin -->
 <div id="admin-modal" class="modal-overlay hidden">
   <div class="modal-box">
     <button class="modal-close" onclick="hideAdminLoginModal()">✕</button>
-    <h3><i class="fas fa-shield-alt" style="color:var(--dgreen);"></i> เข้าสู่ระบบผู้ดูแล</h3>
+    <h3><i class="fas fa-shield-alt" style="color:var(--dgreen);"></i> เข้าสู่ระบบผู้ดูแลระบบ</h3>
+    <p style="font-size:.8rem;color:#aaa;margin-bottom:16px;text-align:center;">Admin และ SuperAdmin ใช้ช่องนี้ร่วมกัน</p>
     <div class="form-group">
       <label>Username</label>
-      <input type="text" id="admin-user" placeholder="admin" autocomplete="username">
+      <input type="text" id="admin-user" placeholder="admin / superadmin" autocomplete="username">
     </div>
     <div class="form-group">
       <label>รหัสผ่าน</label>

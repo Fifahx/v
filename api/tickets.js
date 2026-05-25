@@ -83,13 +83,19 @@ module.exports = async function handler(req, res) {
 
   try {
     const sheets = await getSheetsClient();
-    const data   = await getSheetData(sheets, SHEET_TICKETS);
+    let data     = await getSheetData(sheets, SHEET_TICKETS);
 
     if (!data.length) return res.json({ success: true, tickets: [] });
 
-    // ── ตรวจและเพิ่ม headers ที่ขาด ──
+    // ── ตรวจและเพิ่ม headers ที่ขาด (อาจแก้ sheet จริง) ──
     let headers = [...(data[0] || [])];
+    const hadMissingHeaders = headers.some(h => !['Pinned','Comments','หมายเหตุผู้ใช้','FileURL'].includes(h) === false);
     headers = await ensureHeaders(sheets, headers);
+    // ถ้าเพิ่ม header ใหม่ ให้ reload data เพื่อให้ index ตรง
+    if (hadMissingHeaders) {
+      data = await getSheetData(sheets, SHEET_TICKETS);
+      headers = [...(data[0] || [])];
+    }
 
     // ── index ที่ใช้บ่อย (ค้นหาจาก header name เสมอ ไม่ hardcode) ──
     const idx = {
@@ -186,20 +192,27 @@ module.exports = async function handler(req, res) {
         return res.json({ success: true });
       }
 
-      // ── addComment — APPEND ──
+      // ── addComment — APPEND (ไม่ลบของเก่า) ──
       if (action === 'addComment') {
         const row = findRow(ticketId);
         if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
         if (idx.comments === -1) return res.json({ success: false, message: 'ไม่พบ column Comments' });
 
-        const oldComments = String(data[row - 1][idx.comments] || '');
+        // อ่านค่า comment เก่าจาก row จริงใน data (row เป็น 1-based → data index = row-1)
+        const dataRow = data[row - 1];
+        const oldComments = dataRow && dataRow[idx.comments] !== undefined
+          ? String(dataRow[idx.comments]).trim()
+          : '';
+
         const timestamp   = formatDateThai(new Date());
-        const authorLabel = author || 'ผู้ดูแล';
+        const authorLabel = (author || 'ผู้ดูแล').trim();
         const newEntry    = `[${timestamp}] ${authorLabel}: ${comment}`;
-        const merged      = oldComments ? oldComments + '\n---\n' + newEntry : newEntry;
+        // APPEND: ถ้ามีของเก่าให้ต่อท้ายด้วย separator
+        const merged = oldComments ? `${oldComments}\n---\n${newEntry}` : newEntry;
 
         await batchUpdate(sheets, [{
-          range: `${SHEET_TICKETS}!${colLetter(idx.comments)}${row}`, value: merged,
+          range: `${SHEET_TICKETS}!${colLetter(idx.comments)}${row}`,
+          value: merged,
         }]);
         return res.json({ success: true, comments: merged });
       }
@@ -213,6 +226,18 @@ module.exports = async function handler(req, res) {
         await batchUpdate(sheets, [{
           range: `${SHEET_TICKETS}!${colLetter(idx.pinned)}${row}`, value: String(pinned),
         }]);
+        return res.json({ success: true });
+      }
+
+      // ── deleteTicket (superadmin only) ──
+      if (action === 'deleteTicket') {
+        const row = findRow(ticketId);
+        if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
+        const lastCol = colLetter(headers.length - 1);
+        await sheets.spreadsheets.values.clear({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `${SHEET_TICKETS}!A${row}:${lastCol}${row}`,
+        });
         return res.json({ success: true });
       }
 

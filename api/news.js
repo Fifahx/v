@@ -24,7 +24,7 @@ async function ensureNewsSheet(sheets) {
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_NEWS}!A1`,
       valueInputOption: 'RAW',
-      requestBody: { values: [['NewsID', 'วันที่', 'หัวเรื่อง', 'เนื้อหา', 'Tag', 'Author']] },
+      requestBody: { values: [['NewsID', 'วันที่', 'หัวเรื่อง', 'เนื้อหา', 'Tag', 'Author', 'ImageURL']] },
     });
   }
 }
@@ -45,12 +45,13 @@ module.exports = async function handler(req, res) {
       const rows = data.slice(1)
         .filter(r => r[0])
         .map(r => ({
-          newsId:  String(r[0]||''),
-          date:    String(r[1]||''),
-          title:   String(r[2]||''),
-          content: String(r[3]||''),
-          tag:     String(r[4]||'ทั่วไป'),
-          author:  String(r[5]||''),
+          newsId:   String(r[0]||''),
+          date:     String(r[1]||''),
+          title:    String(r[2]||''),
+          content:  String(r[3]||''),
+          tag:      String(r[4]||'ทั่วไป'),
+          author:   String(r[5]||''),
+          imageUrl: String(r[6]||''),
         }))
         .reverse();
       return res.json({ success: true, news: rows });
@@ -61,11 +62,11 @@ module.exports = async function handler(req, res) {
 
       if (action === 'add') {
         if (!title || !content) return res.json({ success: false, message: 'กรุณากรอกหัวเรื่องและเนื้อหา' });
-        // สร้าง ID ใหม่
         const existIds = data.slice(1).map(r => Number(r[0])||0);
         const newId    = existIds.length ? Math.max(...existIds) + 1 : 1;
+        const { imageUrl } = req.body;
         await appendRow(sheets, SHEET_NEWS, [
-          newId, formatDateThai(new Date()), title, content, tag||'ทั่วไป', author||'admin'
+          newId, formatDateThai(new Date()), title, content, tag||'ทั่วไป', author||'admin', imageUrl||''
         ]);
         return res.json({ success: true, message: 'เพิ่มข่าวสำเร็จ' });
       }

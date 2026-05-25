@@ -1,4 +1,5 @@
-// api/auth.js v5 — user / admin / superadmin
+// api/auth.js v6 — unified admin+superadmin login
+// superadmin ใช้ช่องเดียวกับ admin แต่ตรวจ VOC_SuperAdmins ก่อน → VOC_Admins
 const {
   getSheetsClient, getSheetData, appendRow,
   SHEET_USERS, SHEET_ADMINS, SPREADSHEET_ID,
@@ -10,21 +11,20 @@ const SHEET_SUPERADMINS = 'VOC_SuperAdmins';
 async function ensureSuperAdminSheet(sheets) {
   try {
     const d = await getSheetData(sheets, SHEET_SUPERADMINS);
-    if (d.length <= 1)
-      await appendRow(sheets, SHEET_SUPERADMINS,
-        ['superadmin', hashPassword('super1234'), 'ผู้ดูแลระดับสูง', 'superadmin@yru.ac.th', 'active']);
+    if (!d.length || d.length <= 1) throw new Error('empty');
   } catch {
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
       requestBody: { requests: [{ addSheet: { properties: { title: SHEET_SUPERADMINS } } }] },
-    }).catch(() => {});
+    }).catch(()=>{});
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID, range: `${SHEET_SUPERADMINS}!A1`,
       valueInputOption: 'RAW',
       requestBody: { values: [['Username','Password','ชื่อ-นามสกุล','อีเมล','สถานะ']] },
-    });
+    }).catch(()=>{});
     await appendRow(sheets, SHEET_SUPERADMINS,
-      ['superadmin', hashPassword('super1234'), 'ผู้ดูแลระดับสูง', 'superadmin@yru.ac.th', 'active']);
+      ['superadmin', hashPassword('super1234'), 'ผู้ดูแลระดับสูง', 'superadmin@yru.ac.th', 'active'])
+      .catch(()=>{});
   }
 }
 
@@ -36,6 +36,7 @@ module.exports = async function handler(req, res) {
   try {
     const sheets = await getSheetsClient();
 
+    // ── LOGIN USER ──
     if (action === 'loginUser') {
       const { username, password } = req.body;
       const data = await getSheetData(sheets, SHEET_USERS);
@@ -49,23 +50,38 @@ module.exports = async function handler(req, res) {
       return res.json({ success:false, message:'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
     }
 
+    // ── LOGIN ADMIN (unified: ตรวจ superadmin ก่อน แล้วค่อย admin) ──
     if (action === 'loginAdmin') {
       const { username, password } = req.body;
-      let data = await getSheetData(sheets, SHEET_ADMINS);
-      if (data.length <= 1) {
-        await appendRow(sheets, SHEET_ADMINS, ['admin', hashPassword('admin1234'), 'ผู้ดูแลระบบ', 'admin@yru.ac.th', 'active']);
-        data = await getSheetData(sheets, SHEET_ADMINS);
-      }
       const h = hashPassword(password);
-      for (let i = 1; i < data.length; i++) {
-        if (String(data[i][0]||'').toLowerCase() === String(username).toLowerCase()
-          && String(data[i][1]) === h && String(data[i][4]) === 'active')
+
+      // ตรวจ SuperAdmins ก่อน
+      await ensureSuperAdminSheet(sheets);
+      const saData = await getSheetData(sheets, SHEET_SUPERADMINS);
+      for (let i = 1; i < saData.length; i++) {
+        if (String(saData[i][0]||'').toLowerCase() === String(username).toLowerCase()
+          && String(saData[i][1]) === h && String(saData[i][4]) === 'active')
+          return res.json({ success:true, role:'superadmin',
+            username:saData[i][0], fullname:saData[i][2], email:saData[i][3] });
+      }
+
+      // ตรวจ Admins ปกติ
+      let aData = await getSheetData(sheets, SHEET_ADMINS);
+      if (aData.length <= 1) {
+        await appendRow(sheets, SHEET_ADMINS,
+          ['admin', hashPassword('admin1234'), 'ผู้ดูแลระบบ', 'admin@yru.ac.th', 'active']);
+        aData = await getSheetData(sheets, SHEET_ADMINS);
+      }
+      for (let i = 1; i < aData.length; i++) {
+        if (String(aData[i][0]||'').toLowerCase() === String(username).toLowerCase()
+          && String(aData[i][1]) === h && String(aData[i][4]) === 'active')
           return res.json({ success:true, role:'admin',
-            username:data[i][0], fullname:data[i][2], email:data[i][3] });
+            username:aData[i][0], fullname:aData[i][2], email:aData[i][3] });
       }
       return res.json({ success:false, message:'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
     }
 
+    // ── LOGIN SUPERADMIN (legacy — ยังรองรับไว้กัน client เก่า) ──
     if (action === 'loginSuperAdmin') {
       const { username, password } = req.body;
       await ensureSuperAdminSheet(sheets);
@@ -80,6 +96,7 @@ module.exports = async function handler(req, res) {
       return res.json({ success:false, message:'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
     }
 
+    // ── REGISTER ──
     if (action === 'register') {
       const { firstname, lastname, email, lineId, phone, username, password } = req.body;
       const data = await getSheetData(sheets, SHEET_USERS);
@@ -94,6 +111,33 @@ module.exports = async function handler(req, res) {
         lineId||'', phone||'', username||'', hashPassword(password||''), 'active',
       ]);
       return res.json({ success:true, message:'ลงทะเบียนสำเร็จ' });
+    }
+
+    // ── ADD ADMIN (superadmin เพิ่ม admin ใหม่) ──
+    if (action === 'addAdmin') {
+      const { username, password, fullname, email } = req.body;
+      if (!username || !password) return res.json({ success:false, message:'ข้อมูลไม่ครบ' });
+      const data = await getSheetData(sheets, SHEET_ADMINS);
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]||'').toLowerCase() === username.toLowerCase())
+          return res.json({ success:false, message:'Username นี้มีอยู่แล้ว' });
+      }
+      await appendRow(sheets, SHEET_ADMINS, [
+        username, hashPassword(password), fullname||username, email||'', 'active'
+      ]);
+      return res.json({ success:true, message:`เพิ่ม Admin "${username}" สำเร็จ` });
+    }
+
+    // ── LIST ADMINS (superadmin ดูรายชื่อ) ──
+    if (action === 'listAdmins') {
+      const data = await getSheetData(sheets, SHEET_ADMINS);
+      const admins = data.slice(1).filter(r=>r[0]).map(r=>({
+        username: String(r[0]||''),
+        fullname: String(r[2]||''),
+        email:    String(r[3]||''),
+        status:   String(r[4]||'active'),
+      }));
+      return res.json({ success:true, admins });
     }
 
     res.status(400).json({ error: 'Unknown action' });

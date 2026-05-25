@@ -113,52 +113,25 @@ async function doLogin(){
 function showAdminLoginModal(){document.getElementById('admin-modal').classList.remove('hidden');}
 function hideAdminLoginModal(){document.getElementById('admin-modal').classList.add('hidden');}
 
-// superadmin modal
-function showSuperAdminLoginModal(){
-  const o=document.createElement('div'); o.className='voc-overlay'; o.id='sa-login-overlay';
-  o.innerHTML=`<div class="voc-modal-box">
-    <span class="voc-modal-icon">👑</span>
-    <div class="voc-modal-title">ผู้ดูแลระดับสูง</div>
-    <div style="margin-bottom:14px;">
-      <div class="form-group"><label>Username</label><input type="text" id="sa-user" placeholder="superadmin"></div>
-      <div class="form-group"><label>รหัสผ่าน</label><input type="password" id="sa-pass" placeholder="••••••••"></div>
-    </div>
-    <div class="voc-modal-btns">
-      <button class="voc-btn-cancel" onclick="document.body.removeChild(document.getElementById('sa-login-overlay'))">ยกเลิก</button>
-      <button class="voc-btn-ok" onclick="doSuperAdminLogin()">เข้าสู่ระบบ</button>
-    </div>
-  </div>`;
-  document.body.appendChild(o);
-  // Enter key
-  const sp=document.getElementById('sa-pass');
-  if(sp) sp.addEventListener('keydown',e=>{if(e.key==='Enter')doSuperAdminLogin();});
-}
+// ── superadmin modal ถูกรวมเข้า admin modal แล้ว (ข้อ 1) ──
+// ยังคง function นี้ไว้เพื่อ backward compat กับ HTML เก่า
+function showSuperAdminLoginModal(){ showAdminLoginModal(); }
 
-async function doSuperAdminLogin(){
-  const u=(document.getElementById('sa-user')||{}).value?.trim();
-  const p=(document.getElementById('sa-pass')||{}).value;
-  if(!u||!p){await showAlert('⚠️','กรุณากรอกข้อมูล','');return;}
-  try{
-    const res=await api.post('/api/auth',{action:'loginSuperAdmin',username:u,password:p});
-    if(res.success){
-      currentUser=res; saveSession(res);
-      const o=document.getElementById('sa-login-overlay');
-      if(o) document.body.removeChild(o);
-      updateMenuForSuperAdmin(); navigateTo('superadmin');
-    } else { await showAlert('❌','ไม่สำเร็จ',res.message); }
-  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
-}
-
+// doAdminLogin — unified: ตรวจ superadmin ก่อนอัตโนมัติ (ข้อ 1)
 async function doAdminLogin(){
   const u=document.getElementById('admin-user').value.trim();
   const p=document.getElementById('admin-pass').value;
   if(!u||!p){await showAlert('⚠️','กรุณากรอกข้อมูล','');return;}
   const btn=document.getElementById('btn-admin-login');
-  btn.disabled=true; btn.innerHTML='กำลังตรวจสอบ...';
+  btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังตรวจสอบ...';
   try{
+    // action:'loginAdmin' ตรวจ superadmin ก่อน แล้วจึง admin (ดู auth.js v6)
     const res=await api.post('/api/auth',{action:'loginAdmin',username:u,password:p});
-    if(res.success){currentUser=res;saveSession(res);hideAdminLoginModal();updateMenuForAdmin();navigateTo('admin-dashboard');}
-    else await showAlert('❌','ไม่สำเร็จ',res.message);
+    if(res.success){
+      currentUser=res; saveSession(res); hideAdminLoginModal();
+      if(res.role==='superadmin'){updateMenuForSuperAdmin();navigateTo('superadmin');}
+      else{updateMenuForAdmin();navigateTo('admin-dashboard');}
+    } else await showAlert('❌','เข้าสู่ระบบไม่สำเร็จ',res.message);
   }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
   finally{btn.disabled=false;btn.innerHTML='เข้าสู่ระบบ';}
 }
@@ -506,7 +479,7 @@ function buildProgressBar(status){
   </div>`;
 }
 
-// ═══ NEWS STRIP (หน้าหลัก) ═══
+// ═══ NEWS STRIP (หน้าหลัก — card style พร้อมรูปภาพ ข้อ 2) ═══
 async function loadNewsStrip(){
   const container=document.getElementById('news-strip-section');
   if(!container)return;
@@ -514,21 +487,27 @@ async function loadNewsStrip(){
     const res=await api.get('/api/news');
     if(res.success&&res.news&&res.news.length>0){
       container.classList.remove('hidden');
-      const recent=res.news.slice(0,3);
-      const tagClass={ทั่วไป:'',ด่วน:'urgent',ข้อมูล:'info',กิจกรรม:'event'};
-      let html=`<div class="news-strip"><h3><i class="fas fa-newspaper"></i> ข่าวสารและประกาศ</h3>`;
-      recent.forEach(n=>{
-        const tc=tagClass[n.tag]||'';
-        // ข้อ 11: ตัดข้อความยาว
-        const shortContent=n.content.length>80?n.content.substring(0,80)+'...':n.content;
-        html+=`<div class="news-item">
-          <span class="news-tag ${tc}">${n.tag||'ทั่วไป'}</span>
-          <strong>${n.title}</strong>
-          <span class="news-date">${n.date||''}</span>
-          <div style="color:#666;font-size:.84rem;margin-top:4px;">${shortContent}</div>
+      const tagClass={ทั่วไป:'news-tag-default',ด่วน:'news-tag-urgent',ข้อมูล:'news-tag-info',กิจกรรม:'news-tag-event','ข่าวสำคัญ':'news-tag-urgent','การเรียนการสอน':'news-tag-info','ประกาศทั่วไป':'news-tag-default'};
+      let html=`<div class="news-section-wrap">
+        <div class="section-title" style="margin-bottom:16px;">
+          <h2><i class="fas fa-newspaper"></i> ข่าวสารและประกาศ</h2>
+        </div>
+        <div class="news-card-grid">`;
+      res.news.forEach(n=>{
+        const tc=tagClass[n.tag]||'news-tag-default';
+        const shortContent=n.content.length>120?n.content.substring(0,120)+'...':n.content;
+        const imgHtml=n.imageUrl?`<div class="news-card-img"><img src="${n.imageUrl}" alt="${n.title}" onerror="this.parentElement.style.display='none'"></div>`:'';
+        html+=`<div class="news-card">
+          ${imgHtml}
+          <div class="news-card-body">
+            <span class="news-tag-pill ${tc}">${n.tag||'ทั่วไป'}</span>
+            <div class="news-card-title">${n.title}</div>
+            <div class="news-card-date"><i class="fas fa-clock"></i> ${n.date||''}</div>
+            <div class="news-card-content">${shortContent}</div>
+          </div>
         </div>`;
       });
-      html+=`</div>`;
+      html+=`</div></div>`;
       container.innerHTML=html;
     } else { container.classList.add('hidden'); }
   }catch(e){ container.classList.add('hidden'); }
@@ -547,7 +526,7 @@ async function loadPinnedTickets(){
         <h2 style="font-size:1.05rem;"><i class="fas fa-thumbtack" style="color:var(--dgreen);"></i> ประกาศ / ติดตามสถานะ</h2>
       </div>`;
       res.tickets.forEach(t=>{
-
+        const comments = t['Comments'] || '';
         const commentEntries = comments ? comments.split('\n---\n').filter(c=>c.trim()) : [];
         const lastEntry = commentEntries.length ? commentEntries[commentEntries.length-1] : '';
         // แยก timestamp และข้อความออกจาก comment
@@ -979,6 +958,11 @@ function renderAdminTickets(tickets,currentEmail){
             color:${isPinned?'#2d6a4f':'#aaa'};font-family:'Sarabun',sans-serif;">
             <i class="fas fa-thumbtack"></i>${isPinned?'แสดงอยู่':'ปักหมุด'}
           </button>
+          ${currentUser&&currentUser.role==='superadmin'?`<button onclick="deleteTicket('${tid}')"
+            style="padding:3px 9px;border-radius:8px;border:1px solid #f5c6c6;
+            background:#fff5f5;font-size:.74rem;color:#d00000;font-family:'Sarabun',sans-serif;">
+            <i class="fas fa-trash-alt"></i> ลบ
+          </button>`:''}
         </div>
       </div>
       <div style="font-size:.97rem;font-weight:700;margin-bottom:10px;">${t['หัวข้อ']||'-'}</div>
@@ -990,7 +974,14 @@ function renderAdminTickets(tickets,currentEmail){
         <span><strong>กำหนดตอบกลับ:</strong> ${t['กำหนดตอบกลับ']||'-'}</span>
         <span><strong>ผู้รับผิดชอบ:</strong> ${t['ผู้รับผิดชอบ']||'-'}</span>
       </div>
-      ${t['หมายเหตุผู้ใช้']?`<div style="background:#fffbf0;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:.84rem;border-left:3px solid #f77f00;"><strong>📝 หมายเหตุผู้แจ้ง:</strong> ${t['หมายเหตุผู้ใช้']}</div>`:''}
+      ${t['หมายเหตุผู้ใช้']?`<div class="admin-user-note">
+        <span class="admin-note-label"><i class="fas fa-sticky-note"></i> หมายเหตุจากผู้แจ้ง</span>
+        <div class="admin-note-text">${t['หมายเหตุผู้ใช้']}</div>
+      </div>`:''}
+      ${t['FileURL']&&t['FileURL']!==''?`<div class="admin-file-box">
+        <span class="admin-note-label"><i class="fas fa-paperclip"></i> ไฟล์แนบ</span>
+        <div class="admin-file-text">${t['FileURL']}</div>
+      </div>`:''}
       <div class="detail-box" id="adm-detail-${tid}">
         ${needExpand?detailShort:detail}
         ${needExpand?`<button class="btn-expand" onclick="expandAdminDetail('${tid}','${encodeURIComponent(detail)}')">ดูเพิ่มเติม ▼</button>`:''}
@@ -1101,6 +1092,40 @@ async function submitUpdate(tid){
   finally{if(btn){btn.innerHTML='<i class="fas fa-save"></i> บันทึก';btn.disabled=false;}}
 }
 
+// ── deleteTicket (ข้อ 4 — superadmin only) ──
+async function deleteTicket(tid){
+  if(!await showConfirm('🗑️','ลบ Ticket',`ต้องการลบ Ticket <strong>${tid}</strong> ออกจากระบบ?<br><small style="color:#d00000;">การดำเนินการนี้ไม่สามารถเรียกคืนได้</small>`,'danger'))return;
+  try{
+    const res=await api.post('/api/tickets',{action:'deleteTicket',ticketId:tid});
+    if(res.success){
+      const card=document.getElementById('card-'+tid);
+      if(card){card.style.transition='opacity .4s';card.style.opacity='0';setTimeout(()=>card.remove(),400);}
+      await showAlert('✅','ลบสำเร็จ',`Ticket ${tid} ถูกลบออกจากระบบแล้ว`);
+    } else await showAlert('❌','ลบไม่สำเร็จ',res.message||'');
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+}
+
+// ── addAdmin (superadmin เพิ่ม admin ใหม่) ──
+async function addAdmin(){
+  const u=document.getElementById('new-admin-user')?.value.trim();
+  const p=document.getElementById('new-admin-pass')?.value;
+  const n=document.getElementById('new-admin-name')?.value.trim();
+  const e=document.getElementById('new-admin-email')?.value.trim();
+  if(!u||!p){await showAlert('⚠️','ข้อมูลไม่ครบ','กรุณากรอก Username และรหัสผ่าน');return;}
+  if(p.length<8){await showAlert('⚠️','รหัสผ่านสั้นเกิน','รหัสผ่านต้องอย่างน้อย 8 ตัว');return;}
+  try{
+    const res=await api.post('/api/auth',{action:'addAdmin',username:u,password:p,fullname:n,email:e});
+    if(res.success){
+      await showAlert('✅','เพิ่ม Admin สำเร็จ',res.message);
+      document.getElementById('new-admin-user').value='';
+      document.getElementById('new-admin-pass').value='';
+      document.getElementById('new-admin-name').value='';
+      document.getElementById('new-admin-email').value='';
+      loadSuperAdmin();
+    } else await showAlert('❌','ไม่สำเร็จ',res.message);
+  }catch(err){await showAlert('❌','เกิดข้อผิดพลาด',err.message);}
+}
+
 // ═══ ADMIN REVIEWS ═══
 async function loadReviews(){
   const container=document.getElementById('review-content');
@@ -1157,8 +1182,53 @@ function showSATab(tab){
   currentSATab=tab;
   document.querySelectorAll('.sa-tab').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('sa-tab-'+tab); if(btn) btn.classList.add('active');
-  if(tab==='news') loadSANews();
-  if(tab==='faq')  loadSAFaq();
+  if(tab==='news')   loadSANews();
+  if(tab==='faq')    loadSAFaq();
+  if(tab==='admins') loadSAAdmins();
+}
+
+// ── Superadmin: Admin Manager ──
+async function loadSAAdmins(){
+  const container=document.getElementById('superadmin-content'); if(!container)return;
+  try{
+    const res=await api.post('/api/auth',{action:'listAdmins'});
+    renderSAAdmins(res.admins||[]);
+  }catch(e){ container.innerHTML=`<p style="color:red;">${e.message}</p>`; }
+}
+function renderSAAdmins(admins){
+  const container=document.getElementById('superadmin-content');
+  let html=`<div class="superadmin-banner"><i class="fas fa-crown"></i><div><strong>ผู้ดูแลระดับสูง</strong><br><small>จัดการข่าวสาร FAQ และการตั้งค่าระบบ</small></div></div>
+  <div class="sa-tabs">
+    <button class="sa-tab ${currentSATab==='news'?'active':''}" id="sa-tab-news" onclick="showSATab('news')"><i class="fas fa-newspaper"></i> ข่าวสาร</button>
+    <button class="sa-tab ${currentSATab==='faq'?'active':''}" id="sa-tab-faq" onclick="showSATab('faq')"><i class="fas fa-question-circle"></i> FAQ</button>
+    <button class="sa-tab ${currentSATab==='admins'?'active':''}" id="sa-tab-admins" onclick="showSATab('admins')"><i class="fas fa-user-shield"></i> ผู้ดูแลระบบ</button>
+  </div>
+  <div class="news-manager-form">
+    <h4><i class="fas fa-user-plus"></i> เพิ่มผู้ดูแลระบบ (Admin) ใหม่</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group" style="margin-bottom:0;"><label>Username <span style="color:#d00000;">*</span></label><input type="text" id="new-admin-user" placeholder="admin_name" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div>
+      <div class="form-group" style="margin-bottom:0;"><label>รหัสผ่าน <span style="color:#d00000;">*</span></label><input type="password" id="new-admin-pass" placeholder="อย่างน้อย 8 ตัว" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div>
+      <div class="form-group" style="margin-bottom:0;"><label>ชื่อแสดง</label><input type="text" id="new-admin-name" placeholder="ชื่อ-นามสกุล" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div>
+      <div class="form-group" style="margin-bottom:0;"><label>อีเมล</label><input type="email" id="new-admin-email" placeholder="admin@yru.ac.th" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div>
+    </div>
+    <button class="btn-add-news" style="margin-top:14px;" onclick="addAdmin()"><i class="fas fa-plus"></i> เพิ่ม Admin</button>
+  </div>
+  <p style="font-size:.85rem;color:#888;margin-bottom:14px;">ผู้ดูแลระบบทั้งหมด ${admins.length} คน</p>`;
+  if(!admins.length){
+    html+=`<div class="no-tickets"><i class="fas fa-user-slash" style="font-size:2rem;color:#ddd;"></i><p style="margin-top:10px;">ยังไม่มีผู้ดูแลระบบ</p></div>`;
+  } else {
+    admins.forEach(a=>{
+      html+=`<div class="news-manager-card" style="display:flex;align-items:center;gap:14px;">
+        <div style="width:44px;height:44px;background:var(--dgreen);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">${(a.fullname||a.username||'A')[0].toUpperCase()}</div>
+        <div style="flex:1;">
+          <div style="font-weight:700;color:#222;">${a.fullname||a.username}</div>
+          <div style="font-size:.82rem;color:#aaa;font-family:monospace;">${a.username} · ${a.email||'ไม่มีอีเมล'}</div>
+        </div>
+        <span style="font-size:.75rem;padding:3px 10px;border-radius:8px;background:${a.status==='active'?'#e8f5e9':'#fde8e8'};color:${a.status==='active'?'#2d6a4f':'#d00000'};font-weight:700;">${a.status==='active'?'ใช้งาน':'ระงับ'}</span>
+      </div>`;
+    });
+  }
+  container.innerHTML=html;
 }
 
 // ── Superadmin: News Manager ──
@@ -1176,11 +1246,16 @@ function renderSANews(news){
   <div class="sa-tabs">
     <button class="sa-tab ${currentSATab==='news'?'active':''}" id="sa-tab-news" onclick="showSATab('news')"><i class="fas fa-newspaper"></i> ข่าวสาร</button>
     <button class="sa-tab ${currentSATab==='faq'?'active':''}" id="sa-tab-faq" onclick="showSATab('faq')"><i class="fas fa-question-circle"></i> FAQ</button>
+    <button class="sa-tab ${currentSATab==='admins'?'active':''}" id="sa-tab-admins" onclick="showSATab('admins')"><i class="fas fa-user-shield"></i> ผู้ดูแลระบบ</button>
   </div>
   <div class="news-manager-form">
     <h4><i class="fas fa-plus-circle"></i> เพิ่มข่าวสารใหม่</h4>
-    <div class="form-group"><label>หัวเรื่อง *</label><input type="text" id="news-title" placeholder="หัวเรื่องข่าว"></div>
-    <div class="form-group"><label>เนื้อหา *</label><textarea id="news-content" rows="4" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:.93rem;resize:vertical;"></textarea></div>
+    <div class="form-group"><label>หัวเรื่อง <span style="color:#d00000;">*</span></label><input type="text" id="news-title" placeholder="หัวเรื่องข่าว"></div>
+    <div class="form-group"><label>เนื้อหา <span style="color:#d00000;">*</span></label><textarea id="news-content" rows="4" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:.93rem;resize:vertical;"></textarea></div>
+    <div class="form-group"><label>URL รูปภาพ <span style="color:#aaa;font-weight:400;">(ไม่บังคับ)</span></label>
+      <input type="url" id="news-image" placeholder="https://example.com/image.jpg" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:.93rem;box-sizing:border-box;">
+      <small style="color:#aaa;font-size:.75rem;">ใส่ URL รูปภาพจากภายนอก เช่น Google Drive, Imgur หรือเว็บโรงเรียน</small>
+    </div>
     <div class="form-group"><label>Tag</label><select id="news-tag" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;">
       ${tagOpts.map(t=>`<option value="${t}">${t}</option>`).join('')}
     </select></div>
@@ -1189,12 +1264,16 @@ function renderSANews(news){
   <p style="font-size:.85rem;color:#888;margin-bottom:14px;">ข่าวทั้งหมด ${news.length} รายการ</p>`;
   news.forEach(n=>{
     const shortContent=n.content.length>100?n.content.substring(0,100)+'...':n.content;
-    html+=`<div class="news-manager-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
-        <div><span class="news-tag">${n.tag||'ทั่วไป'}</span><strong>${n.title}</strong><span class="news-date">${n.date||''}</span></div>
-        <button class="btn-delete" onclick="deleteNews('${n.newsId}')"><i class="fas fa-trash"></i> ลบ</button>
+    const imgHtml=n.imageUrl?`<img src="${n.imageUrl}" alt="img" style="width:60px;height:60px;object-fit:cover;border-radius:8px;margin-right:12px;flex-shrink:0;" onerror="this.style.display='none'">`:'';
+    html+=`<div class="news-manager-card" style="display:flex;align-items:flex-start;gap:0;">
+      ${imgHtml}
+      <div style="flex:1;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+          <div><span class="news-tag">${n.tag||'ทั่วไป'}</span><strong>${n.title}</strong><span class="news-date">${n.date||''}</span></div>
+          <button class="btn-delete" onclick="deleteNews('${n.newsId}')"><i class="fas fa-trash"></i> ลบ</button>
+        </div>
+        <div style="font-size:.86rem;color:#666;">${shortContent}</div>
       </div>
-      <div style="font-size:.86rem;color:#666;">${shortContent}</div>
     </div>`;
   });
   container.innerHTML=html;
@@ -1203,9 +1282,10 @@ async function addNews(){
   const title=document.getElementById('news-title')?.value.trim();
   const content=document.getElementById('news-content')?.value.trim();
   const tag=document.getElementById('news-tag')?.value;
+  const imageUrl=document.getElementById('news-image')?.value.trim()||'';
   if(!title||!content){await showAlert('⚠️','กรุณากรอกข้อมูล','กรุณากรอกหัวเรื่องและเนื้อหา');return;}
   try{
-    const res=await api.post('/api/news',{action:'add',title,content,tag,author:currentUser?.username||'superadmin'});
+    const res=await api.post('/api/news',{action:'add',title,content,tag,imageUrl,author:currentUser?.username||'admin'});
     if(res.success){await showAlert('✅','เพิ่มข่าวสำเร็จ','');loadSANews();}
     else await showAlert('❌','ไม่สำเร็จ',res.message);
   }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
@@ -1234,6 +1314,7 @@ function renderSAFaq(faqs){
   <div class="sa-tabs">
     <button class="sa-tab ${currentSATab==='news'?'active':''}" id="sa-tab-news" onclick="showSATab('news')"><i class="fas fa-newspaper"></i> ข่าวสาร</button>
     <button class="sa-tab ${currentSATab==='faq'?'active':''}" id="sa-tab-faq" onclick="showSATab('faq')"><i class="fas fa-question-circle"></i> FAQ</button>
+    <button class="sa-tab ${currentSATab==='admins'?'active':''}" id="sa-tab-admins" onclick="showSATab('admins')"><i class="fas fa-user-shield"></i> ผู้ดูแลระบบ</button>
   </div>
   <div class="news-manager-form">
     <h4><i class="fas fa-plus-circle"></i> เพิ่มคำถามใหม่</h4>
