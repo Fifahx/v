@@ -446,3 +446,14 @@ footer{background:#1b4332;color:#fff;padding:44px 20px 32px;margin-top:40px;}
 .chip.orange{background:#fff3e0;color:#e65100;}
 .chip.green{background:#e8f5e9;color:#2d6a4f;}
 .chip.gray{background:#f0f0f0;color:#555;}
+
+/* ── News section header (แทน section-title ใน news wrap) ── */
+.news-section-wrap{margin-top:36px;} /* เพิ่ม space จาก home-grid */
+.news-section-header{
+  display:flex;align-items:center;gap:10px;
+  font-size:1.2rem;font-weight:700;color:var(--dgreen);
+  padding:20px 20px 4px;
+  border-bottom:2px solid #f0f4f2;
+  margin-bottom:16px;
+}
+.news-section-header i{font-size:1.1rem;}

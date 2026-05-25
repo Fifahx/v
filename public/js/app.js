@@ -479,25 +479,29 @@ function buildProgressBar(status){
   </div>`;
 }
 
-// ═══ NEWS STRIP (หน้าหลัก — card style พร้อมรูปภาพ ข้อ 2) ═══
+// ═══ NEWS STRIP (หน้าหลัก — card style พร้อมรูปภาพ) ═══
+let _newsCache = []; // เก็บ news objects ไว้ใช้ใน showNewsDetail
+
 async function loadNewsStrip(){
   const container=document.getElementById('news-strip-section');
   if(!container)return;
   try{
     const res=await api.get('/api/news');
     if(res.success&&res.news&&res.news.length>0){
+      _newsCache = res.news; // cache ไว้
       container.classList.remove('hidden');
       const tagClass={ทั่วไป:'news-tag-default',ด่วน:'news-tag-urgent',ข้อมูล:'news-tag-info',กิจกรรม:'news-tag-event','ข่าวสำคัญ':'news-tag-urgent','การเรียนการสอน':'news-tag-info','ประกาศทั่วไป':'news-tag-default'};
       let html=`<div class="news-section-wrap">
-        <div class="section-title" style="margin:16px;">
-          <h2><i class="fas fa-newspaper"></i> ข่าวสารและประกาศ</h2>
+        <div class="news-section-header">
+          <i class="fas fa-newspaper"></i> ข่าวสารและประกาศ
         </div>
         <div class="news-card-grid">`;
-      res.news.forEach(n=>{
+      res.news.forEach((n, idx)=>{
         const tc=tagClass[n.tag]||'news-tag-default';
         const shortContent=n.content.length>120?n.content.substring(0,120)+'...':n.content;
-        const imgHtml=n.imageUrl?`<div class="news-card-img"><img src="${n.imageUrl}" alt="${n.title}" onerror="this.parentElement.style.display='none'"></div>`:'';
-        html+=`<div class="news-card" onclick="showNewsDetail(${JSON.stringify(n).replace(/`/g,String.fromCharCode(96))})" style="cursor:pointer;">
+        const imgHtml=n.imageUrl?`<div class="news-card-img"><img src="${n.imageUrl}" alt="" onerror="this.parentElement.style.display='none'"></div>`:'';
+        // ใช้ index แทน JSON.stringify เพื่อหลีกเลี่ยง quote ชนกัน
+        html+=`<div class="news-card" onclick="showNewsDetail(${idx})" style="cursor:pointer;">
           ${imgHtml}
           <div class="news-card-body">
             <span class="news-tag-pill ${tc}">${n.tag||'ทั่วไป'}</span>
@@ -516,13 +520,18 @@ async function loadNewsStrip(){
 
 
 // ═══ NEWS DETAIL MODAL ═══
-function showNewsDetail(n){
+// รับ index ของ _newsCache แทน object โดยตรง (หลีกเลี่ยง quote ชนกันใน onclick)
+function showNewsDetail(idx){
+  const n = _newsCache[idx];
+  if(!n) return;
+  const existing = document.getElementById('news-detail-overlay');
+  if(existing) document.body.removeChild(existing);
   const overlay=document.createElement('div');
   overlay.className='voc-overlay';
   overlay.id='news-detail-overlay';
   const imgBlock=n.imageUrl?
-    `<div style="text-align:center;margin-bottom:18px;"><img src="${n.imageUrl}" alt="${n.title}" style="max-width:100%;max-height:280px;border-radius:10px;object-fit:cover;" onerror="this.style.display='none'"></div>`:'';
-  const contentHtml=n.content.replace(/\n/g,'<br>');
+    `<div style="text-align:center;margin-bottom:18px;"><img src="${n.imageUrl}" alt="" style="max-width:100%;max-height:280px;border-radius:10px;object-fit:cover;" onerror="this.style.display='none'"></div>`:'';
+  const contentHtml=(n.content||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
   overlay.innerHTML=`<div class="voc-modal-box" style="max-width:680px;max-height:85vh;overflow-y:auto;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
       <div>
@@ -530,12 +539,14 @@ function showNewsDetail(n){
         <div style="font-size:.8rem;color:#aaa;margin-top:6px;"><i class="fas fa-clock"></i> ${n.date||''}</div>
       </div>
       <button onclick="document.body.removeChild(document.getElementById('news-detail-overlay'))"
-        style="background:none;border:none;font-size:1.3rem;color:#aaa;cursor:pointer;padding:0 4px;">✕</button>
+        style="background:none;border:none;font-size:1.3rem;color:#aaa;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
     </div>
     ${imgBlock}
     <h3 style="font-size:1.15rem;color:var(--dgreen);margin-bottom:14px;line-height:1.5;">${n.title}</h3>
-    <div style="font-size:.93rem;color:#444;line-height:1.85;white-space:pre-wrap;word-break:break-word;">${contentHtml}</div>
+    <div style="font-size:.93rem;color:#444;line-height:1.85;word-break:break-word;">${contentHtml}</div>
   </div>`;
+  // ปิด modal เมื่อกด overlay ด้านนอก
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) document.body.removeChild(overlay); });
   document.body.appendChild(overlay);
 }
 // ═══ PINNED TICKETS ═══
