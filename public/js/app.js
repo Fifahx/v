@@ -489,7 +489,7 @@ async function loadNewsStrip(){
       container.classList.remove('hidden');
       const tagClass={ทั่วไป:'news-tag-default',ด่วน:'news-tag-urgent',ข้อมูล:'news-tag-info',กิจกรรม:'news-tag-event','ข่าวสำคัญ':'news-tag-urgent','การเรียนการสอน':'news-tag-info','ประกาศทั่วไป':'news-tag-default'};
       let html=`<div class="news-section-wrap">
-        <div class="section-title" style="margin-bottom:16px;">
+        <div class="section-title" style="margin:16px;">
           <h2><i class="fas fa-newspaper"></i> ข่าวสารและประกาศ</h2>
         </div>
         <div class="news-card-grid">`;
