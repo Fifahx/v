@@ -1785,109 +1785,141 @@ window.onload=function(){
 };
 
 // ════════════════════════════════════════════════════════
-//  MANAGEMENT SLIDER
-//  การ์ดผู้บริหารเลื่อนซ้าย-ขวาได้ พร้อม dot indicators
+//  MANAGEMENT FADE — เลื่อนทีละคน แบบ fade ไม่มีกรอบ
+//  ข้อมูลผู้บริหารทั้งหมดอยู่ที่นี่ — แก้ได้เลย
 // ════════════════════════════════════════════════════════
 (function(){
-  let mgmtCurrentIdx = 0;   // index การ์ดซ้ายสุดที่เห็นอยู่
-  let mgmtCardsPerView = 5; // จำนวนการ์ดที่เห็นในครั้งเดียว (คำนวณ responsive)
-  let mgmtCards = [];
-  let mgmtTotal = 0;
+  const MGMT_PEOPLE = [
+    {
+      img:  '/img/คณะผู้บริหารคณะวิทย์/wlw.jpg',
+      name: 'ผศ.ดร.วิไลวัลย์ แก้วตาทิพย์',
+      pos:  'คณบดีคณะวิทยาศาสตร์เทคโนโลยีและการเกษตร',
+    },
+    {
+      img:  '/img/คณะผู้บริหารคณะวิทย์/ดาว.png',
+      name: 'ผศ.ดร.ปัทมา พิศภักดิ์',
+      pos:  'รองคณบดีฝ่ายบริหารและเครือข่ายสัมพันธ์',
+    },
+    {
+      img:  '/img/คณะผู้บริหารคณะวิทย์/ely.jpg',
+      name: 'ผศ.ดร.อีลีหย๊ะ สนิโซ',
+      pos:  'รองคณบดีฝ่ายวิจัย บริการวิชาการและกิจการนักศึกษา',
+    },
+    {
+      img:  '/img/คณะผู้บริหารคณะวิทย์/อาบีดีน.png',
+      name: 'ผศ.ดร.อาบีดีน ดะแซสาเมาะ',
+      pos:  'รองคณบดีฝ่ายวิชาการและพัฒนาคุณภาพบัณฑิต',
+    },
+    {
+      img:  '/img/คณะผู้บริหารคณะวิทย์/1759376222_.png',
+      name: 'นางอธิพร สมจิตต์',
+      pos:  'รักษาการในตำแหน่งผู้อำนวยการสำนักงานคณบดี',
+    },
+    {
+      img:  '/img/คณะผู้บริหารคณะวิทย์/zl.png',
+      name: 'ผศ.ดร.อิมรอน มีชัย',
+      pos:  'ผู้ช่วยคณบดี ฝ่ายการสรรหานักศึกษาเชิงรุก',
+    },
+    {
+      img:  '/img/คณะผู้บริหารคณะวิทย์/Screenshot 2025_09_24 153629.png',
+      name: 'ผศ.รอมลี เจะดอเลาะ',
+      pos:  'ผู้ช่วยคณบดี ฝ่ายการประเมินผลกระทบการบริการวิชาการ และงานกิจการนักศึกษาสัมพันธ์',
+    },
+    {
+      img:  '/img/คณะผู้บริหารคณะวิทย์/Gemini_Generated_Image_z9sopgz9sopgz9so_removebg_preview.png',
+      name: 'อ.ดร.อดุลย์สมาน สุขแก้ว',
+      pos:  'ผู้ช่วยคณบดี ฝ่ายงานวิเทศสัมพันธ์และการสื่อสารองค์กร',
+    },
+  ];
 
-  function calcCardsPerView(){
-    const w = window.innerWidth;
-    if(w < 480) return 2;
-    if(w < 700) return 3;
-    if(w < 900) return 4;
-    return 5;
+  let current = 0;
+  let total   = MGMT_PEOPLE.length;
+  let timer   = null;
+  let slides  = [];
+
+  // ── สร้าง slides ทั้งหมดใน #mgmt-frame ──
+  function buildSlides(){
+    const frame = document.getElementById('mgmt-frame');
+    if(!frame) return;
+    frame.innerHTML = '';
+    slides = MGMT_PEOPLE.map((p, i) => {
+      const div = document.createElement('div');
+      div.className = 'mgmt-slide' + (i === 0 ? ' active' : '');
+      div.innerHTML = `
+        <div class="mgmt-slide-avatar">
+          <img src="${p.img}" alt="${p.name}"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="mgmt-slide-fallback"><i class="fas fa-user-tie"></i></div>
+        </div>
+        <div class="mgmt-slide-name">${p.name}</div>
+        <div class="mgmt-slide-pos">${p.pos}</div>`;
+      frame.appendChild(div);
+      return div;
+    });
   }
 
+  // ── Dots ──
   function buildDots(){
     const dotsEl = document.getElementById('mgmt-dots');
     if(!dotsEl) return;
-    const pages = Math.ceil(mgmtTotal / mgmtCardsPerView);
     dotsEl.innerHTML = '';
-    for(let i = 0; i < pages; i++){
+    MGMT_PEOPLE.forEach((_, i) => {
       const d = document.createElement('div');
       d.className = 'mgmt-dot' + (i === 0 ? ' active' : '');
-      d.onclick = () => mgmtGoTo(i * mgmtCardsPerView);
+      d.onclick = () => goTo(i);
       dotsEl.appendChild(d);
-    }
+    });
   }
 
   function updateDots(){
     const dotsEl = document.getElementById('mgmt-dots');
     if(!dotsEl) return;
-    const pageIdx = Math.floor(mgmtCurrentIdx / mgmtCardsPerView);
-    dotsEl.querySelectorAll('.mgmt-dot').forEach((d,i) => {
-      d.classList.toggle('active', i === pageIdx);
+    dotsEl.querySelectorAll('.mgmt-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
     });
   }
 
-  function mgmtGoTo(idx){
-    const maxIdx = Math.max(0, mgmtTotal - mgmtCardsPerView);
-    mgmtCurrentIdx = Math.max(0, Math.min(idx, maxIdx));
-    const track = document.getElementById('mgmt-track');
-    if(!track) return;
-    // คำนวณ card width + gap จาก DOM จริง
-    const card = track.querySelector('.mgmt-card');
-    if(!card) return;
-    const style = getComputedStyle(track);
-    const gap = parseInt(style.gap) || 16;
-    const cardW = card.offsetWidth + gap;
-    track.style.transform = `translateX(-${mgmtCurrentIdx * cardW}px)`;
-    // อัปเดตลูกศร
-    const prev = document.getElementById('mgmt-prev');
-    const next = document.getElementById('mgmt-next');
-    if(prev) prev.disabled = mgmtCurrentIdx <= 0;
-    if(next) next.disabled = mgmtCurrentIdx >= maxIdx;
+  // ── เปลี่ยน slide ──
+  function goTo(idx){
+    if(!slides.length) return;
+    slides[current].classList.remove('active');
+    current = (idx + total) % total;
+    slides[current].classList.add('active');
     updateDots();
   }
 
-  // expose ให้ HTML onclick เรียกได้
-  window.mgmtSlide = function(dir){
-    mgmtGoTo(mgmtCurrentIdx + dir * mgmtCardsPerView);
-  };
+  // ── Auto-play ──
+  function startAuto(){
+    stopAuto();
+    timer = setInterval(() => goTo(current + 1), 3500);
+  }
+  function stopAuto(){
+    if(timer){ clearInterval(timer); timer = null; }
+  }
 
+  // ── init ──
   window.initMgmtSlider = function(){
-    const track = document.getElementById('mgmt-track');
-    if(!track) return;
-    mgmtCards = track.querySelectorAll('.mgmt-card');
-    mgmtTotal = mgmtCards.length;
-    if(!mgmtTotal) return;
-    mgmtCardsPerView = calcCardsPerView();
+    buildSlides();
     buildDots();
-    mgmtGoTo(0);
-    // Auto-play ทุก 4 วินาที
-    let autoPlay = setInterval(() => {
-      const maxIdx = Math.max(0, mgmtTotal - mgmtCardsPerView);
-      if(mgmtCurrentIdx >= maxIdx) mgmtGoTo(0);
-      else mgmtGoTo(mgmtCurrentIdx + 1);
-    }, 4000);
-    // หยุด auto-play เมื่อ hover
-    const section = document.querySelector('.mgmt-section');
-    if(section){
-      section.addEventListener('mouseenter', () => clearInterval(autoPlay));
-      section.addEventListener('mouseleave', () => {
-        autoPlay = setInterval(() => {
-          const maxIdx = Math.max(0, mgmtTotal - mgmtCardsPerView);
-          if(mgmtCurrentIdx >= maxIdx) mgmtGoTo(0);
-          else mgmtGoTo(mgmtCurrentIdx + 1);
-        }, 4000);
+    startAuto();
+    // หยุดเมื่อ hover
+    const panel = document.querySelector('.hero-mgmt-panel');
+    if(panel){
+      panel.addEventListener('mouseenter', stopAuto);
+      panel.addEventListener('mouseleave', startAuto);
+    }
+    // swipe มือถือ
+    const frame = document.getElementById('mgmt-frame');
+    if(frame){
+      let tx = 0;
+      frame.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive:true});
+      frame.addEventListener('touchend', e => {
+        const diff = tx - e.changedTouches[0].clientX;
+        if(Math.abs(diff) > 40) goTo(current + (diff > 0 ? 1 : -1));
       });
     }
-    // Swipe บนมือถือ
-    let touchStartX = 0;
-    track.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive:true});
-    track.addEventListener('touchend', e => {
-      const diff = touchStartX - e.changedTouches[0].clientX;
-      if(Math.abs(diff) > 40) mgmtSlide(diff > 0 ? 1 : -1);
-    });
-    // Responsive resize
-    window.addEventListener('resize', () => {
-      mgmtCardsPerView = calcCardsPerView();
-      buildDots();
-      mgmtGoTo(0);
-    });
   };
+
+  // ── expose mgmtSlide (ถ้า HTML บางแห่งยังเรียก) ──
+  window.mgmtSlide = function(dir){ goTo(current + dir); };
 })();

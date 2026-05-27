@@ -86,115 +86,14 @@
       </div>
     </div>
 
-    <!-- Right: ผู้บริหารคณะ (ย้ายจาก mgmt-section ด้านล่าง) -->
+    <!-- Right: ผู้บริหารคณะ — fade ทีละคน ไม่มีกรอบ -->
     <div class="hero-mgmt-panel">
       <div class="hero-mgmt-label">
         <i class="fas fa-users"></i> ผู้บริหารคณะ
       </div>
 
-      <!-- Slider -->
-      <div class="hero-mgmt-slider-wrap">
-        <button class="mgmt-arrow left" id="mgmt-prev" onclick="mgmtSlide(-1)" aria-label="ก่อนหน้า">
-          <i class="fas fa-chevron-left"></i>
-        </button>
-        <div class="mgmt-track-overflow">
-          <div class="mgmt-track" id="mgmt-track">
-
-          <!-- ═══ การ์ดผู้บริหาร — เพิ่ม/แก้ไขที่นี่ ═══
-               วิธีเพิ่มผู้บริหารใหม่: copy block <div class="mgmt-card"> ... </div>
-               แล้ววางต่อท้าย แก้ src รูป, ชื่อ และตำแหน่ง
-               ════════════════════════════════════════ -->
-
-          <div class="mgmt-card">
-            <div class="mgmt-avatar-wrap">
-              <img src="/img/คณะผู้บริหารคณะวิทย์/wlw.jpg" alt="คณบดี"
-                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-              <div class="mgmt-avatar-fallback"><i class="fas fa-user-tie"></i></div>
-            </div>
-            <div class="mgmt-name">ผศ.ดร.วิไลวัลย์ แก้วตาทิพย์</div>
-            <div class="mgmt-position">คณบดีคณะวิทยาศาสตร์เทคโนโลยีและการเกษตร</div>
-          </div>
-
-          <div class="mgmt-card">
-            <div class="mgmt-avatar-wrap">
-              <img src="/img/คณะผู้บริหารคณะวิทย์/ดาว.png" alt="รองคณบดี 1"
-                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-              <div class="mgmt-avatar-fallback"><i class="fas fa-user-tie"></i></div>
-            </div>
-            <div class="mgmt-name">ผศ.ดร.ปัทมา พิศภักดิ์</div>
-            <div class="mgmt-position">รองคณบดีฝ่ายบริหารและเครือข่ายสัมพันธ์</div>
-          </div>
-
-          <div class="mgmt-card">
-            <div class="mgmt-avatar-wrap">
-              <img src="/img/คณะผู้บริหารคณะวิทย์/ely.jpg" alt="รองคณบดี 2"
-                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-              <div class="mgmt-avatar-fallback"><i class="fas fa-user-tie"></i></div>
-            </div>
-            <div class="mgmt-name">ผศ.ดร.อีลีหย๊ะ สนิโซ</div>
-            <div class="mgmt-position">รองคณบดีฝ่ายวิจัย บริการวิชาการและกิจการนักศึกษา</div>
-          </div>
-
-
-          <div class="mgmt-card">
-            <div class="mgmt-avatar-wrap">
-              <img src="/img/คณะผู้บริหารคณะวิทย์/อาบีดีน.png" alt="รองคณบดี 3"
-                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-              <div class="mgmt-avatar-fallback"><i class="fas fa-user-tie"></i></div>
-            </div>
-            <div class="mgmt-name">ผศ.ดร.อาบีดีน ดะแซสาเมาะ</div>
-            <div class="mgmt-position">รองคณบดีฝ่ายวิชาการและพัฒนาคุณภาพบัณฑิต</div>
-          </div>
-
-          <div class="mgmt-card">
-            <div class="mgmt-avatar-wrap">
-              <img src="/img/คณะผู้บริหารคณะวิทย์/1759376222_.png" alt="รองคณบดี 4"
-                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-              <div class="mgmt-avatar-fallback"><i class="fas fa-user-tie"></i></div>
-            </div>
-            <div class="mgmt-name">นางอธิพร สมจิตต์</div>
-            <div class="mgmt-position">รักษาการในตำแหน่งผู้อำนวยการสำนักงานคณบดี</div>
-          </div>
-
-          <div class="mgmt-card">
-            <div class="mgmt-avatar-wrap">
-              <img src="/img/คณะผู้บริหารคณะวิทย์/zl.png" alt="ผู้ช่วยคณบดี คนที่ 1"
-                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-              <div class="mgmt-avatar-fallback"><i class="fas fa-user-tie"></i></div>
-            </div>
-            <div class="mgmt-name">ผศ.ดร.อิมรอน มีชัย</div>
-            <div class="mgmt-position">ผู้ช่วยคณบดี ฝ่าย การสรรหานักศึกษาเชิงรุก</div>
-          </div>
-
-          <div class="mgmt-card">
-            <div class="mgmt-avatar-wrap">
-              <img src="/img/คณะผู้บริหารคณะวิทย์/Screenshot 2025_09_24 153629.png" alt="ผู้ช่วยคณบดี คนที่ 2"
-                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-              <div class="mgmt-avatar-fallback"><i class="fas fa-user-tie"></i></div>
-            </div>
-            <div class="mgmt-name">ผศ.รอมลี เจะดอเลาะ</div>
-            <div class="mgmt-position">ผู้ช่วยคณบดี ฝ่าย การประเมินผลกระทบการบริการวิชาการ
-            และงานกิจการนักศึกษาสัมพันธ์</div>
-          </div>
-
-          <div class="mgmt-card">
-            <div class="mgmt-avatar-wrap">
-              <img src="/public/img/คณะผู้บริหารคณะวิทย์/Gemini_Generated_Image_z9sopgz9sopgz9so_removebg_preview.png" alt="ผู้ช่วยคณบดี คนที่ 3"
-                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-              <div class="mgmt-avatar-fallback"><i class="fas fa-user-tie"></i></div>
-            </div>
-            <div class="mgmt-name">อ.ดร.อดุลย์สมาน สุขแก้ว</div>
-            <div class="mgmt-position">ผู้ช่วยคณบดี ฝ่าย งานวิเทศสัมพันธ์และการสื่อสารองค์กร</div>
-          </div>
-          <!-- เพิ่มการ์ดผู้บริหารเพิ่มเติมตรงนี้ -->
-
-        </div><!-- /mgmt-track -->
-        </div><!-- /overflow -->
-
-        <button class="mgmt-arrow right" id="mgmt-next" onclick="mgmtSlide(1)" aria-label="ถัดไป">
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </div><!-- /hero-mgmt-slider-wrap -->
+      <!-- Frame: JS จะสร้าง .mgmt-slide เข้ามาที่นี่ -->
+      <div class="mgmt-frame" id="mgmt-frame"></div>
 
       <!-- Dots -->
       <div class="mgmt-dots" id="mgmt-dots"></div>
