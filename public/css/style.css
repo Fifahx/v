@@ -525,12 +525,26 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 
 /* Nav bar — dark green strip */
 .header-nav-bar{background:#1b4332;border-top:1px solid rgba(255,255,255,.08);}
-.nav-inner{max-width:1200px;margin:0 auto;padding:0 24px;}
-.nav-menu{display:flex;gap:0;align-items:center;flex-wrap:wrap;}
+.nav-inner{max-width:1200px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:center;position:relative;}
+.nav-menu{display:flex;gap:0;align-items:center;justify-content:center;flex-wrap:wrap;}
 .nav-menu a{text-decoration:none;color:rgba(255,255,255,.82);font-size:13.5px;font-weight:500;transition:.25s;white-space:nowrap;padding:12px 18px;display:block;position:relative;border-bottom:none;}
 .nav-menu a::after{content:'';position:absolute;bottom:0;left:50%;right:50%;height:3px;background:var(--primary);transition:.25s;border-radius:2px 2px 0 0;}
 .nav-menu a:hover,.nav-menu a.active{color:#fff;background:rgba(255,255,255,.06);}
 .nav-menu a:hover::after,.nav-menu a.active::after{left:0;right:0;}
+
+/* ── Hamburger Button (mobile) ── */
+.hamburger-btn{
+  display:none;flex-direction:column;justify-content:center;gap:5px;
+  background:none;border:none;padding:10px 12px;cursor:pointer;
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);z-index:10;
+}
+.hamburger-btn span{
+  display:block;width:22px;height:2.5px;background:#fff;border-radius:2px;
+  transition:transform .3s,opacity .3s;
+}
+.hamburger-btn.open span:nth-child(1){transform:translateY(7.5px) rotate(45deg);}
+.hamburger-btn.open span:nth-child(2){opacity:0;}
+.hamburger-btn.open span:nth-child(3){transform:translateY(-7.5px) rotate(-45deg);}
 
 /* ════════════════════════════════════════════════════════
    NEW HERO — full-width banner with overlay + wave
@@ -571,7 +585,7 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 /* ════════════════════════════════════════════════════════
    NEW HOME — action cards + manual
    ════════════════════════════════════════════════════════ */
-.home-action-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px;}
+.home-action-row{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:28px;width:100%;}
 .action-card{background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:20px;display:flex;align-items:center;gap:16px;transition:.3s;border:1.5px solid #edf0ee;cursor:pointer;}
 .action-card:hover{transform:translateY(-4px);box-shadow:0 12px 36px rgba(0,0,0,.1);border-color:#b7dfcb;}
 .action-icon-wrap{width:52px;height:52px;min-width:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;flex-shrink:0;}
@@ -619,13 +633,14 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
   max-width:520px;
 }
 .hero-slogan-main{
-  font-size:1.5rem;font-weight:800;color:var(--primary);
-  line-height:1.3;margin-bottom:8px;
-  text-shadow:0 2px 12px rgba(231,231,27,.25);
+  font-size:2.1rem;font-weight:800;color:var(--primary);
+  line-height:1.3;margin-bottom:10px;
+  text-shadow:0 2px 16px rgba(231,231,27,.3);
+  letter-spacing:-.3px;
 }
 .hero-slogan-sub{
-  font-size:.95rem;color:rgba(255,255,255,.88);
-  line-height:1.7;font-weight:400;
+  font-size:1.1rem;color:rgba(255,255,255,.93);
+  line-height:1.8;font-weight:500;
 }
 
 /* ════════════════════════════════════════════════════════
@@ -689,32 +704,32 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 
 /* รูปภาพใหญ่ — วงกลม ไม่มีกรอบกล่อง */
 .mgmt-slide-avatar{
-  width:150px;height:150px;border-radius:50%;
+  width:220px;height:220px;border-radius:16px;
   overflow:hidden;
-  margin-bottom:18px;
-  box-shadow:0 8px 40px rgba(0,0,0,.45);
-  border:3px solid rgba(231,231,27,.45);
-  background:#1b4332;
+  margin-bottom:14px;
+  box-shadow:0 12px 48px rgba(0,0,0,.55);
+  border:2px solid rgba(231,231,27,.35);
+  background:transparent;
   flex-shrink:0;
 }
 .mgmt-slide-avatar img{
-  width:100%;height:100%;object-fit:cover;display:block;
+  width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;background:transparent;
 }
 .mgmt-slide-fallback{
   width:100%;height:100%;
   display:flex;align-items:center;justify-content:center;
-  font-size:3.5rem;color:rgba(255,255,255,.4);
+  font-size:4.5rem;color:rgba(255,255,255,.4);
 }
 
 .mgmt-slide-name{
-  font-size:1rem;font-weight:800;color:#fff;
-  line-height:1.4;margin-bottom:8px;
-  text-shadow:0 2px 12px rgba(0,0,0,.5);
+  display:none;
 }
 .mgmt-slide-pos{
-  font-size:.78rem;color:rgba(255,255,255,.7);
-  line-height:1.5;
-  max-width:260px;
+  font-size:.82rem;color:rgba(255,255,255,.85);
+  line-height:1.55;
+  max-width:280px;
+  text-align:center;
+  font-weight:600;
 }
 
 /* Dots */
@@ -760,9 +775,22 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
   .hero-cta-row{flex-direction:column;}
   .hero-btn{justify-content:center;}
   .manual-grid-new{grid-template-columns:1fr 1fr;}
-  .nav-menu a{padding:10px 12px;font-size:13px;}
+  /* Hamburger mobile nav */
+  .hamburger-btn{display:flex;}
+  .nav-menu{
+    display:none;flex-direction:column;width:100%;
+    background:#1b4332;position:absolute;top:100%;left:0;right:0;
+    z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.3);
+    border-top:1px solid rgba(255,255,255,.1);
+  }
+  .nav-menu.open{display:flex;}
+  .nav-menu a{padding:13px 20px;font-size:14px;border-bottom:1px solid rgba(255,255,255,.06);}
+  .nav-menu a::after{display:none;}
+  .nav-menu a.active,.nav-menu a:hover{background:rgba(255,255,255,.1);}
 }
 @media(max-width:480px){
   .manual-grid-new{grid-template-columns:1fr;}
   .hero-stats-block{grid-template-columns:1fr;}
+  .hero-slogan-main{font-size:1.5rem;}
+  .hero-slogan-sub{font-size:.95rem;}
 }

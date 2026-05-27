@@ -54,9 +54,25 @@ function showConfirm(icon,title,msg,type='warning'){
   });
 }
 
+// ═══ HAMBURGER MENU (mobile) ═══
+function toggleMobileNav(){
+  const menu=document.getElementById('main-nav');
+  const btn=document.getElementById('hamburger-btn');
+  if(!menu||!btn)return;
+  menu.classList.toggle('open');
+  btn.classList.toggle('open');
+}
+function closeMobileNav(){
+  const menu=document.getElementById('main-nav');
+  const btn=document.getElementById('hamburger-btn');
+  if(menu)menu.classList.remove('open');
+  if(btn)btn.classList.remove('open');
+}
+
 // ═══ NAVIGATION ═══
 function navigateTo(pageId){
   if(pageId==='portal'&&!currentUser)pageId='login';
+  closeMobileNav(); // ปิด hamburger menu เมื่อ navigate
   ALL_PAGES.forEach(p=>{const e=document.getElementById('page-'+p);if(e)e.classList.add('hidden');});
   document.querySelectorAll('.nav-menu a').forEach(a=>a.classList.remove('active'));
   const page=document.getElementById('page-'+pageId);
@@ -908,6 +924,82 @@ function searchFaq(){
 }
 
 
+// ═══ PRINT REPORT ═══
+function printReport(){
+  const reportNames={
+    service:'สรุปการให้บริการ',
+    users:'ผู้ใช้บริการ',
+    duration:'เวลาให้บริการ',
+    monthly:'สรุปรายเดือน',
+  };
+  const content=document.getElementById('report-content');
+  if(!content||content.querySelector('.loading-spinner')){
+    showAlert('⚠️','รายงานยังไม่โหลด','กรุณารอให้รายงานโหลดเสร็จก่อนพิมพ์');return;
+  }
+  const rptName=reportNames[currentReportType]||'รายงาน';
+  const now=new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const printWin=window.open('','_blank','width=900,height=700');
+  printWin.document.write(`<!DOCTYPE html><html lang="th"><head>
+    <meta charset="UTF-8">
+    <title>VOC รายงาน — ${rptName}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0;}
+      body{font-family:'Sarabun',sans-serif;background:#fff;color:#222;padding:32px 40px;}
+      .print-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2d6a4f;padding-bottom:16px;margin-bottom:24px;}
+      .print-header h1{font-size:1.4rem;color:#2d6a4f;font-weight:800;}
+      .print-header p{font-size:.8rem;color:#888;margin-top:4px;}
+      .print-meta{text-align:right;font-size:.8rem;color:#888;}
+      /* KPI grid */
+      .rpt-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+      .rpt-kpi{background:#f8faf9;border-radius:10px;padding:14px 10px;text-align:center;border-top:3px solid #e0e0e0;}
+      .rpt-kpi.green{border-top-color:#2d6a4f;}.rpt-kpi.orange{border-top-color:#f77f00;}.rpt-kpi.red{border-top-color:#d00000;}.rpt-kpi.blue{border-top-color:#3a86ff;}
+      .rpt-kpi-num{font-size:1.8rem;font-weight:800;line-height:1;margin-bottom:5px;}
+      .rpt-kpi-label{font-size:.72rem;color:#888;font-weight:600;}
+      .rpt-card{background:#f8faf9;border-radius:10px;padding:16px;margin-bottom:12px;}
+      .rpt-card-title{font-size:.88rem;font-weight:700;color:#333;margin-bottom:12px;border-bottom:1.5px solid #e0e0e0;padding-bottom:7px;}
+      .rpt-two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+      .rpt-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+      .rpt-bar-label{font-size:.78rem;color:#555;width:100px;flex-shrink:0;}
+      .rpt-bar-track{flex:1;height:9px;background:#e0e0e0;border-radius:5px;overflow:hidden;}
+      .rpt-bar-fill{height:100%;background:#2d6a4f;border-radius:5px;}
+      .rpt-bar-fill.blue{background:#3a86ff;}.rpt-bar-fill.orange{background:#f77f00;}
+      .rpt-bar-count{font-size:.76rem;font-weight:700;color:#555;min-width:22px;text-align:right;}
+      .rpt-success-bar-wrap{background:#f8faf9;border-radius:10px;padding:14px 16px;margin-bottom:12px;}
+      .rpt-bar-track.big{height:14px;border-radius:7px;}
+      .rpt-priority-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;}
+      .rpt-priority-block{flex:1;min-width:70px;padding:12px 8px;border-radius:8px;text-align:center;font-size:.78rem;font-weight:600;}
+      .rpt-priority-block.high{background:#fff0f0;color:#c62828;}.rpt-priority-block.med{background:#fff8e1;color:#b25f00;}.rpt-priority-block.low{background:#e8f5e9;color:#2d6a4f;}
+      .rpt-priority-num{font-size:1.5rem;font-weight:800;line-height:1;margin-bottom:3px;}
+      .rpt-table{width:100%;border-collapse:collapse;font-size:.78rem;}
+      .rpt-table th{background:#e8f5e9;color:#2d6a4f;font-weight:700;padding:7px 8px;text-align:left;border-bottom:2px solid #c8e6c9;}
+      .rpt-table td{padding:7px 8px;border-bottom:1px solid #f0f0f0;color:#444;vertical-align:middle;}
+      .rpt-table tr:last-child td{border-bottom:none;}
+      .rpt-month-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+      .rpt-month-label{width:75px;font-size:.78rem;color:#555;flex-shrink:0;}
+      .rpt-month-count{width:30px;font-size:.78rem;font-weight:700;color:#333;text-align:right;}
+      @media print{
+        body{padding:16px 20px;}
+        @page{margin:12mm;size:A4;}
+      }
+    </style>
+  </head><body>
+    <div class="print-header">
+      <div>
+        <h1><i>🎙️</i> VOC System — ${rptName}</h1>
+        <p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร · มหาวิทยาลัยราชภัฏยะลา</p>
+      </div>
+      <div class="print-meta">
+        <div>วันที่พิมพ์: ${now}</div>
+        <div>ผู้พิมพ์: ${currentUser?.fullname||currentUser?.username||'admin'}</div>
+      </div>
+    </div>
+    ${content.innerHTML}
+    <script>setTimeout(function(){window.print();},600);<\/script>
+  </body></html>`);
+  printWin.document.close();
+}
+
 // ═══════════════════════════════════════════════════════════════
 // ADMIN REPORT (ข้อ 2)
 // ═══════════════════════════════════════════════════════════════
@@ -1661,9 +1753,10 @@ async function updateNews(newsId){
   const title=document.getElementById('edit-news-title')?.value.trim();
   const content=document.getElementById('edit-news-content')?.value.trim();
   const tag=document.getElementById('edit-news-tag')?.value;
+  const imageUrl=document.getElementById('edit-news-image')?.value.trim()||'';
   if(!title||!content){await showAlert('⚠️','กรุณากรอกข้อมูล','หัวเรื่องและเนื้อหาจำเป็นต้องกรอก');return;}
   try{
-    const res=await api.post('/api/news',{action:'update',newsId,title,content,tag});
+    const res=await api.post('/api/news',{action:'update',newsId,title,content,tag,imageUrl});
     if(res.success){
       const o=document.getElementById('edit-news-overlay');if(o)document.body.removeChild(o);
       await showAlert('✅','แก้ไขสำเร็จ','อัปเดตข่าวเรียบร้อยแล้ว');
@@ -1711,12 +1804,50 @@ function renderSAFaq(faqs){
     html+=`<div class="news-manager-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
         <div><span class="chip gray" style="margin-right:6px;">${f.category}</span><strong>${f.question}</strong></div>
-        <button class="btn-delete" onclick="deleteFaq('${f.faqId}')"><i class="fas fa-trash"></i> ลบ</button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-edit-news" onclick='editFaq(${JSON.stringify(f)})'><i class="fas fa-edit"></i> แก้ไข</button>
+          <button class="btn-delete" onclick="deleteFaq('${f.faqId}')"><i class="fas fa-trash"></i> ลบ</button>
+        </div>
       </div>
       <div style="font-size:.86rem;color:#666;">${f.answer}</div>
     </div>`;
   });
   container.innerHTML=html;
+}
+function editFaq(f){
+  const catOpts=['การใช้งาน','ความเร่งด่วน','ความปลอดภัย','ระบบ','ทั่วไป'];
+  const overlay=document.createElement('div');
+  overlay.className='voc-overlay'; overlay.id='edit-faq-overlay';
+  overlay.innerHTML=`<div class="voc-modal-box" style="max-width:580px;">
+    <div class="voc-modal-title"><i class="fas fa-edit"></i> แก้ไขคำถาม FAQ</div>
+    <div class="form-group"><label>หมวดหมู่</label>
+      <select id="edit-faq-cat" style="width:100%;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;margin-top:4px;">
+        ${catOpts.map(c=>`<option value="${c}" ${c===f.category?'selected':''}>${c}</option>`).join('')}
+      </select></div>
+    <div class="form-group"><label>คำถาม <span style="color:#d00000;">*</span></label>
+      <input type="text" id="edit-faq-q" value="${(f.question||'').replace(/"/g,'&quot;')}" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div>
+    <div class="form-group"><label>คำตอบ <span style="color:#d00000;">*</span></label>
+      <textarea id="edit-faq-a" rows="5" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:.93rem;resize:vertical;box-sizing:border-box;">${f.answer||''}</textarea></div>
+    <div class="voc-modal-btns">
+      <button class="voc-btn-cancel" onclick="document.body.removeChild(document.getElementById('edit-faq-overlay'))">ยกเลิก</button>
+      <button class="voc-btn-ok" onclick="updateFaq('${f.faqId}')"><i class="fas fa-save"></i> บันทึก</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+async function updateFaq(faqId){
+  const category=document.getElementById('edit-faq-cat')?.value;
+  const question=document.getElementById('edit-faq-q')?.value.trim();
+  const answer=document.getElementById('edit-faq-a')?.value.trim();
+  if(!question||!answer){await showAlert('⚠️','กรุณากรอกข้อมูล','คำถามและคำตอบจำเป็นต้องกรอก');return;}
+  try{
+    const res=await api.post('/api/faq',{action:'update',faqId,category,question,answer});
+    if(res.success){
+      const o=document.getElementById('edit-faq-overlay');if(o)document.body.removeChild(o);
+      await showAlert('✅','แก้ไขสำเร็จ','อัปเดต FAQ เรียบร้อยแล้ว');
+      loadSAFaq();
+    } else await showAlert('❌','ไม่สำเร็จ',res.message);
+  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
 }
 async function addFaq(){
   const cat=document.getElementById('faq-cat-new')?.value;
