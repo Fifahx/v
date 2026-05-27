@@ -75,7 +75,7 @@ function navigateTo(pageId){
     document.getElementById('track-input').value='';
     if(currentUser&&currentUser.role!=='admin'&&currentUser.role!=='superadmin')loadMyTickets();
   }
-  if(pageId==='home'){loadPinnedTickets();loadNewsStrip();loadHeroStats();}
+  if(pageId==='home'){loadPinnedTickets();loadNewsStrip();}
   window.scrollTo(0,0);
 }
 function setupPortalView(){

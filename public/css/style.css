@@ -535,14 +535,14 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 /* ════════════════════════════════════════════════════════
    NEW HERO — full-width banner with overlay + wave
    ════════════════════════════════════════════════════════ */
-.hero-section{position:relative;background:linear-gradient(135deg,rgba(13,43,30,.93) 0%,rgba(27,67,50,.88) 50%,rgba(45,106,79,.82) 100%),url('/img/bg.png') center/cover no-repeat;padding:5rem 24px 6rem;overflow:hidden;}
+.hero-section{position:relative;background:linear-gradient(135deg,rgba(13,43,30,.72) 0%,rgba(27,67,50,.62) 50%,rgba(45,106,79,.55) 100%),url('/img/bg.png') center/cover no-repeat;padding:5rem 24px 6rem;overflow:hidden;background-size:cover;background-position:center;}
 .hero-overlay{position:absolute;inset:0;background:radial-gradient(ellipse at 70% 50%,rgba(231,231,27,.07) 0%,transparent 60%);}
 /* decorative circles */
 .hero-section::before,.hero-section::after{content:'';position:absolute;border-radius:50%;background:rgba(255,255,255,.03);}
 .hero-section::before{width:480px;height:480px;top:-120px;right:-80px;}
 .hero-section::after{width:260px;height:260px;bottom:-60px;left:10%;}
 
-.hero-content{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr auto;align-items:center;gap:32px;position:relative;z-index:1;}
+.hero-content{max-width:900px;margin:0 auto;display:block;position:relative;z-index:1;}
 .hero-text-block{color:#fff;}
 .hero-title{font-size:2.8rem;font-weight:800;line-height:1.15;margin-bottom:12px;letter-spacing:-0.5px;}
 .hero-voc{color:var(--primary);position:relative;}
@@ -555,12 +555,7 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 .hero-btn.outline{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.55);}
 .hero-btn.outline:hover{background:rgba(255,255,255,.1);border-color:#fff;transform:translateY(-2px);}
 
-/* Hero stat cards */
-.hero-stats-block{display:flex;flex-direction:column;gap:10px;}
-.hero-stat-card{background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:16px 22px;text-align:center;min-width:130px;transition:.3s;}
-.hero-stat-card:hover{background:rgba(255,255,255,.16);transform:translateY(-2px);}
-.hs-num{font-size:1.9rem;font-weight:800;color:var(--primary);line-height:1;}
-.hs-label{font-size:.72rem;color:rgba(255,255,255,.75);margin-top:4px;font-weight:500;}
+/* Hero stat cards — removed */
 
 /* Wave */
 .hero-wave{position:absolute;bottom:0;left:0;right:0;line-height:0;}
@@ -598,8 +593,6 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 /* ════ RESPONSIVE ════ */
 @media(max-width:900px){
   .hero-content{grid-template-columns:1fr;}
-  .hero-stats-block{flex-direction:row;justify-content:center;}
-  .hero-stat-card{min-width:100px;}
   .hero-title{font-size:2.1rem;}
   .home-action-row{grid-template-columns:1fr;}
 }
@@ -609,9 +602,6 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
   .hero-title{font-size:1.8rem;}
   .hero-cta-row{flex-direction:column;}
   .hero-btn{justify-content:center;}
-  .hero-stats-block{display:grid;grid-template-columns:repeat(3,1fr);}
-  .hero-stat-card{min-width:unset;padding:12px 8px;}
-  .hs-num{font-size:1.4rem;}
   .manual-grid-new{grid-template-columns:1fr 1fr;}
   .nav-menu a{padding:10px 12px;font-size:13px;}
 }
