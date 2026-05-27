@@ -1778,5 +1778,116 @@ window.onload=function(){
   const fs=document.getElementById('faq-search');
   if(fs) fs.addEventListener('keydown',e=>{if(e.key==='Enter')searchFaq();});
 
+  // ═══ MANAGEMENT SLIDER ═══
+  initMgmtSlider();
+
   navigateTo('home');
 };
+
+// ════════════════════════════════════════════════════════
+//  MANAGEMENT SLIDER
+//  การ์ดผู้บริหารเลื่อนซ้าย-ขวาได้ พร้อม dot indicators
+// ════════════════════════════════════════════════════════
+(function(){
+  let mgmtCurrentIdx = 0;   // index การ์ดซ้ายสุดที่เห็นอยู่
+  let mgmtCardsPerView = 5; // จำนวนการ์ดที่เห็นในครั้งเดียว (คำนวณ responsive)
+  let mgmtCards = [];
+  let mgmtTotal = 0;
+
+  function calcCardsPerView(){
+    const w = window.innerWidth;
+    if(w < 480) return 2;
+    if(w < 700) return 3;
+    if(w < 900) return 4;
+    return 5;
+  }
+
+  function buildDots(){
+    const dotsEl = document.getElementById('mgmt-dots');
+    if(!dotsEl) return;
+    const pages = Math.ceil(mgmtTotal / mgmtCardsPerView);
+    dotsEl.innerHTML = '';
+    for(let i = 0; i < pages; i++){
+      const d = document.createElement('div');
+      d.className = 'mgmt-dot' + (i === 0 ? ' active' : '');
+      d.onclick = () => mgmtGoTo(i * mgmtCardsPerView);
+      dotsEl.appendChild(d);
+    }
+  }
+
+  function updateDots(){
+    const dotsEl = document.getElementById('mgmt-dots');
+    if(!dotsEl) return;
+    const pageIdx = Math.floor(mgmtCurrentIdx / mgmtCardsPerView);
+    dotsEl.querySelectorAll('.mgmt-dot').forEach((d,i) => {
+      d.classList.toggle('active', i === pageIdx);
+    });
+  }
+
+  function mgmtGoTo(idx){
+    const maxIdx = Math.max(0, mgmtTotal - mgmtCardsPerView);
+    mgmtCurrentIdx = Math.max(0, Math.min(idx, maxIdx));
+    const track = document.getElementById('mgmt-track');
+    if(!track) return;
+    // คำนวณ card width + gap จาก DOM จริง
+    const card = track.querySelector('.mgmt-card');
+    if(!card) return;
+    const style = getComputedStyle(track);
+    const gap = parseInt(style.gap) || 16;
+    const cardW = card.offsetWidth + gap;
+    track.style.transform = `translateX(-${mgmtCurrentIdx * cardW}px)`;
+    // อัปเดตลูกศร
+    const prev = document.getElementById('mgmt-prev');
+    const next = document.getElementById('mgmt-next');
+    if(prev) prev.disabled = mgmtCurrentIdx <= 0;
+    if(next) next.disabled = mgmtCurrentIdx >= maxIdx;
+    updateDots();
+  }
+
+  // expose ให้ HTML onclick เรียกได้
+  window.mgmtSlide = function(dir){
+    mgmtGoTo(mgmtCurrentIdx + dir * mgmtCardsPerView);
+  };
+
+  window.initMgmtSlider = function(){
+    const track = document.getElementById('mgmt-track');
+    if(!track) return;
+    mgmtCards = track.querySelectorAll('.mgmt-card');
+    mgmtTotal = mgmtCards.length;
+    if(!mgmtTotal) return;
+    mgmtCardsPerView = calcCardsPerView();
+    buildDots();
+    mgmtGoTo(0);
+    // Auto-play ทุก 4 วินาที
+    let autoPlay = setInterval(() => {
+      const maxIdx = Math.max(0, mgmtTotal - mgmtCardsPerView);
+      if(mgmtCurrentIdx >= maxIdx) mgmtGoTo(0);
+      else mgmtGoTo(mgmtCurrentIdx + 1);
+    }, 4000);
+    // หยุด auto-play เมื่อ hover
+    const section = document.querySelector('.mgmt-section');
+    if(section){
+      section.addEventListener('mouseenter', () => clearInterval(autoPlay));
+      section.addEventListener('mouseleave', () => {
+        autoPlay = setInterval(() => {
+          const maxIdx = Math.max(0, mgmtTotal - mgmtCardsPerView);
+          if(mgmtCurrentIdx >= maxIdx) mgmtGoTo(0);
+          else mgmtGoTo(mgmtCurrentIdx + 1);
+        }, 4000);
+      });
+    }
+    // Swipe บนมือถือ
+    let touchStartX = 0;
+    track.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive:true});
+    track.addEventListener('touchend', e => {
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      if(Math.abs(diff) > 40) mgmtSlide(diff > 0 ? 1 : -1);
+    });
+    // Responsive resize
+    window.addEventListener('resize', () => {
+      mgmtCardsPerView = calcCardsPerView();
+      buildDots();
+      mgmtGoTo(0);
+    });
+  };
+})();
