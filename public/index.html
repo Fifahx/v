@@ -38,10 +38,6 @@
   <!-- Nav bar -->
   <div class="header-nav-bar">
     <div class="nav-inner">
-      <!-- Hamburger (mobile only) -->
-      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="เมนู">
-        <span></span><span></span><span></span>
-      </button>
       <div class="nav-menu" id="main-nav">
         <a onclick="navigateTo('home')" id="nav-home" class="active">หน้าหลัก</a>
         <a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a>
@@ -49,6 +45,10 @@
         <a onclick="alert('คู่มืออยู่ด้านล่างหน้าแรก')">คู่มือ</a>
         <a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>
       </div>
+      <!-- Hamburger (mobile only) — ฝั่งขวา -->
+      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="เมนู">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
 </header>
@@ -85,7 +85,7 @@
       </div>
     </div>
 
-    <!-- Right: ผู้บริหาร horizontal slider — ไม่มีกรอบ ไม่มี label -->
+    <!-- Right: ผู้บริหาร horizontal slider -->
     <div class="hero-mgmt-panel">
       <!-- Track หลัก — เลื่อนแนวนอน -->
       <div class="mgmt-h-track-wrap">
@@ -278,9 +278,9 @@
         <div class="voc-panel">
           <span class="voc-title">แสดงตัวตน</span>
           <label><input type="checkbox" id="isAnon" onchange="toggleAnon()"> แจ้งแบบนิรนาม</label>
-          <div id="identity-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;">
-            <div>ชื่อ-นามสกุล<input type="text" id="v-name" class="voc-input" style="margin-top:6px;"></div>
-            <div>รหัสนักศึกษา/หน่วยงาน<input type="text" id="v-sid" class="voc-input" style="margin-top:6px;"></div>
+          <div id="identity-fields" class="identity-grid" style="margin-top:14px;">
+            <div><label class="voc-field-label">ชื่อ-นามสกุล</label><input type="text" id="v-name" class="voc-input" style="margin-top:6px;"></div>
+            <div><label class="voc-field-label">รหัสนักศึกษา/หน่วยงาน</label><input type="text" id="v-sid" class="voc-input" style="margin-top:6px;"></div>
           </div>
         </div>
         <button class="btn-submit" onclick="changeStep(2)">ถัดไป - ระบุเรื่องที่แจ้ง →</button>
@@ -356,10 +356,12 @@
           <p style="color:#777;margin-top:8px;">ทีมงานได้รับเรื่องของคุณเรียบร้อยแล้ว</p>
           <div class="ticket-id-box" id="new-ticket-id">VOC-2568-0001</div>
           <p style="font-size:.86rem;color:#aaa;margin-bottom:22px;">บันทึกหมายเลข Ticket ไว้เพื่อติดตามสถานะ</p>
-          <button class="btn-submit" style="width:auto;padding:12px 32px;" onclick="navigateTo('tracking')">
-            <i class="fas fa-list-alt"></i> ติดตามสถานะ
-          </button>
-          <button class="btn-back" style="margin-left:10px;" onclick="navigateTo('home')">กลับหน้าหลัก</button>
+          <div class="success-btn-row">
+            <button class="btn-submit" style="padding:12px 32px;" onclick="navigateTo('tracking')">
+              <i class="fas fa-list-alt"></i> ติดตามสถานะ
+            </button>
+            <button class="btn-back" onclick="navigateTo('home')">กลับหน้าหลัก</button>
+          </div>
         </div>
       </div>
     </div>

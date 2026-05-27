@@ -502,7 +502,7 @@ function buildProgressBar(status){
   </div>`;
 }
 
-// ═══ NEWS STRIP (หน้าหลัก — card style พร้อมรูปภาพ) ═══
+// ═══ NEWS STRIP (หน้าหลัก — horizontal scroll) ═══
 let _newsCache = []; // เก็บ news objects ไว้ใช้ใน showNewsDetail
 
 async function loadNewsStrip(){
@@ -511,34 +511,66 @@ async function loadNewsStrip(){
   try{
     const res=await api.get('/api/news');
     if(res.success&&res.news&&res.news.length>0){
-      _newsCache = res.news; // cache ไว้
+      _newsCache = res.news;
       container.classList.remove('hidden');
       const tagClass={ทั่วไป:'news-tag-default',ด่วน:'news-tag-urgent',ข้อมูล:'news-tag-info',กิจกรรม:'news-tag-event','ข่าวสำคัญ':'news-tag-urgent','การเรียนการสอน':'news-tag-info','ประกาศทั่วไป':'news-tag-default'};
-      let html=`<div class="news-section-wrap">
-        <div class="news-section-header">
-          <i class="fas fa-newspaper"></i> ข่าวสารและประกาศ
-        </div>
-        <div class="news-card-grid">`;
+      let itemsHtml='';
       res.news.forEach((n, idx)=>{
         const tc=tagClass[n.tag]||'news-tag-default';
         const shortContent=n.content.length>120?n.content.substring(0,120)+'...':n.content;
-        const imgHtml=n.imageUrl?`<div class="news-card-img"><img src="${n.imageUrl}" alt="" onerror="this.parentElement.style.display='none'"></div>`:'';
-        // ใช้ index แทน JSON.stringify เพื่อหลีกเลี่ยง quote ชนกัน
-        html+=`<div class="news-card" onclick="showNewsDetail(${idx})" style="cursor:pointer;">
+        const imgHtml=n.imageUrl
+          ?`<div style="height:120px;overflow:hidden;border-radius:8px;margin-bottom:10px;"><img src="${n.imageUrl}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.style.display='none'"></div>`:'';
+        itemsHtml+=`<div class="news-strip-item" onclick="showNewsDetail(${idx})">
           ${imgHtml}
-          <div class="news-card-body">
+          <div class="news-strip-item-meta">
             <span class="news-tag-pill ${tc}">${n.tag||'ทั่วไป'}</span>
-            <div class="news-card-title">${n.title}</div>
-            <div class="news-card-date"><i class="fas fa-clock"></i> ${n.date||''}</div>
-            <div class="news-card-content">${shortContent}</div>
-            <div class="news-read-more"><i class="fas fa-arrow-right"></i> อ่านเพิ่มเติม</div>
+            <span class="news-date" style="font-size:.73rem;color:#bbb;"><i class="fas fa-clock"></i> ${n.date||''}</span>
           </div>
+          <div class="news-strip-item-title">${n.title}</div>
+          <div class="news-strip-item-content">${shortContent}</div>
         </div>`;
       });
-      html+=`</div></div>`;
-      container.innerHTML=html;
+      // dots สำหรับ scroll indicator
+      let dotsHtml='';
+      if(res.news.length>1){
+        res.news.forEach((_,i)=>{
+          dotsHtml+=`<button class="news-strip-dot${i===0?' active':''}" data-idx="${i}" onclick="newsScrollTo(${i})"></button>`;
+        });
+      }
+      container.innerHTML=`<div class="news-section-wrap">
+        <div class="news-section-header">
+          <i class="fas fa-newspaper"></i> ข่าวสารและประกาศ
+          <span style="margin-left:auto;font-size:.78rem;color:#aaa;font-weight:400;">
+            ${res.news.length} รายการ <i class="fas fa-hand-pointer" style="font-size:.7rem;"></i>
+          </span>
+        </div>
+        <div class="news-strip-scroll-wrap" id="news-scroll-wrap">
+          <div class="news-strip-inner" id="news-strip-inner">${itemsHtml}</div>
+        </div>
+        ${dotsHtml?`<div class="news-strip-dots" id="news-strip-dots">${dotsHtml}</div>`:''}
+      </div>`;
+      // sync dots เมื่อ scroll
+      const wrap=document.getElementById('news-scroll-wrap');
+      if(wrap&&dotsHtml){
+        wrap.addEventListener('scroll',function(){
+          const items=wrap.querySelectorAll?document.querySelectorAll('.news-strip-item'):[];
+          if(!items.length)return;
+          const itemW=items[0].offsetWidth+14; // width + gap
+          const idx=Math.round(wrap.scrollLeft/itemW);
+          document.querySelectorAll('.news-strip-dot').forEach((d,i)=>{
+            d.classList.toggle('active',i===idx);
+          });
+        },{passive:true});
+      }
     } else { container.classList.add('hidden'); }
   }catch(e){ container.classList.add('hidden'); }
+}
+function newsScrollTo(idx){
+  const wrap=document.getElementById('news-scroll-wrap');
+  const items=document.querySelectorAll('.news-strip-item');
+  if(!wrap||!items[idx])return;
+  const itemW=items[0].offsetWidth+14;
+  wrap.scrollTo({left:idx*itemW,behavior:'smooth'});
 }
 
 
@@ -1349,6 +1381,10 @@ function renderAdminTickets(tickets,currentEmail){
   const scTag={'รอดำเนินการ':'status-pending','กำลังดำเนินการ':'status-inprogress','เสร็จสิ้น':'status-success','ปฏิเสธ':'status-reject'};
   const pLabel={'high':'🔴 เร่งด่วน','medium':'🟡 ปานกลาง','low':'🟢 ทั่วไป'};
   const pClass={'high':'p-high','medium':'p-medium','low':'p-low'};
+
+  // ── สร้าง list หมวดหมู่จาก ticket ที่มีอยู่ ──
+  const categories = [...new Set(tickets.map(t=>t['ประเภทเรื่อง']).filter(Boolean))].sort();
+
   let html=`<div class="notify-box">
     <h4><i class="fas fa-bell"></i> Email แจ้งเตือน</h4>
     <div class="notify-row">
@@ -1357,22 +1393,32 @@ function renderAdminTickets(tickets,currentEmail){
     </div>
     ${currentEmail?`<p style="font-size:.8rem;color:#2d6a4f;margin-top:8px;"><i class="fas fa-check-circle"></i> ${currentEmail}</p>`:''}
   </div>`;
+
+  // ── Category filter bar ──
+  if(categories.length){
+    html+=`<div class="admin-cat-filter" id="admin-cat-filter">
+      <span class="admin-cat-label"><i class="fas fa-filter"></i> กรองหมวดหมู่:</span>
+      <button class="cat-filter-btn active" onclick="filterByCategory('all',this)">ทั้งหมด</button>
+      ${categories.map(c=>`<button class="cat-filter-btn" onclick="filterByCategory('${c.replace(/'/g,'&#39;')}',this)">${c}</button>`).join('')}
+    </div>`;
+  }
+
   if(!tickets.length){
     container.innerHTML=html+'<div class="no-tickets"><i class="fas fa-inbox" style="font-size:2.5rem;color:#ddd;"></i><p style="margin-top:12px;">ไม่มีเรื่อง</p></div>';
     return;
   }
-  html+=`<p style="color:#888;margin-bottom:14px;font-size:.85rem;">แสดง ${tickets.length} รายการ (เรียงตามความเร่งด่วน)</p>`;
+  html+=`<p style="color:#888;margin-bottom:14px;font-size:.85rem;" id="admin-ticket-count">แสดง ${tickets.length} รายการ (เรียงตามความเร่งด่วน)</p>`;
   tickets.forEach(t=>{
     const tid=t['Ticket ID'], pr=t['ความเร่งด่วน']||'low', isHigh=pr==='high';
     const isPinned=String(t['Pinned']||'').toLowerCase()==='true';
     const comments=t['Comments']||'';
     const commentEntries=comments?comments.split('\n---\n').filter(c=>c.trim()):[];
-    // ข้อ 11: ตัดรายละเอียดยาว
     const detail=t['รายละเอียด']||'(ไม่มีรายละเอียด)';
     const detailShort=detail.length>200?detail.substring(0,200)+'...':detail;
     const needExpand=detail.length>200;
+    const catVal=(t['ประเภทเรื่อง']||'').replace(/"/g,'&quot;');
 
-    html+=`<div class="admin-ticket-card ${scColor[t['สถานะ']]||'pending'} ${isHigh?'priority-high':''}" id="card-${tid}">
+    html+=`<div class="admin-ticket-card ${scColor[t['สถานะ']]||'pending'} ${isHigh?'priority-high':''}" id="card-${tid}" data-category="${catVal}">
       <div class="admin-card-top">
         <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
           ${isHigh?'<span>🚨</span>':''}
@@ -1416,7 +1462,6 @@ function renderAdminTickets(tickets,currentEmail){
         ${needExpand?detailShort:detail}
         ${needExpand?`<button class="btn-expand" onclick="expandAdminDetail('${tid}','${encodeURIComponent(detail)}')">ดูเพิ่มเติม ▼</button>`:''}
       </div>
-      <!-- ความคิดเห็น (ข้อ 6 — แสดงพร้อม timestamp) -->
       ${commentEntries.length?`<div style="margin-bottom:12px;">
         <div style="font-size:.75rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;"><i class="fas fa-comments"></i> ความคิดเห็น (${commentEntries.length} รายการ)</div>
         <div class="comments-log">
@@ -1437,13 +1482,11 @@ function renderAdminTickets(tickets,currentEmail){
           }).join('')}
         </div>
       </div>`:''}
-      <!-- เพิ่มความคิดเห็นใหม่ (ข้อ 6 — append ไม่ overwrite) -->
       <div class="comment-add-box">
         <div style="font-size:.78rem;color:#2d6a4f;font-weight:700;margin-bottom:6px;"><i class="fas fa-plus-circle"></i> เพิ่มความคิดเห็น</div>
         <textarea id="new-comment-${tid}" rows="2" placeholder="พิมพ์ความคิดเห็น... (จะบันทึกวันเวลาอัตโนมัติ)"></textarea>
         <button class="btn-comment" onclick="addComment('${tid}')"><i class="fas fa-paper-plane"></i> ส่งความคิดเห็น</button>
       </div>
-      <!-- Update row -->
       <div class="update-row" style="margin-top:10px;">
         <select id="status-${tid}">
           <option value="รอดำเนินการ"    ${t['สถานะ']==='รอดำเนินการ'    ?'selected':''}>รอดำเนินการ</option>
@@ -1458,6 +1501,23 @@ function renderAdminTickets(tickets,currentEmail){
     </div>`;
   });
   container.innerHTML=html;
+}
+
+// ── filter admin tickets by category (client-side) ──
+function filterByCategory(cat, btn){
+  // update active button
+  document.querySelectorAll('.cat-filter-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  // show/hide cards
+  const cards=document.querySelectorAll('.admin-ticket-card[data-category]');
+  let shown=0;
+  cards.forEach(card=>{
+    const match = cat==='all' || card.dataset.category===cat;
+    card.style.display=match?'':'none';
+    if(match) shown++;
+  });
+  const countEl=document.getElementById('admin-ticket-count');
+  if(countEl) countEl.textContent=`แสดง ${shown} รายการ${cat!=='all'?' (กรอง: '+cat+')':' (เรียงตามความเร่งด่วน)'}`;
 }
 
 function expandAdminDetail(tid,enc){
@@ -1669,7 +1729,11 @@ async function loadSANews(){
     renderSANews(res.news||[]);
   }catch(e){ container.innerHTML=`<p style="color:red;">${e.message}</p>`; }
 }
+// ── เก็บ news ทั้งหมดไว้ใน memory สำหรับ edit ──
+let _saNewsCache = [];
+
 function renderSANews(news){
+  _saNewsCache = news; // cache ไว้
   const container=document.getElementById('superadmin-content');
   const tagOpts=['ทั่วไป','ด่วน','ข้อมูล','กิจกรรม'];
   let html=`<div class="superadmin-banner"><i class="fas fa-crown"></i><div><strong>ผู้ดูแลระดับสูง</strong><br><small>จัดการข่าวสาร FAQ และการตั้งค่าระบบ</small></div></div>
@@ -1701,7 +1765,7 @@ function renderSANews(news){
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
           <div><span class="news-tag">${n.tag||'ทั่วไป'}</span><strong>${n.title}</strong><span class="news-date">${n.date||''}</span></div>
           <div style="display:flex;gap:6px;">
-            <button class="btn-edit-news" onclick="editNews(${JSON.stringify(n).replace(/'/g,'&#39;')})"><i class="fas fa-edit"></i> แก้ไข</button>
+            <button class="btn-edit-news" onclick="editNews(${news.indexOf(n)})"><i class="fas fa-edit"></i> แก้ไข</button>
             <button class="btn-delete" onclick="deleteNews('${n.newsId}')"><i class="fas fa-trash"></i> ลบ</button>
           </div>
         </div>
@@ -1724,8 +1788,11 @@ async function addNews(){
   }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
 }
 
-// ── editNews: เปิด modal แก้ไขข่าว ──
-function editNews(n){
+// ── editNews: รับ index แล้วดึงข้อมูลจาก _saNewsCache ──
+function editNews(idxOrObj){
+  // รองรับทั้ง index (number) และ object (legacy)
+  const n = typeof idxOrObj === 'number' ? _saNewsCache[idxOrObj] : idxOrObj;
+  if(!n){ showAlert('⚠️','เกิดข้อผิดพลาด','ไม่พบข้อมูลข่าว'); return; }
   const tagOpts=['ทั่วไป','ด่วน','ข้อมูล','กิจกรรม'];
   const overlay=document.createElement('div');
   overlay.className='voc-overlay';
