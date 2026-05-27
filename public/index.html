@@ -12,35 +12,68 @@
 
 <!-- ══ HEADER ══ -->
 <header>
-  <div class="nav-container">
-    <div class="logos">
-      <div class="logo-circle">
-        <img src="/img/yru_logo.png" alt="YRU"
-             onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'color:#fff;font-weight:700;font-size:.75rem;\'>YRU</span>'">
+  <!-- Top bar: logos + title -->
+  <div class="header-top-bar">
+    <div class="header-top-inner">
+      <div class="header-logos">
+        <div class="logo-circle">
+          <img src="/img/yru_logo.png" alt="YRU"
+               onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'color:#fff;font-weight:700;font-size:.75rem;\'>YRU</span>'">
+        </div>
+        <div class="logo-circle">
+          <img src="/img/Logo faculty of sta_yru.png" alt="SCI"
+               onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'color:#fff;font-weight:700;font-size:.75rem;\'>SCI</span>'">
+        </div>
+        <div class="header-brand">
+          <div class="header-brand-title"><span class="brand-voc">VOC</span> System</div>
+          <div class="header-brand-sub">คณะวิทยาศาสตร์ฯ มรย.</div>
+        </div>
       </div>
-      <div class="logo-circle">
-        <img src="/img/Logo faculty of sta_yru.png" alt="SCI"
-             onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'color:#fff;font-weight:700;font-size:.75rem;\'>SCI</span>'">
+      <div class="header-right-top" id="right-menu">
+        <a onclick="navigateTo('login')" class="nav-menu" style="color:rgba(255,255,255,.85);font-size:.85rem;"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</a>
+        <a onclick="navigateTo('register')" class="btn-nav-active nav-menu">ลงทะเบียน</a>
       </div>
     </div>
-    <div class="nav-menu" id="main-nav">
-      <a onclick="navigateTo('home')" id="nav-home" class="active">หน้าหลัก</a>
-      <a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a>
-      <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
-      <a onclick="alert('คู่มืออยู่ด้านล่างหน้าแรก')">คู่มือ</a>
-      <a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>
-    </div>
-    <div class="right-menu" id="right-menu">
-      <a onclick="navigateTo('login')" class="nav-menu" style="color:#fff;">เข้าสู่ระบบ</a>
-      <a onclick="navigateTo('register')" class="btn-nav-active nav-menu">ลงทะเบียน</a>
+  </div>
+  <!-- Nav bar -->
+  <div class="header-nav-bar">
+    <div class="nav-inner">
+      <div class="nav-menu" id="main-nav">
+        <a onclick="navigateTo('home')" id="nav-home" class="active">หน้าหลัก</a>
+        <a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a>
+        <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
+        <a onclick="alert('คู่มืออยู่ด้านล่างหน้าแรก')">คู่มือ</a>
+        <a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>
+      </div>
     </div>
   </div>
 </header>
 
 <!-- ══ HERO ══ -->
-<div class="faculty-title">
-  <h1>ระบบรับฟังเสียงจากลูกค้า VOC</h1>
-  <p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</p>
+<div class="hero-section">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-text-block">
+      <h1 class="hero-title"><span class="hero-voc">VOC</span> System</h1>
+      <p class="hero-tagline">Voice of Customer — ระบบรับฟังเสียงจากลูกค้า</p>
+      <p class="hero-sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร<br>มหาวิทยาลัยราชภัฏยะลา</p>
+      <div class="hero-cta-row">
+        <button class="hero-btn primary" onclick="navigateTo('portal')"><i class="fas fa-bullhorn"></i> แจ้งเรื่องร้องเรียน</button>
+        <button class="hero-btn outline" onclick="navigateTo('tracking')"><i class="fas fa-search"></i> ติดตามสถานะ</button>
+      </div>
+    </div>
+    <div class="hero-stats-block">
+      <div class="hero-stat-card" id="hs-total"><div class="hs-num">—</div><div class="hs-label">คำร้องทั้งหมด</div></div>
+      <div class="hero-stat-card" id="hs-done"><div class="hs-num">—</div><div class="hs-label">ดำเนินการสำเร็จ</div></div>
+      <div class="hero-stat-card" id="hs-pending"><div class="hs-num">—</div><div class="hs-label">รอดำเนินการ</div></div>
+    </div>
+  </div>
+  <!-- Decorative wave -->
+  <div class="hero-wave">
+    <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,30 C360,60 720,0 1080,30 C1260,45 1380,38 1440,30 L1440,60 L0,60 Z" fill="var(--white)"/>
+    </svg>
+  </div>
 </div>
 
 <!-- ══ MAIN ══ -->
@@ -48,26 +81,66 @@
 
   <!-- PAGE: HOME -->
   <div id="page-home">
-    <div class="home-grid">
-      <div class="main-card" onclick="navigateTo('portal')">
-        <i class="fas fa-bullhorn"></i>แจ้งเรื่องร้องเรียน
+
+    <!-- Quick action cards -->
+    <div class="home-action-row">
+      <div class="action-card" onclick="navigateTo('portal')">
+        <div class="action-icon-wrap blue"><i class="fas fa-bullhorn"></i></div>
+        <div class="action-text">
+          <div class="action-title">แจ้งเรื่องร้องเรียน</div>
+          <div class="action-desc">ส่งคำร้องและติดตามผล</div>
+        </div>
+        <i class="fas fa-chevron-right action-arrow"></i>
       </div>
-      <div class="main-card" onclick="navigateTo('tracking')">
-        <i class="fas fa-search"></i>ติดตามสถานะ
+      <div class="action-card" onclick="navigateTo('tracking')">
+        <div class="action-icon-wrap orange"><i class="fas fa-search"></i></div>
+        <div class="action-text">
+          <div class="action-title">ติดตามสถานะ</div>
+          <div class="action-desc">ตรวจสอบความคืบหน้า</div>
+        </div>
+        <i class="fas fa-chevron-right action-arrow"></i>
+      </div>
+      <div class="action-card" onclick="navigateTo('faq')">
+        <div class="action-icon-wrap green"><i class="fas fa-question-circle"></i></div>
+        <div class="action-text">
+          <div class="action-title">คำถามที่พบบ่อย</div>
+          <div class="action-desc">FAQ และคู่มือการใช้งาน</div>
+        </div>
+        <i class="fas fa-chevron-right action-arrow"></i>
       </div>
     </div>
+
     <!-- ข่าวสาร -->
     <div id="news-strip-section" class="hidden"></div>
     <!-- Pinned tickets -->
     <div id="pinned-tickets-section" class="hidden"></div>
-    <div class="manual-section">
-      <h3>คู่มือการใช้งาน</h3>
-      <div class="manual-grid">
-        <div><div class="manual-box"></div>วิดีโอ</div>
-        <div><div class="manual-box"></div>Infographic</div>
-        <div><div class="manual-box"></div>เอกสาร</div>
+
+    <!-- คู่มือการใช้งาน -->
+    <div class="manual-section-new">
+      <div class="manual-header">
+        <div class="manual-header-line"></div>
+        <h3><i class="fas fa-book-open"></i> คู่มือการใช้งาน</h3>
+        <div class="manual-header-line"></div>
+      </div>
+      <div class="manual-grid-new">
+        <div class="manual-card">
+          <div class="manual-icon-wrap"><i class="fas fa-play-circle"></i></div>
+          <div class="manual-card-title">วิดีโอแนะนำ</div>
+          <div class="manual-card-desc">ดูวิดีโอขั้นตอนการใช้งานระบบ</div>
+        </div>
+        <div class="manual-card">
+          <div class="manual-icon-wrap"><i class="fas fa-images"></i></div>
+          <div class="manual-card-title">Infographic</div>
+          <div class="manual-card-desc">ภาพสรุปขั้นตอนแบบง่าย</div>
+        </div>
+        <div class="manual-card">
+          <div class="manual-icon-wrap"><i class="fas fa-file-pdf"></i></div>
+          <div class="manual-card-title">เอกสาร PDF</div>
+          <div class="manual-card-desc">คู่มือฉบับเต็มสำหรับพิมพ์</div>
+        </div>
       </div>
     </div>
+
   </div>
 
   <!-- PAGE: LOGIN -->

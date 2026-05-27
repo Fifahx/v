@@ -75,7 +75,7 @@ function navigateTo(pageId){
     document.getElementById('track-input').value='';
     if(currentUser&&currentUser.role!=='admin'&&currentUser.role!=='superadmin')loadMyTickets();
   }
-  if(pageId==='home'){loadPinnedTickets();loadNewsStrip();}
+  if(pageId==='home'){loadPinnedTickets();loadNewsStrip();loadHeroStats();}
   window.scrollTo(0,0);
 }
 function setupPortalView(){
@@ -555,6 +555,19 @@ function showNewsDetail(idx){
   // ปิด modal เมื่อกด overlay ด้านนอก
   overlay.addEventListener('click', function(e){ if(e.target===overlay) document.body.removeChild(overlay); });
   document.body.appendChild(overlay);
+}
+
+// ═══ HERO STATS ═══
+async function loadHeroStats(){
+  try{
+    const res=await api.get('/api/dashboard');
+    if(!res.success)return;
+    const s=res.stats;
+    const el=(id,v)=>{const e=document.getElementById(id);if(e){const n=e.querySelector('.hs-num');if(n)n.textContent=v;}};
+    el('hs-total',   s.total||0);
+    el('hs-done',    s.done||0);
+    el('hs-pending', s.pending||0);
+  }catch(e){/* ไม่แสดง error ใน hero */}
 }
 // ═══ PINNED TICKETS ═══
 async function loadPinnedTickets(){
