@@ -644,95 +644,105 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 }
 
 /* ════════════════════════════════════════════════════════
-   MANAGEMENT PANEL — ฝั่งขวา hero (full-frame fade, ไม่มีกรอบ)
+   MANAGEMENT PANEL — ฝั่งขวา hero (horizontal slider)
    ════════════════════════════════════════════════════════ */
 /* mgmt-section เดิม — ไม่ใช้แล้ว */
 .mgmt-section{ display:none!important; }
 
-/* Panel wrapper — ไม่มีกรอบ ไม่มี background */
+/* Panel wrapper */
 .hero-mgmt-panel{
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
   position:relative;
-  min-height:340px;
   overflow:hidden;
+  padding:0;
   /* ไม่มี background, border, padding-box */
 }
 
-/* label "ผู้บริหารคณะ" เล็กๆ ด้านบน */
-.hero-mgmt-label{
-  display:flex;align-items:center;gap:7px;
-  color:rgba(255,255,255,.55);font-size:.72rem;font-weight:700;
-  letter-spacing:1px;text-transform:uppercase;
-  margin-bottom:14px;
-  align-self:flex-start;
-}
-.hero-mgmt-label i{color:var(--primary);font-size:.7rem;}
+/* ── ซ่อน label เดิม ── */
+.hero-mgmt-label{ display:none; }
 
-/* ซ่อน slider-wrap เดิม — ใช้ fade แทน */
-.hero-mgmt-slider-wrap{ display:none; }
-.mgmt-dots{ margin-top:14px; }
-
-/* ── Fade Frame ── */
-.mgmt-frame{
-  position:relative;
+/* ── Horizontal track wrapper ── */
+.mgmt-h-track-wrap{
   width:100%;
-  flex:1;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-/* แต่ละ slide = ซ้อนทับกัน absolute */
-.mgmt-slide{
-  position:absolute;inset:0;
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  opacity:0;
-  transition:opacity .8s ease;
-  pointer-events:none;
-  text-align:center;
-  padding:0 10px;
-}
-.mgmt-slide.active{
-  opacity:1;
-  pointer-events:auto;
-  position:relative; /* ทำให้ parent ขยายตาม */
-}
-
-/* รูปภาพใหญ่ — วงกลม ไม่มีกรอบกล่อง */
-.mgmt-slide-avatar{
-  width:220px;height:220px;border-radius:16px;
   overflow:hidden;
-  margin-bottom:14px;
-  box-shadow:0 12px 48px rgba(0,0,0,.55);
-  border:2px solid rgba(231,231,27,.35);
-  background:transparent;
-  flex-shrink:0;
-}
-.mgmt-slide-avatar img{
-  width:100%;height:100%;object-fit:contain;object-position:center bottom;display:block;background:transparent;
-}
-.mgmt-slide-fallback{
-  width:100%;height:100%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:4.5rem;color:rgba(255,255,255,.4);
+  position:relative;
 }
 
-.mgmt-slide-name{
-  display:none;
+/* Track: flex แนวนอน เลื่อน transform */
+.mgmt-h-track{
+  display:flex;
+  flex-direction:row;
+  align-items:flex-end;
+  gap:0;
+  transition:transform .55s cubic-bezier(.4,0,.2,1);
+  will-change:transform;
 }
-.mgmt-slide-pos{
-  font-size:.82rem;color:rgba(255,255,255,.85);
-  line-height:1.55;
-  max-width:280px;
+
+/* แต่ละ item ใน track */
+.mgmt-h-item{
+  flex:0 0 100%;          /* เต็ม 100% ของ wrap */
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+}
+
+/* รูปภาพ — ใหญ่ โปร่งใส ไม่มีกรอบ */
+.mgmt-h-img{
+  width:100%;
+  max-width:320px;
+  height:340px;
+  object-fit:contain;
+  object-position:center bottom;
+  display:block;
+  /* โปร่งใส ไม่มีกรอบ */
+  background:transparent;
+  border:none;
+  box-shadow:none;
+  /* fade-in ด้านล่างเพื่อ blend กับ hero */
+  -webkit-mask-image:linear-gradient(to bottom,black 60%,transparent 100%);
+  mask-image:linear-gradient(to bottom,black 60%,transparent 100%);
+}
+.mgmt-h-img-fallback{
+  width:200px;height:280px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:6rem;color:rgba(255,255,255,.2);
+}
+
+/* ชื่อ + ตำแหน่ง ด้านล่าง — ไม่อยู่ใน item แต่อยู่นอก track */
+.mgmt-h-info{
+  width:100%;
   text-align:center;
-  font-weight:600;
+  padding:10px 12px 0;
+  min-height:64px;
+}
+.mgmt-h-name{
+  font-size:.95rem;
+  font-weight:700;
+  color:#fff;
+  line-height:1.4;
+  margin-bottom:4px;
+  transition:opacity .4s;
+  text-shadow:0 2px 8px rgba(0,0,0,.4);
+}
+.mgmt-h-pos{
+  font-size:.78rem;
+  color:rgba(255,255,255,.75);
+  line-height:1.5;
+  font-weight:500;
+  transition:opacity .4s;
+  text-shadow:0 1px 4px rgba(0,0,0,.35);
 }
 
 /* Dots */
+.mgmt-dots{
+  display:flex;justify-content:center;gap:6px;
+  margin-top:10px;
+}
 .mgmt-dot{
   width:7px;height:7px;border-radius:50%;
   background:rgba(255,255,255,.25);

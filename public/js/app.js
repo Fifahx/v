@@ -1968,25 +1968,41 @@ window.onload=function(){
   let timer   = null;
   let slides  = [];
 
-  // ── สร้าง slides ทั้งหมดใน #mgmt-frame ──
+  // ── สร้าง track items (horizontal) ──
   function buildSlides(){
-    const frame = document.getElementById('mgmt-frame');
-    if(!frame) return;
-    frame.innerHTML = '';
+    const track = document.getElementById('mgmt-h-track');
+    if(!track) return;
+    track.innerHTML = '';
     slides = MGMT_PEOPLE.map((p, i) => {
       const div = document.createElement('div');
-      div.className = 'mgmt-slide' + (i === 0 ? ' active' : '');
+      div.className = 'mgmt-h-item';
       div.innerHTML = `
-        <div class="mgmt-slide-avatar">
-          <img src="${p.img}" alt="${p.name}"
-            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-          <div class="mgmt-slide-fallback"><i class="fas fa-user-tie"></i></div>
-        </div>
-        <div class="mgmt-slide-name">${p.name}</div>
-        <div class="mgmt-slide-pos">${p.pos}</div>`;
-      frame.appendChild(div);
+        <img class="mgmt-h-img" src="${p.img}" alt="${p.name}"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="mgmt-h-img-fallback" style="display:none;"><i class="fas fa-user-tie"></i></div>`;
+      track.appendChild(div);
       return div;
     });
+    // ตั้งค่า info ของคนแรก
+    updateInfo(0);
+  }
+
+  // ── อัปเดตชื่อ + ตำแหน่ง ──
+  function updateInfo(idx){
+    const nameEl = document.getElementById('mgmt-h-name');
+    const posEl  = document.getElementById('mgmt-h-pos');
+    if(!nameEl || !posEl) return;
+    const p = MGMT_PEOPLE[idx];
+    if(!p) return;
+    // fade out → เปลี่ยน → fade in
+    nameEl.style.opacity = '0';
+    posEl.style.opacity  = '0';
+    setTimeout(() => {
+      nameEl.textContent = p.name;
+      posEl.textContent  = p.pos;
+      nameEl.style.opacity = '1';
+      posEl.style.opacity  = '1';
+    }, 220);
   }
 
   // ── Dots ──
@@ -2010,13 +2026,14 @@ window.onload=function(){
     });
   }
 
-  // ── เปลี่ยน slide ──
+  // ── เลื่อน track แนวนอน ──
   function goTo(idx){
     if(!slides.length) return;
-    slides[current].classList.remove('active');
     current = (idx + total) % total;
-    slides[current].classList.add('active');
+    const track = document.getElementById('mgmt-h-track');
+    if(track) track.style.transform = `translateX(-${current * 100}%)`;
     updateDots();
+    updateInfo(current);
   }
 
   // ── Auto-play ──
@@ -2040,17 +2057,17 @@ window.onload=function(){
       panel.addEventListener('mouseleave', startAuto);
     }
     // swipe มือถือ
-    const frame = document.getElementById('mgmt-frame');
-    if(frame){
+    const track = document.getElementById('mgmt-h-track');
+    if(track){
       let tx = 0;
-      frame.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive:true});
-      frame.addEventListener('touchend', e => {
+      track.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive:true});
+      track.addEventListener('touchend', e => {
         const diff = tx - e.changedTouches[0].clientX;
         if(Math.abs(diff) > 40) goTo(current + (diff > 0 ? 1 : -1));
       });
     }
   };
 
-  // ── expose mgmtSlide (ถ้า HTML บางแห่งยังเรียก) ──
+  // ── expose mgmtSlide ──
   window.mgmtSlide = function(dir){ goTo(current + dir); };
 })();

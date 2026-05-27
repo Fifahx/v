@@ -90,18 +90,20 @@
       </div>
     </div>
 
-    <!-- Right: ผู้บริหารคณะ — fade ทีละคน ไม่มีกรอบ -->
+    <!-- Right: ผู้บริหาร horizontal slider — ไม่มีกรอบ ไม่มี label -->
     <div class="hero-mgmt-panel">
-      <div class="hero-mgmt-label">
-        <i class="fas fa-users"></i> ผู้บริหารคณะ
+      <!-- Track หลัก — เลื่อนแนวนอน -->
+      <div class="mgmt-h-track-wrap">
+        <div class="mgmt-h-track" id="mgmt-h-track"></div>
       </div>
-
-      <!-- Frame: JS จะสร้าง .mgmt-slide เข้ามาที่นี่ -->
-      <div class="mgmt-frame" id="mgmt-frame"></div>
-
+      <!-- ชื่อ + ตำแหน่ง ด้านล่างรูป -->
+      <div class="mgmt-h-info" id="mgmt-h-info">
+        <div class="mgmt-h-name" id="mgmt-h-name"></div>
+        <div class="mgmt-h-pos"  id="mgmt-h-pos"></div>
+      </div>
       <!-- Dots -->
       <div class="mgmt-dots" id="mgmt-dots"></div>
-    </div><!-- /hero-mgmt-panel -->
+    </div>
 
   </div><!-- /hero-content -->
 
