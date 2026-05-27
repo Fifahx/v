@@ -535,14 +535,21 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 /* ════════════════════════════════════════════════════════
    NEW HERO — full-width banner with overlay + wave
    ════════════════════════════════════════════════════════ */
-.hero-section{position:relative;background:linear-gradient(135deg,rgba(13,43,30,.72) 0%,rgba(27,67,50,.62) 50%,rgba(45,106,79,.55) 100%),url('/img/bg.png') center/cover no-repeat;padding:5rem 24px 6rem;overflow:hidden;background-size:cover;background-position:center;}
+.hero-section{position:relative;background:linear-gradient(135deg,rgba(13,43,30,.72) 0%,rgba(27,67,50,.62) 50%,rgba(45,106,79,.55) 100%),url('/img/bg.png') center/cover no-repeat;padding:4.5rem 40px 5.5rem;overflow:hidden;background-size:cover;background-position:center;}
 .hero-overlay{position:absolute;inset:0;background:radial-gradient(ellipse at 70% 50%,rgba(231,231,27,.07) 0%,transparent 60%);}
 /* decorative circles */
 .hero-section::before,.hero-section::after{content:'';position:absolute;border-radius:50%;background:rgba(255,255,255,.03);}
 .hero-section::before{width:480px;height:480px;top:-120px;right:-80px;}
 .hero-section::after{width:260px;height:260px;bottom:-60px;left:10%;}
 
-.hero-content{max-width:900px;margin:0 auto;display:block;position:relative;z-index:1;}
+.hero-content{
+  max-width:1200px;margin:0 auto;
+  display:grid;
+  grid-template-columns:1fr 420px;
+  gap:40px;
+  align-items:center;
+  position:relative;z-index:1;
+}
 .hero-text-block{color:#fff;}
 .hero-title{font-size:2.8rem;font-weight:800;line-height:1.15;margin-bottom:12px;letter-spacing:-0.5px;}
 .hero-voc{color:var(--primary);position:relative;}
@@ -624,22 +631,35 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 /* ════════════════════════════════════════════════════════
    MANAGEMENT SLIDER
    ════════════════════════════════════════════════════════ */
-.mgmt-section{
-  background:linear-gradient(180deg,#1b4332 0%,#2d6a4f 100%);
-  padding:28px 0 32px;
-  position:relative;
-  z-index:1;
+/* mgmt-section เดิม — ไม่ใช้แล้ว (ย้ายเข้า hero แล้ว) */
+.mgmt-section{ display:none; }
+.mgmt-inner{ display:none; }
+.mgmt-label{ display:none; }
+
+/* ── Hero Management Panel (ฝั่งขวา hero) ── */
+.hero-mgmt-panel{
+  display:flex;flex-direction:column;
+  background:rgba(255,255,255,.08);
+  border:1.5px solid rgba(255,255,255,.16);
+  border-radius:20px;
+  padding:22px 18px 18px;
+  backdrop-filter:blur(10px);
+  min-height:300px;
+  overflow:hidden;
 }
-.mgmt-inner{
-  max-width:1100px;margin:0 auto;padding:0 20px;
-}
-.mgmt-label{
+.hero-mgmt-label{
   display:flex;align-items:center;gap:8px;
-  color:rgba(255,255,255,.65);font-size:.82rem;font-weight:700;
+  color:rgba(255,255,255,.7);font-size:.8rem;font-weight:700;
   letter-spacing:.8px;text-transform:uppercase;
-  margin-bottom:20px;
+  margin-bottom:16px;
+  padding-bottom:12px;
+  border-bottom:1px solid rgba(255,255,255,.12);
 }
-.mgmt-label i{color:var(--primary);}
+.hero-mgmt-label i{color:var(--primary);}
+.hero-mgmt-slider-wrap{
+  display:flex;align-items:center;gap:8px;
+  flex:1;overflow:hidden;
+}
 
 /* Slider wrapper */
 .mgmt-slider-wrap{
@@ -668,10 +688,10 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 
 /* Individual card */
 .mgmt-card{
-  flex:0 0 170px;
+  flex:0 0 150px;
   background:rgba(255,255,255,.09);
   border:1.5px solid rgba(255,255,255,.14);
-  border-radius:16px;padding:22px 14px 18px;
+  border-radius:14px;padding:16px 12px 14px;
   text-align:center;
   transition:.3s;
   cursor:default;
@@ -686,8 +706,8 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 
 /* Avatar */
 .mgmt-avatar-wrap{
-  width:88px;height:88px;border-radius:50%;
-  margin:0 auto 14px;
+  width:76px;height:76px;border-radius:50%;
+  margin:0 auto 12px;
   overflow:hidden;
   border:3px solid rgba(231,231,27,.5);
   box-shadow:0 4px 16px rgba(0,0,0,.3);
@@ -746,8 +766,12 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 }
 
 /* ════ HERO responsive (merge) ════ */
+@media(max-width:1024px){
+  .hero-content{grid-template-columns:1fr 360px;gap:28px;}
+}
 @media(max-width:900px){
   .hero-content{grid-template-columns:1fr;}
+  .hero-mgmt-panel{display:none;} /* ซ่อนบน mobile เพราะ hero แคบ */
   .hero-title{font-size:2.1rem;}
   .home-action-row{grid-template-columns:1fr;}
 }

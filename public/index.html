@@ -86,31 +86,19 @@
       </div>
     </div>
 
-  </div>
+    <!-- Right: ผู้บริหารคณะ (ย้ายจาก mgmt-section ด้านล่าง) -->
+    <div class="hero-mgmt-panel">
+      <div class="hero-mgmt-label">
+        <i class="fas fa-users"></i> ผู้บริหารคณะ
+      </div>
 
-  <!-- Decorative wave -->
-  <div class="hero-wave">
-    <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M0,30 C360,60 720,0 1080,30 C1260,45 1380,38 1440,30 L1440,60 L0,60 Z" fill="var(--white)"/>
-    </svg>
-  </div>
-</div>
-
-<!-- ══ MANAGEMENT SLIDER (ใต้ hero ก่อน container) ══ -->
-<div class="mgmt-section">
-  <div class="mgmt-inner">
-    <div class="mgmt-label">
-      <i class="fas fa-users"></i> ผู้บริหารคณะ
-    </div>
-
-    <!-- Slider track -->
-    <div class="mgmt-slider-wrap">
-      <button class="mgmt-arrow left" id="mgmt-prev" onclick="mgmtSlide(-1)" aria-label="ก่อนหน้า">
-        <i class="fas fa-chevron-left"></i>
-      </button>
-
-      <div class="mgmt-track-overflow">
-        <div class="mgmt-track" id="mgmt-track">
+      <!-- Slider -->
+      <div class="hero-mgmt-slider-wrap">
+        <button class="mgmt-arrow left" id="mgmt-prev" onclick="mgmtSlide(-1)" aria-label="ก่อนหน้า">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <div class="mgmt-track-overflow">
+          <div class="mgmt-track" id="mgmt-track">
 
           <!-- ═══ การ์ดผู้บริหาร — เพิ่ม/แก้ไขที่นี่ ═══
                วิธีเพิ่มผู้บริหารใหม่: copy block <div class="mgmt-card"> ... </div>
@@ -201,18 +189,26 @@
           <!-- เพิ่มการ์ดผู้บริหารเพิ่มเติมตรงนี้ -->
 
         </div><!-- /mgmt-track -->
-      </div><!-- /overflow -->
+        </div><!-- /overflow -->
 
-      <button class="mgmt-arrow right" id="mgmt-next" onclick="mgmtSlide(1)" aria-label="ถัดไป">
-        <i class="fas fa-chevron-right"></i>
-      </button>
-    </div><!-- /slider-wrap -->
+        <button class="mgmt-arrow right" id="mgmt-next" onclick="mgmtSlide(1)" aria-label="ถัดไป">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div><!-- /hero-mgmt-slider-wrap -->
 
-    <!-- Dots indicator -->
-    <div class="mgmt-dots" id="mgmt-dots"></div>
+      <!-- Dots -->
+      <div class="mgmt-dots" id="mgmt-dots"></div>
+    </div><!-- /hero-mgmt-panel -->
 
-  </div><!-- /mgmt-inner -->
-</div><!-- /mgmt-section -->
+  </div><!-- /hero-content -->
+
+  <!-- Decorative wave -->
+  <div class="hero-wave">
+    <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,30 C360,60 720,0 1080,30 C1260,45 1380,38 1440,30 L1440,60 L0,60 Z" fill="var(--white)"/>
+    </svg>
+  </div>
+</div><!-- /hero-section -->
 
 <!-- ══ MAIN ══ -->
 <div class="container">
