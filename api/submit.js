@@ -61,6 +61,8 @@ module.exports = async function handler(req, res) {
     // ในระบบจริงควร upload ไป Google Drive แล้วเก็บ URL
     // ตอนนี้เก็บชื่อไฟล์ไว้ก่อน
     const fileInfo = p.fileName ? `[แนบไฟล์: ${p.fileName}]` : '';
+    // Sanitize userNote: แทน newline ด้วย ↵ เพื่อป้องกัน Sheets แตกแถว
+    const userNote = (p.userNote || '').replace(/\r?\n/g, ' ↵ ').trim();
 
     await appendRow(sheets, SHEET_TICKETS, [
       userId,                                                    // A: UserID
@@ -74,7 +76,7 @@ module.exports = async function handler(req, res) {
       p.priority || 'medium',                                    // I: ความเร่งด่วน
       p.subject || '',                                           // J: หัวข้อ
       p.detail  || '',                                           // K: รายละเอียด
-      p.userNote || '',                                          // L: หมายเหตุ (ผู้ใช้)
+      userNote,                                                     // L: หมายเหตุ (ผู้ใช้)
       'รอดำเนินการ',                                             // M: สถานะ
       '',                                                        // N: ผู้รับผิดชอบ
       dueDate,                                                   // O: กำหนดตอบกลับ

@@ -6,7 +6,8 @@ let vocData={cType:'นักศึกษา',priority:'medium',category:'ข้
 let attachedFile=null;
 
 const ALL_PAGES=['home','login','register','portal','tracking',
-  'faq','admin-dashboard','admin-tickets','admin-reviews','superadmin'];
+  'faq','admin-dashboard','admin-tickets','admin-reviews','admin-report','user-report','superadmin'];
+let currentReportType='service';
 
 // ═══ API ═══
 const api={
@@ -64,6 +65,7 @@ function navigateTo(pageId){
   if(nav)nav.classList.add('active');
   if(pageId==='portal'){setupPortalView();changeStep(1);}
   if(pageId==='admin-dashboard')loadDashboard();
+  if(pageId==='admin-report')loadReport(currentReportType);
   if(pageId==='admin-tickets')loadAdminTickets('pending');
   if(pageId==='admin-reviews')loadReviews();
   if(pageId==='superadmin')loadSuperAdmin();
@@ -230,6 +232,7 @@ function updateMenuForAdmin(){
     <a onclick="navigateTo('admin-dashboard')" id="nav-admin-dashboard">สถิติ</a>
     <a onclick="navigateTo('admin-tickets')" id="nav-admin-tickets">จัดการเรื่อง</a>
     <a onclick="navigateTo('admin-reviews')" id="nav-admin-reviews">รีวิว</a>
+    <a onclick="navigateTo('admin-report')" id="nav-admin-report">รายงาน</a>
     <a onclick="navigateTo('faq')" id="nav-faq">FAQ</a>`;
   document.getElementById('right-menu').innerHTML=`
     <span class="user-badge"><i class="fas fa-shield-alt"></i>${currentUser.fullname||'Admin'}</span>
@@ -241,6 +244,7 @@ function updateMenuForSuperAdmin(){
     <a onclick="navigateTo('admin-dashboard')" id="nav-admin-dashboard">สถิติ</a>
     <a onclick="navigateTo('admin-tickets')" id="nav-admin-tickets">จัดการเรื่อง</a>
     <a onclick="navigateTo('admin-reviews')" id="nav-admin-reviews">รีวิว</a>
+    <a onclick="navigateTo('admin-report')" id="nav-admin-report">รายงาน</a>
     <a onclick="navigateTo('superadmin')" id="nav-superadmin">⚙️ ระบบ</a>`;
   document.getElementById('right-menu').innerHTML=`
     <span class="user-badge superadmin-badge"><i class="fas fa-crown" style="color:#f0a500;"></i>${currentUser.fullname||'SuperAdmin'}</span>
@@ -288,6 +292,9 @@ async function showProfile(){
           <div><div class="label" style="margin-bottom:4px;">📱 เบอร์โทรศัพท์</div><input class="profile-edit-field" id="pe-phone" value="${p.phone||''}" placeholder="0xxxxxxxxx" maxlength="10"></div>
           <div><div class="label" style="margin-bottom:4px;">💬 Line ID</div><input class="profile-edit-field" id="pe-line" value="${p.lineId||''}" placeholder="Line ID"></div>
         </div>
+      </div>
+      <div style="text-align:center;margin-bottom:14px;">
+        <button onclick="showUserReport('${p.username||''}')" style="width:100%;padding:10px;background:#f0faf5;border:1.5px solid var(--dgreen);border-radius:10px;color:var(--dgreen);font-family:'Sarabun',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;"><i class="fas fa-chart-pie"></i> ดูรายงานสรุปการใช้บริการของฉัน</button>
       </div>
       <div class="voc-modal-btns">
         <button class="voc-btn-cancel" onclick="document.body.removeChild(document.getElementById('profile-overlay'))">ปิด</button>
@@ -885,6 +892,255 @@ function searchFaq(){
   api.get('/api/faq').then(res=>{
     if(res.success) renderFaq(res.faqs||[],q);
   });
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN REPORT (ข้อ 2)
+// ═══════════════════════════════════════════════════════════════
+async function loadReport(type){
+  currentReportType = type || 'service';
+  // sync tab active state
+  ['service','users','duration','monthly'].forEach(t=>{
+    const el=document.getElementById('rtab-'+t);
+    if(el) el.classList.toggle('active', t===currentReportType);
+  });
+  const box=document.getElementById('report-content');
+  if(!box)return;
+  box.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลดรายงาน...</p></div>';
+  try{
+    const res=await api.get('/api/report?type='+currentReportType);
+    if(!res.success){box.innerHTML='<p style="color:red;padding:20px;">โหลดไม่สำเร็จ</p>';return;}
+    if(currentReportType==='service')  renderReportService(res.report, box);
+    if(currentReportType==='users')    renderReportUsers(res.report, box);
+    if(currentReportType==='duration') renderReportDuration(res.report, box);
+    if(currentReportType==='monthly')  renderReportMonthly(res.report, box);
+  }catch(e){box.innerHTML=`<p style="color:red;padding:20px;">${e.message}</p>`;}
+}
+
+// ── 2.1 สรุปการให้บริการ ──
+function renderReportService(r, box){
+  const statusRows=Object.entries(r.byStatus||{}).sort((a,b)=>b[1]-a[1])
+    .map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right;font-weight:700;">${v}</td><td style="text-align:right;color:#888;">${r.total?`${Math.round(v/r.total*100)}%`:'0%'}</td></tr>`).join('');
+  const catRows=Object.entries(r.byCategory||{}).sort((a,b)=>b[1]-a[1]).slice(0,8)
+    .map(([k,v])=>{ const pct=r.total?Math.round(v/r.total*100):0; return `<div class="rpt-bar-row"><span class="rpt-bar-label">${k}</span><div class="rpt-bar-track"><div class="rpt-bar-fill" style="width:${pct}%"></div></div><span class="rpt-bar-count">${v}</span></div>`; }).join('');
+  const assigneeRows=Object.entries(r.byAssignee||{}).sort((a,b)=>b[1]-a[1]).slice(0,8)
+    .map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right;font-weight:700;">${v}</td></tr>`).join('');
+  box.innerHTML=`
+    <div class="rpt-kpi-grid">
+      <div class="rpt-kpi"><div class="rpt-kpi-num">${r.total}</div><div class="rpt-kpi-label">📋 ทั้งหมด</div></div>
+      <div class="rpt-kpi green"><div class="rpt-kpi-num" style="color:#2d6a4f">${r.done}</div><div class="rpt-kpi-label">✅ เสร็จสิ้น</div></div>
+      <div class="rpt-kpi orange"><div class="rpt-kpi-num" style="color:#f77f00">${r.pending}</div><div class="rpt-kpi-label">⏳ รอ/ดำเนินการ</div></div>
+      <div class="rpt-kpi red"><div class="rpt-kpi-num" style="color:#d00000">${r.rejected}</div><div class="rpt-kpi-label">❌ ปฏิเสธ</div></div>
+    </div>
+    <div class="rpt-success-bar-wrap">
+      <div style="display:flex;justify-content:space-between;font-size:.84rem;color:#888;margin-bottom:6px;"><span>อัตราความสำเร็จ</span><span style="font-weight:700;color:#2d6a4f;font-size:1.1rem;">${r.successRate}%</span></div>
+      <div class="rpt-bar-track big"><div class="rpt-bar-fill" style="width:${r.successRate}%"></div></div>
+    </div>
+    <div class="rpt-two-col">
+      <div class="rpt-card">
+        <div class="rpt-card-title"><i class="fas fa-list-ul"></i> สถานะทั้งหมด</div>
+        <table class="rpt-table"><tr><th>สถานะ</th><th>จำนวน</th><th>%</th></tr>${statusRows}</table>
+      </div>
+      <div class="rpt-card">
+        <div class="rpt-card-title"><i class="fas fa-shield-alt"></i> ความเร่งด่วน</div>
+        <div class="rpt-priority-row">
+          <div class="rpt-priority-block high"><div class="rpt-priority-num">${r.byPriority?.high||0}</div><div>🔴 เร่งด่วน</div></div>
+          <div class="rpt-priority-block med"><div class="rpt-priority-num">${r.byPriority?.medium||0}</div><div>🟡 ปานกลาง</div></div>
+          <div class="rpt-priority-block low"><div class="rpt-priority-num">${r.byPriority?.low||0}</div><div>🟢 ทั่วไป</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="rpt-two-col">
+      <div class="rpt-card">
+        <div class="rpt-card-title"><i class="fas fa-tags"></i> ประเภทเรื่อง (Top 8)</div>
+        ${catRows||'<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}
+      </div>
+      <div class="rpt-card">
+        <div class="rpt-card-title"><i class="fas fa-user-tie"></i> ผู้รับผิดชอบ</div>
+        <table class="rpt-table"><tr><th>ชื่อ</th><th>จำนวน</th></tr>${assigneeRows||'<tr><td colspan="2" style="color:#bbb;">ยังไม่มีข้อมูล</td></tr>'}</table>
+      </div>
+    </div>`;
+}
+
+// ── 2.2 ผู้ใช้บริการ ──
+function renderReportUsers(r, box){
+  const rows=(r.users||[]).map((u,i)=>`
+    <tr>
+      <td style="color:#888;font-size:.82rem;">${i+1}</td>
+      <td><strong>${u.username}</strong><br><span style="font-size:.78rem;color:#aaa;">${u.name||''}</span></td>
+      <td style="text-align:center;">${u.total}</td>
+      <td style="text-align:center;color:#2d6a4f;font-weight:700;">${u.done}</td>
+      <td style="text-align:center;color:#f77f00;">${u.pending}</td>
+      <td style="text-align:center;">${u.successRate}%</td>
+      <td style="font-size:.8rem;color:#666;">${u.topCategory}</td>
+      <td><button onclick="showUserReport('${u.username}')" style="padding:4px 10px;background:var(--dgreen);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.76rem;"><i class="fas fa-user-chart"></i> รายงาน</button></td>
+    </tr>`).join('');
+  box.innerHTML=`
+    <div class="rpt-kpi-grid" style="grid-template-columns:repeat(2,1fr);">
+      <div class="rpt-kpi"><div class="rpt-kpi-num">${r.totalUsers}</div><div class="rpt-kpi-label">👤 ผู้ใช้ทั้งหมด</div></div>
+      <div class="rpt-kpi green"><div class="rpt-kpi-num" style="color:#2d6a4f;">${(r.users||[]).filter(u=>u.total>0).length}</div><div class="rpt-kpi-label">✅ ใช้งานแล้ว</div></div>
+    </div>
+    <div class="rpt-card" style="overflow-x:auto;">
+      <div class="rpt-card-title"><i class="fas fa-users"></i> รายชื่อผู้ใช้บริการ</div>
+      <table class="rpt-table rpt-users-table">
+        <tr><th>#</th><th>ผู้ใช้</th><th>ทั้งหมด</th><th>เสร็จ</th><th>รอ</th><th>%สำเร็จ</th><th>หมวดบ่อยสุด</th><th></th></tr>
+        ${rows||'<tr><td colspan="8" style="color:#bbb;">ยังไม่มีข้อมูล</td></tr>'}
+      </table>
+    </div>`;
+}
+
+// ── 2.3 เวลาให้บริการสำเร็จ ──
+function renderReportDuration(r, box){
+  const rows=(r.items||[]).slice(0,20).map(d=>{
+    const pLabel={high:'🔴 เร่งด่วน',medium:'🟡 ปานกลาง',low:'🟢 ทั่วไป'};
+    return `<tr><td style="font-size:.8rem;color:#2d6a4f;font-weight:700;">${d.ticketId}</td><td style="font-size:.82rem;">${d.subject}</td><td>${pLabel[d.priority]||d.priority}</td><td style="text-align:right;font-weight:700;">${d.hours} ชม.</td></tr>`;
+  }).join('');
+  const avgLabel = h => h!==null?h+' ชม.':'-';
+  box.innerHTML=`
+    <div class="rpt-kpi-grid">
+      <div class="rpt-kpi"><div class="rpt-kpi-num">${r.total}</div><div class="rpt-kpi-label">🎯 เรื่องที่เสร็จแล้ว</div></div>
+      <div class="rpt-kpi blue"><div class="rpt-kpi-num" style="color:#3a86ff;">${avgLabel(r.avgHours)}</div><div class="rpt-kpi-label">⏱️ เวลาเฉลี่ยรวม</div></div>
+    </div>
+    <div class="rpt-two-col">
+      <div class="rpt-card">
+        <div class="rpt-card-title"><i class="fas fa-tachometer-alt"></i> เวลาเฉลี่ยตามความเร่งด่วน</div>
+        <div class="rpt-priority-row">
+          <div class="rpt-priority-block high"><div class="rpt-priority-num" style="font-size:1.2rem;">${avgLabel(r.avgByPriority?.high)}</div><div style="font-size:.75rem;">🔴 เร่งด่วน</div></div>
+          <div class="rpt-priority-block med"><div class="rpt-priority-num" style="font-size:1.2rem;">${avgLabel(r.avgByPriority?.medium)}</div><div style="font-size:.75rem;">🟡 ปานกลาง</div></div>
+          <div class="rpt-priority-block low"><div class="rpt-priority-num" style="font-size:1.2rem;">${avgLabel(r.avgByPriority?.low)}</div><div style="font-size:.75rem;">🟢 ทั่วไป</div></div>
+        </div>
+      </div>
+      <div class="rpt-card" style="overflow-x:auto;">
+        <div class="rpt-card-title"><i class="fas fa-list"></i> รายการล่าสุด (20 เรื่อง)</div>
+        <table class="rpt-table">
+          <tr><th>Ticket</th><th>หัวข้อ</th><th>ความเร่งด่วน</th><th>เวลา</th></tr>
+          ${rows||'<tr><td colspan="4" style="color:#bbb;">ยังไม่มีข้อมูล</td></tr>'}
+        </table>
+      </div>
+    </div>`;
+}
+
+// ── 2.4 รายเดือน ──
+function renderReportMonthly(r, box){
+  const months = r.months || [];
+  const maxTotal = Math.max(...months.map(m=>m.total), 1);
+  const bars = months.map(m=>{
+    const pct = Math.round(m.total/maxTotal*100);
+    const donePct = m.total?Math.round(m.done/m.total*100):0;
+    return `<div class="rpt-month-row">
+      <div class="rpt-month-label">${m.month}</div>
+      <div style="flex:1;">
+        <div class="rpt-bar-track"><div class="rpt-bar-fill" style="width:${pct}%"></div></div>
+        <div style="font-size:.74rem;color:#888;margin-top:2px;">เสร็จ ${donePct}% · รอ ${m.pending} · ปฏิเสธ ${m.rejected}</div>
+      </div>
+      <div class="rpt-month-count">${m.total}</div>
+    </div>`;
+  }).join('');
+  const tableRows = months.map(m=>`<tr><td>${m.month}</td><td style="text-align:center;">${m.total}</td><td style="text-align:center;color:#2d6a4f;">${m.done}</td><td style="text-align:center;color:#f77f00;">${m.pending}</td><td style="text-align:center;color:#d00000;">${m.rejected}</td><td style="text-align:center;color:#3a86ff;">${m.high}</td></tr>`).join('');
+  box.innerHTML=`
+    <div class="rpt-card">
+      <div class="rpt-card-title"><i class="fas fa-chart-bar"></i> จำนวน Ticket รายเดือน</div>
+      ${bars||'<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}
+    </div>
+    <div class="rpt-card" style="overflow-x:auto;margin-top:16px;">
+      <div class="rpt-card-title"><i class="fas fa-table"></i> ตารางสรุปรายเดือน</div>
+      <table class="rpt-table">
+        <tr><th>เดือน/ปี</th><th>ทั้งหมด</th><th>เสร็จ</th><th>รอ</th><th>ปฏิเสธ</th><th>🔴 เร่งด่วน</th></tr>
+        ${tableRows||'<tr><td colspan="6" style="color:#bbb;">ยังไม่มีข้อมูล</td></tr>'}
+      </table>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// USER PERSONAL REPORT (ข้อ 3)
+// ═══════════════════════════════════════════════════════════════
+async function showUserReport(username){
+  // ปิด profile overlay ถ้าเปิดอยู่
+  const po=document.getElementById('profile-overlay');
+  if(po)document.body.removeChild(po);
+  navigateTo('user-report');
+  const box=document.getElementById('user-report-content');
+  box.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลดรายงาน...</p></div>';
+  try{
+    const res=await api.get('/api/report?type=userSummary&username='+encodeURIComponent(username));
+    if(!res.success){box.innerHTML='<p style="color:red;padding:20px;">โหลดไม่สำเร็จ</p>';return;}
+    renderUserReport(res.report, box);
+  }catch(e){box.innerHTML=`<p style="color:red;padding:20px;">${e.message}</p>`;}
+}
+function closeUserReport(){
+  // กลับหน้าที่เหมาะสม
+  if(currentUser&&(currentUser.role==='admin'||currentUser.role==='superadmin'))
+    navigateTo('admin-report');
+  else
+    navigateTo('tracking');
+}
+function renderUserReport(r, box){
+  const pLabel={high:'🔴 เร่งด่วน',medium:'🟡 ปานกลาง',low:'🟢 ทั่วไป'};
+  const scClass={'รอดำเนินการ':'status-pending','กำลังดำเนินการ':'status-inprogress','เสร็จสิ้น':'status-done','ปฏิเสธ':'status-rejected'};
+
+  // by category bars
+  const catEntries=Object.entries(r.byCategory||{}).sort((a,b)=>b[1]-a[1]);
+  const maxCat=Math.max(...catEntries.map(e=>e[1]),1);
+  const catBars=catEntries.map(([k,v])=>{
+    const pct=Math.round(v/maxCat*100);
+    return `<div class="rpt-bar-row"><span class="rpt-bar-label">${k}</span><div class="rpt-bar-track"><div class="rpt-bar-fill" style="width:${pct}%"></div></div><span class="rpt-bar-count">${v}</span></div>`;
+  }).join('');
+
+  // monthly mini bars
+  const maxMon=Math.max(...(r.byMonth||[]).map(m=>m[1]),1);
+  const monBars=(r.byMonth||[]).map(([k,v])=>{
+    const pct=Math.round(v/maxMon*100);
+    return `<div class="rpt-bar-row"><span class="rpt-bar-label" style="width:90px;">${k}</span><div class="rpt-bar-track"><div class="rpt-bar-fill blue" style="width:${pct}%"></div></div><span class="rpt-bar-count">${v}</span></div>`;
+  }).join('');
+
+  // ticket table
+  const ticketRows=(r.recentTickets||[]).map(t=>`
+    <tr>
+      <td style="font-size:.78rem;color:#2d6a4f;font-weight:700;">${t.ticketId}</td>
+      <td style="font-size:.83rem;">${t.subject}</td>
+      <td><span class="status ${scClass[t.status]||'status-pending'}" style="font-size:.72rem;">${t.status}</span></td>
+      <td style="font-size:.78rem;">${pLabel[t.priority]||t.priority}</td>
+      <td style="font-size:.78rem;color:#888;">${t.date}</td>
+    </tr>`).join('');
+
+  box.innerHTML=`
+    <div style="text-align:center;padding:16px 0 8px;">
+      <div style="width:60px;height:60px;border-radius:50%;background:var(--dgreen);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:800;margin-bottom:8px;">${(r.username||'?')[0].toUpperCase()}</div>
+      <div style="font-size:1.1rem;font-weight:700;color:#222;">@${r.username}</div>
+      <div style="font-size:.83rem;color:#aaa;margin-top:2px;">สรุปการใช้บริการทั้งหมด</div>
+    </div>
+
+    <div class="rpt-kpi-grid">
+      <div class="rpt-kpi"><div class="rpt-kpi-num">${r.total}</div><div class="rpt-kpi-label">📋 รวมทั้งหมด</div></div>
+      <div class="rpt-kpi green"><div class="rpt-kpi-num" style="color:#2d6a4f;">${r.done}</div><div class="rpt-kpi-label">✅ เสร็จสิ้น</div></div>
+      <div class="rpt-kpi orange"><div class="rpt-kpi-num" style="color:#f77f00;">${r.pending}</div><div class="rpt-kpi-label">⏳ รอดำเนินการ</div></div>
+      <div class="rpt-kpi red"><div class="rpt-kpi-num" style="color:#d00000;">${r.rejected}</div><div class="rpt-kpi-label">❌ ปฏิเสธ</div></div>
+    </div>
+
+    <div class="rpt-success-bar-wrap">
+      <div style="display:flex;justify-content:space-between;font-size:.84rem;color:#888;margin-bottom:6px;"><span>อัตราความสำเร็จ</span><span style="font-weight:700;color:#2d6a4f;font-size:1.1rem;">${r.successRate}%</span></div>
+      <div class="rpt-bar-track big"><div class="rpt-bar-fill" style="width:${r.successRate}%"></div></div>
+    </div>
+
+    <div class="rpt-two-col">
+      <div class="rpt-card">
+        <div class="rpt-card-title"><i class="fas fa-tags"></i> ประเภทเรื่องที่แจ้ง</div>
+        ${catBars||'<p style="color:#bbb;font-size:.85rem;">ยังไม่มีข้อมูล</p>'}
+      </div>
+      <div class="rpt-card">
+        <div class="rpt-card-title"><i class="fas fa-calendar-alt"></i> ประวัติรายเดือน</div>
+        ${monBars||'<p style="color:#bbb;font-size:.85rem;">ยังไม่มีข้อมูล</p>'}
+      </div>
+    </div>
+
+    <div class="rpt-card" style="overflow-x:auto;">
+      <div class="rpt-card-title"><i class="fas fa-history"></i> ประวัติคำร้องล่าสุด (20 รายการ)</div>
+      <table class="rpt-table">
+        <tr><th>Ticket ID</th><th>หัวข้อ</th><th>สถานะ</th><th>ความเร่งด่วน</th><th>วันที่</th></tr>
+        ${ticketRows||'<tr><td colspan="5" style="color:#bbb;">ยังไม่มีข้อมูล</td></tr>'}
+      </table>
+    </div>`;
 }
 
 // ═══ ADMIN DASHBOARD ═══

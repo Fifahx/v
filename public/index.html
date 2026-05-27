@@ -352,6 +352,36 @@
     </div>
   </div>
 
+
+  <!-- PAGE: ADMIN REPORT -->
+  <div id="page-admin-report" class="hidden">
+    <div class="section-title">
+      <h2><i class="fas fa-file-chart-line"></i> รายงาน</h2>
+      <button onclick="loadReport(currentReportType)" style="margin-left:auto;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
+        <i class="fas fa-sync-alt"></i> รีเฟรช
+      </button>
+    </div>
+    <div class="report-type-tabs">
+      <button class="report-tab active" id="rtab-service"  onclick="loadReport('service')"><i class="fas fa-clipboard-list"></i> สรุปการให้บริการ</button>
+      <button class="report-tab" id="rtab-users"    onclick="loadReport('users')"><i class="fas fa-users"></i> ผู้ใช้บริการ</button>
+      <button class="report-tab" id="rtab-duration" onclick="loadReport('duration')"><i class="fas fa-stopwatch"></i> เวลาให้บริการ</button>
+      <button class="report-tab" id="rtab-monthly"  onclick="loadReport('monthly')"><i class="fas fa-calendar-alt"></i> รายเดือน</button>
+    </div>
+    <div id="report-content">
+      <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>
+    </div>
+  </div>
+
+  <!-- PAGE: USER PERSONAL REPORT -->
+  <div id="page-user-report" class="hidden">
+    <div class="section-title" style="align-items:center;">
+      <button onclick="closeUserReport()" style="background:none;border:none;color:var(--dgreen);font-size:1.1rem;cursor:pointer;padding:0 8px 0 0;"><i class="fas fa-arrow-left"></i></button>
+      <h2><i class="fas fa-user-chart"></i> รายงานของฉัน</h2>
+    </div>
+    <div id="user-report-content">
+      <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>
+    </div>
+  </div>
 </div><!-- /container -->
 
 <!-- ADMIN LOGIN MODAL — รองรับทั้ง Admin และ SuperAdmin -->
