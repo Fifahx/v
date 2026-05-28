@@ -702,8 +702,7 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
   background:transparent;
   border:none;
   box-shadow:none;
-  -webkit-mask-image:linear-gradient(to bottom,black 65%,transparent 100%);
-  mask-image:linear-gradient(to bottom,black 65%,transparent 100%);
+  /* เงาลางๆ ด้านล่างรูปถูกนำออกแล้ว */
   transition:transform .4s ease;
 }
 .mgmt-h-item:hover .mgmt-h-img{
@@ -721,7 +720,7 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
   text-align:center;
   padding:14px 16px 4px;
   min-height:72px;
-  background:linear-gradient(to top, rgba(13,43,30,.7) 0%, transparent 100%);
+  background:transparent;
   margin-top:-20px;
   position:relative;
   z-index:2;
@@ -952,3 +951,53 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
   background:#f0faf4;border-radius:8px;padding:8px 12px;
   font-size:.88rem;color:#2d6a4f;border:1px solid #c8e6c9;
 }
+
+/* ═══ COMPLAINT TYPE MODAL ═══ */
+.complaint-type-modal { max-width: 520px !important; }
+.complaint-type-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+@media(max-width:480px){
+  .complaint-type-cards { grid-template-columns: 1fr; }
+}
+.complaint-type-card {
+  border: 2px solid #e0e0e0;
+  border-radius: 14px;
+  padding: 18px 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .22s ease;
+  position: relative;
+  background: #fafafa;
+}
+.complaint-type-card:hover {
+  border-color: var(--dgreen);
+  background: #f0faf4;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(45,106,79,.15);
+}
+.complaint-type-card.selected {
+  border-color: var(--dgreen);
+  background: #e8f5e9;
+  box-shadow: 0 0 0 3px rgba(45,106,79,.18);
+}
+.ctype-icon { font-size: 2rem; margin-bottom: 8px; }
+.ctype-title { font-weight: 700; font-size: 1rem; color: #2d2d2d; margin-bottom: 8px; }
+.ctype-desc { font-size: .82rem; color: #666; line-height: 1.55; margin-bottom: 10px; }
+.ctype-warn { color: #c0392b; font-size: .78rem; }
+.ctype-good { color: #2d6a4f; font-size: .78rem; }
+.ctype-badge {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 20px;
+  font-size: .72rem;
+  font-weight: 700;
+}
+.ctype-badge-guest { background: #fff3cd; color: #856404; }
+.ctype-badge-user  { background: #e8f5e9; color: #2d6a4f; }
+.ctype-confirm-msg { border-radius: 10px; padding: 12px 14px; font-size: .88rem; line-height: 1.6; }
+.ctype-confirm-warn { background: #fff3cd; border: 1px solid #ffc107; border-radius: 10px; padding: 12px 14px; color: #7c5a00; }
+.ctype-confirm-ok   { background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 10px; padding: 12px 14px; color: #1b5e20; }

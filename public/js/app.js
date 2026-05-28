@@ -69,9 +69,103 @@ function closeMobileNav(){
   if(btn)btn.classList.remove('open');
 }
 
+// ═══ COMPLAINT TYPE MODAL ═══
+function showComplaintTypeModal(callback){
+  const o=document.createElement('div');
+  o.className='voc-overlay';
+  o.id='complaint-type-overlay';
+  o.innerHTML=`
+  <div class="voc-modal-box complaint-type-modal" style="max-width:520px;">
+    <div style="text-align:center;margin-bottom:6px;">
+      <span style="font-size:2.2rem;">📣</span>
+    </div>
+    <div class="voc-modal-title" style="margin-bottom:6px;">เลือกประเภทการร้องเรียน</div>
+    <div class="voc-modal-msg" style="margin-bottom:22px;color:#666;">กรุณาเลือกว่าต้องการร้องเรียนแบบใด</div>
+    <div class="complaint-type-cards">
+      <div class="complaint-type-card" id="ctype-oneway">
+        <div class="ctype-icon">📩</div>
+        <div class="ctype-title">ร้องเรียนทางเดียว</div>
+        <div class="ctype-desc">แจ้งเรื่องได้ทันที <strong>ไม่ต้องเข้าสู่ระบบ</strong><br><span class="ctype-warn">⚠️ ไม่สามารถติดตามสถานะหรือรับการแจ้งเตือนได้</span></div>
+        <div class="ctype-badge ctype-badge-guest">ไม่ต้อง Login</div>
+      </div>
+      <div class="complaint-type-card" id="ctype-track">
+        <div class="ctype-icon">🔍</div>
+        <div class="ctype-title">ร้องเรียนแบบติดตามผล</div>
+        <div class="ctype-desc">ต้องเข้าสู่ระบบก่อน<br><span class="ctype-good">✅ ติดตามสถานะ รับแจ้งเตือน และดูประวัติได้</span></div>
+        <div class="ctype-badge ctype-badge-user">ต้อง Login</div>
+      </div>
+    </div>
+    <div id="ctype-confirm-area" style="display:none;margin-top:18px;">
+      <div class="ctype-confirm-msg" id="ctype-confirm-msg"></div>
+      <div class="voc-modal-btns" style="margin-top:12px;">
+        <button class="voc-btn-cancel" onclick="resetComplaintTypeSelection()">เปลี่ยนใจ</button>
+        <button class="voc-btn-ok" id="ctype-confirm-btn">ยืนยัน</button>
+      </div>
+    </div>
+    <div style="margin-top:14px;text-align:center;">
+      <button class="voc-btn-cancel" onclick="document.body.removeChild(document.getElementById('complaint-type-overlay'))" style="font-size:.82rem;padding:7px 18px;">ยกเลิก</button>
+    </div>
+  </div>`;
+  document.body.appendChild(o);
+
+  let selectedType=null;
+
+  function selectType(type){
+    selectedType=type;
+    document.getElementById('ctype-oneway').classList.toggle('selected', type==='oneway');
+    document.getElementById('ctype-track').classList.toggle('selected', type==='track');
+    const area=document.getElementById('ctype-confirm-area');
+    const msg=document.getElementById('ctype-confirm-msg');
+    const btn=document.getElementById('ctype-confirm-btn');
+    if(type==='oneway'){
+      msg.innerHTML=`<div class="ctype-confirm-warn">⚠️ <strong>ยืนยันการร้องเรียนทางเดียว?</strong><br>คุณจะแจ้งเรื่องได้โดยไม่ต้อง Login แต่<br><strong>จะไม่สามารถติดตามสถานะหรือรับการแจ้งเตือนได้</strong></div>`;
+      btn.textContent='ยืนยัน — แจ้งเรื่องโดยไม่ Login';
+      btn.onclick=()=>{document.body.removeChild(document.getElementById('complaint-type-overlay'));callback('oneway');};
+    } else {
+      msg.innerHTML=`<div class="ctype-confirm-ok">✅ <strong>ยืนยันการร้องเรียนแบบติดตามผล?</strong><br>คุณจะถูกนำไปยังหน้าเข้าสู่ระบบก่อน<br>เพื่อให้ระบบสามารถแจ้งสถานะกลับให้คุณได้</div>`;
+      btn.textContent='ยืนยัน — ไปเข้าสู่ระบบ';
+      btn.onclick=()=>{document.body.removeChild(document.getElementById('complaint-type-overlay'));callback('track');};
+    }
+    area.style.display='block';
+  }
+
+  window.resetComplaintTypeSelection=function(){
+    selectedType=null;
+    document.getElementById('ctype-oneway').classList.remove('selected');
+    document.getElementById('ctype-track').classList.remove('selected');
+    document.getElementById('ctype-confirm-area').style.display='none';
+  };
+
+  document.getElementById('ctype-oneway').addEventListener('click',()=>selectType('oneway'));
+  document.getElementById('ctype-track').addEventListener('click',()=>selectType('track'));
+}
+
 // ═══ NAVIGATION ═══
 function navigateTo(pageId){
-  if(pageId==='portal'&&!currentUser){setupGuestPortalView();pageId='portal';}
+  // ถ้าไปหน้า portal และยังไม่ได้ login → แสดง popup ก่อน
+  if(pageId==='portal' && (!currentUser || currentUser.role==='admin' || currentUser.role==='superadmin')){
+    if(currentUser && (currentUser.role==='admin'||currentUser.role==='superadmin')){
+      // admin ไม่มีสิทธิ์แจ้งเรื่อง — ไปต่อตามปกติ
+    } else {
+      // ยังไม่ login
+      showComplaintTypeModal(function(choice){
+        if(choice==='oneway'){
+          setupGuestPortalView();
+          _doNavigate('portal');
+        } else {
+          // ร้องเรียนแบบติดตามผล → บังคับ login ก่อน
+          _doNavigate('login');
+          showAlert('ℹ️','กรุณาเข้าสู่ระบบ','เข้าสู่ระบบหรือลงทะเบียนก่อนนะคะ แล้วระบบจะพาไปหน้าร้องเรียนโดยอัตโนมัติ');
+          // หลัง login สำเร็จจะ navigateTo('portal') อัตโนมัติอยู่แล้วใน doLogin
+          sessionStorage.setItem('voc_after_login','portal');
+        }
+      });
+      return;
+    }
+  }
+  _doNavigate(pageId);
+}
+function _doNavigate(pageId){
   closeMobileNav(); // ปิด hamburger menu เมื่อ navigate
   ALL_PAGES.forEach(p=>{const e=document.getElementById('page-'+p);if(e)e.classList.add('hidden');});
   document.querySelectorAll('.nav-menu a').forEach(a=>a.classList.remove('active'));
@@ -165,7 +259,12 @@ async function doLogin(){
   btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังเข้าสู่ระบบ...';
   try{
     const res=await api.post('/api/auth',{action:'loginUser',username:u,password:p});
-    if(res.success){currentUser=res;saveSession(res);updateMenuForUser();navigateTo('home');}
+    if(res.success){
+      currentUser=res;saveSession(res);updateMenuForUser();
+      const afterLogin=sessionStorage.getItem('voc_after_login');
+      if(afterLogin){sessionStorage.removeItem('voc_after_login');navigateTo(afterLogin);}
+      else navigateTo('home');
+    }
     else await showAlert('❌','เข้าสู่ระบบไม่สำเร็จ',res.message);
   }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
   finally{btn.disabled=false;btn.innerHTML='ยืนยัน';}
