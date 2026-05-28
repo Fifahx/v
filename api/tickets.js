@@ -1,27 +1,31 @@
-// api/tickets.js v7
-// GET  /api/tickets?action=pinned
-// GET  /api/tickets?action=byUsername&username=xxx
-// GET  /api/tickets?action=byId&id=VOC-xxx
-// GET  /api/tickets?action=all&filter=pending
-// POST /api/tickets { action:'update', ticketId, newStatus, assignee }
-// POST /api/tickets { action:'addComment', ticketId, comment, author }
-// POST /api/tickets { action:'togglePin', ticketId, pinned:true|false }
-// POST /api/tickets { action:'deleteTicket', ticketId }
+// api/tickets.js v8
+// [แก้ไข v8] แก้ปัญหา comment ไม่แสดงบนเว็บ
 //
-// [แก้ไข v7]
-// 1. ลบ ensureHeaders ออก — ไม่ auto-add column อีกต่อไป
-//    เพราะ sheet ตั้งค่า header ตายตัวแล้ว และชื่อ header ที่เช็คเก่า
-//    ไม่ตรงกับ sheet จริง (FileURL vs ไฟล์แนบ, หมายเหตุผู้ใช้ vs หมายเหตุ(ผู้ใช้))
-//    ทำให้ idx.comments = -1 ตลอด → addComment fail
-// 2. ลบ hadMissingHeaders ออก — logic เขียนผิด (double negation) ทำให้ true เสมอ
-// 3. ค้นหา idx จาก header name ตาม sheet จริง ครบทุก field
+// สาเหตุจริง: rowToObj() ใช้ header จาก Sheet จริงเป็น key
+// แต่ frontend (app.js) ดึงข้อมูลด้วย key ชุดเก่า เช่น:
+//   t['UserID']       ← Sheet มี 'UUID'
+//   t['หมายเหตุผู้ใช้'] ← Sheet มี 'หมายเหตุ(ผู้ใช้)'
+//   t['FileURL']      ← Sheet มี 'ไฟล์แนบ'
+//   t['Comments']     ← ตรงแล้ว แต่ index ผิดเพราะ header อื่นเพี้ยน
+//
+// วิธีแก้: ใช้ HEADER_MAP แมปชื่อ Sheet → ชื่อที่ frontend เข้าใจ
+// ทำให้ rowToObj() ส่ง key ที่ถูกต้องไปให้ frontend เสมอ
 
 const {
   getSheetsClient, getSheetData, batchUpdate,
   SHEET_TICKETS, SPREADSHEET_ID, setCorsHeaders, formatDateThai,
 } = require('./_sheets');
 
-// แปลง 0-based column index → Excel letter (A, B, ..., Z, AA, AB, ...)
+// แมปชื่อ header ใน Sheet จริง → ชื่อ key ที่ frontend (app.js) ใช้
+// ถ้าชื่อตรงกันอยู่แล้วไม่ต้องใส่
+const HEADER_MAP = {
+  'UUID':              'UserID',          // Sheet: UUID  → frontend: UserID
+  'หมายเหตุ(ผู้ใช้)': 'หมายเหตุผู้ใช้', // Sheet: หมายเหตุ(ผู้ใช้) → frontend: หมายเหตุผู้ใช้
+  'ไฟล์แนบ':          'FileURL',          // Sheet: ไฟล์แนบ → frontend: FileURL
+  'นักศึกษา/หน่วยงาน': 'รหัส',           // Sheet: นักศึกษา/หน่วยงาน → frontend ไม่ได้ใช้ แต่ map ไว้
+};
+
+// แปลง 0-based column index → Excel letter
 function colLetter(idx) {
   let s = '';
   let n = idx + 1;
@@ -33,10 +37,13 @@ function colLetter(idx) {
   return s;
 }
 
-// แปลงแถว → object ตาม headers
+// แปลงแถว → object โดยแมป key ตาม HEADER_MAP
 function rowToObj(headers, row) {
   const o = {};
-  headers.forEach((h, i) => { o[h] = row[i] !== undefined ? String(row[i]) : ''; });
+  headers.forEach((h, i) => {
+    const key = HEADER_MAP[h] || h;  // แมปชื่อถ้ามี ไม่งั้นใช้ชื่อเดิม
+    o[key] = row[i] !== undefined ? String(row[i]) : '';
+  });
   return o;
 }
 
@@ -52,34 +59,40 @@ module.exports = async function handler(req, res) {
 
     const headers = data[0] || [];
 
-    // ── หา index จาก header name จริงใน Sheet ──
-    // ใช้ indexOf เสมอ ไม่ hardcode เลข เพื่อรองรับถ้า column เคลื่อน
+    // หา index จากชื่อ header ใน Sheet จริง (ทั้งชื่อเดิมและชื่อที่อาจเปลี่ยน)
+    // รองรับทั้ง 2 รูปแบบเพื่อความปลอดภัย
+    const findIdx = (...names) => {
+      for (const n of names) {
+        const i = headers.indexOf(n);
+        if (i !== -1) return i;
+      }
+      return -1;
+    };
+
     const idx = {
-      ticketId : headers.indexOf('Ticket ID'),
-      username : headers.indexOf('Username'),
-      status   : headers.indexOf('สถานะ'),
-      assignee : headers.indexOf('ผู้รับผิดชอบ'),
-      comments : headers.indexOf('Comments'),   // col P (index 15)
-      pinned   : headers.indexOf('Pinned'),     // col Q (index 16)
+      ticketId : findIdx('Ticket ID'),
+      username : findIdx('Username'),
+      status   : findIdx('สถานะ'),
+      assignee : findIdx('ผู้รับผิดชอบ'),
+      comments : findIdx('Comments'),                          // col P
+      pinned   : findIdx('Pinned'),                            // col Q
     };
 
     // ════════════════ GET ════════════════
     if (req.method === 'GET') {
       const { action, username, id, filter } = req.query;
 
-      // ── pinned tickets ──
       if (action === 'pinned') {
         if (idx.pinned === -1) return res.json({ success: true, tickets: [] });
         const results = [];
         for (let i = 1; i < data.length; i++) {
           if (!data[i] || !data[i][0]) continue;
-          const val = String(data[i][idx.pinned] || '').trim().toLowerCase();
-          if (val === 'true') results.push(rowToObj(headers, data[i]));
+          if (String(data[i][idx.pinned] || '').trim().toLowerCase() === 'true')
+            results.push(rowToObj(headers, data[i]));
         }
         return res.json({ success: true, tickets: results });
       }
 
-      // ── by username ──
       if (action === 'byUsername') {
         if (!username) return res.json({ success: false, message: 'ไม่พบ username' });
         if (idx.username === -1) return res.json({ success: true, tickets: [] });
@@ -93,7 +106,6 @@ module.exports = async function handler(req, res) {
         return res.json({ success: true, tickets: results.reverse() });
       }
 
-      // ── by ticket ID ──
       if (action === 'byId') {
         if (idx.ticketId === -1)
           return res.json({ success: false, message: 'ไม่พบ Ticket ID นี้' });
@@ -104,7 +116,6 @@ module.exports = async function handler(req, res) {
         return res.json({ success: false, message: 'ไม่พบ Ticket ID นี้' });
       }
 
-      // ── all (admin) ──
       if (action === 'all') {
         if (idx.status === -1) return res.json({ success: true, tickets: [] });
         const results = [];
@@ -131,7 +142,6 @@ module.exports = async function handler(req, res) {
     if (req.method === 'POST') {
       const { action, ticketId, newStatus, assignee, comment, author, pinned } = req.body;
 
-      // หา row number (1-based, ตรงกับ Sheets row จริง)
       function findRow(tid) {
         if (idx.ticketId === -1) return -1;
         for (let i = 1; i < data.length; i++) {
@@ -140,7 +150,6 @@ module.exports = async function handler(req, res) {
         return -1;
       }
 
-      // ── update สถานะ / ผู้รับผิดชอบ ──
       if (action === 'update') {
         const row = findRow(ticketId);
         if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
@@ -153,17 +162,13 @@ module.exports = async function handler(req, res) {
         return res.json({ success: true });
       }
 
-      // ── addComment — APPEND ต่อท้าย ไม่ลบของเก่า ──
       if (action === 'addComment') {
         const row = findRow(ticketId);
         if (row < 0)
           return res.json({ success: false, message: 'ไม่พบ Ticket' });
-
-        // [แก้ไข] ตรวจ idx.comments ก่อนเสมอ
         if (idx.comments === -1)
-          return res.json({ success: false, message: 'ไม่พบ column "Comments" ใน Sheet — กรุณาตรวจสอบ header row' });
+          return res.json({ success: false, message: 'ไม่พบ column "Comments" ใน Sheet — header row อาจไม่ตรง' });
 
-        // อ่าน comment เก่าจาก data array (row 1-based → index row-1)
         const dataRow     = data[row - 1];
         const oldComments = (dataRow && dataRow[idx.comments] !== undefined)
           ? String(dataRow[idx.comments]).trim()
@@ -180,11 +185,9 @@ module.exports = async function handler(req, res) {
           range: `${SHEET_TICKETS}!${colLetter(idx.comments)}${row}`,
           value: merged,
         }]);
-
         return res.json({ success: true, comments: merged });
       }
 
-      // ── togglePin ──
       if (action === 'togglePin') {
         const row = findRow(ticketId);
         if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
@@ -197,7 +200,6 @@ module.exports = async function handler(req, res) {
         return res.json({ success: true });
       }
 
-      // ── deleteTicket (superadmin only) ──
       if (action === 'deleteTicket') {
         const row = findRow(ticketId);
         if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });

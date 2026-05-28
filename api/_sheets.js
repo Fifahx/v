@@ -1,19 +1,18 @@
-// api/_sheets.js v6
+// api/_sheets.js v7
 // ─────────────────────────────────────────────────────────────
 //  Shared helper: Google Sheets client + utilities
 //
-//  [แก้ไข v6] ลบ generateUserID ที่ใช้ counter จาก Sheets ออก
-//  เพราะมีปัญหา Race Condition ใน Serverless (Vercel)
-//  ย้าย generateUserID และ generateTicketId ไปอยู่ใน submit.js แทน
-//  โดยใช้ crypto.randomUUID() ที่ไม่ต้องพึ่ง Sheets เลย
+//  [แก้ไข v7] ปรับ getTicketHeaders() ให้ชื่อ header ตรงกับ
+//  ที่ frontend (app.js) ใช้ดึงข้อมูลทุกจุด เพื่อป้องกัน
+//  key mismatch ที่ทำให้ Comments / หมายเหตุ / FileURL ไม่แสดง
 //
 //  โครงสร้าง VOC_Tickets — 18 columns:
-//  A: UUID              B: Ticket ID        C: Username
-//  D: วันที่แจ้ง        E: ประเภทผู้แจ้ง    F: ชื่อ
-//  G: นักศึกษา/หน่วยงาน H: ประเภทเรื่อง    I: ความเร่งด่วน
-//  J: หัวข้อ            K: รายละเอียด      L: หมายเหตุ(ผู้ใช้)
-//  M: สถานะ             N: ผู้รับผิดชอบ     O: กำหนดตอบกลับ
-//  P: Comments          Q: Pinned           R: ไฟล์แนบ
+//  A: UserID        B: Ticket ID      C: Username
+//  D: วันที่แจ้ง   E: ประเภทผู้แจ้ง  F: ชื่อ
+//  G: รหัส          H: ประเภทเรื่อง  I: ความเร่งด่วน
+//  J: หัวข้อ        K: รายละเอียด    L: หมายเหตุผู้ใช้
+//  M: สถานะ         N: ผู้รับผิดชอบ  O: กำหนดตอบกลับ
+//  P: Comments      Q: Pinned         R: FileURL
 // ─────────────────────────────────────────────────────────────
 
 const { google } = require('googleapis');
@@ -27,27 +26,28 @@ const SHEET_USERS    = 'VOC_Users';
 const SHEET_COUNTERS = 'VOC_Counters';
 const SHEET_ADMINS   = 'VOC_Admins';
 
-// headers ตาม column order ของ Sheet จริง
+// headers — ชื่อต้องตรงกับที่ frontend (app.js) ใช้ t['...'] ดึงข้อมูล
+// ห้ามเปลี่ยนชื่อตาม Sheet header เพราะ rowToObj() จะส่ง key นี้ให้ frontend
 function getTicketHeaders() {
   return [
-    'UUID',                    // A col1
-    'Ticket ID',               // B col2
-    'Username',                // C col3
-    'วันที่แจ้ง',              // D col4
-    'ประเภทผู้แจ้ง',           // E col5
-    'ชื่อ',                    // F col6
-    'นักศึกษา/หน่วยงาน',      // G col7  (ชื่อตรงกับ sheet header)
-    'ประเภทเรื่อง',            // H col8
-    'ความเร่งด่วน',            // I col9
-    'หัวข้อ',                  // J col10
-    'รายละเอียด',              // K col11
-    'หมายเหตุ(ผู้ใช้)',        // L col12  (ชื่อตรงกับ sheet header)
-    'สถานะ',                   // M col13
-    'ผู้รับผิดชอบ',            // N col14
-    'กำหนดตอบกลับ',           // O col15
-    'Comments',                // P col16
-    'Pinned',                  // Q col17
-    'ไฟล์แนบ',                 // R col18  (ชื่อตรงกับ sheet header)
+    'UserID',          // A col1  — frontend ใช้ t['UserID']
+    'Ticket ID',       // B col2  — frontend ใช้ t['Ticket ID']
+    'Username',        // C col3  — frontend ใช้ t['Username']
+    'วันที่แจ้ง',      // D col4
+    'ประเภทผู้แจ้ง',   // E col5
+    'ชื่อ',            // F col6
+    'รหัส',            // G col7  — (นักศึกษา/หน่วยงาน)
+    'ประเภทเรื่อง',    // H col8
+    'ความเร่งด่วน',    // I col9
+    'หัวข้อ',          // J col10
+    'รายละเอียด',      // K col11
+    'หมายเหตุผู้ใช้',  // L col12 — frontend ใช้ t['หมายเหตุผู้ใช้']
+    'สถานะ',           // M col13
+    'ผู้รับผิดชอบ',    // N col14
+    'กำหนดตอบกลับ',   // O col15
+    'Comments',        // P col16 — frontend ใช้ t['Comments']
+    'Pinned',          // Q col17 — frontend ใช้ t['Pinned']
+    'FileURL',         // R col18 — frontend ใช้ t['FileURL']
   ];
 }
 
