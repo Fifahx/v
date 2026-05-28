@@ -1,5 +1,9 @@
-// api/submit.js v5
+// api/submit.js v6 — UUID-based IDs (ไม่มี Race Condition)
 // POST /api/submit — บันทึก ticket พร้อมหมายเหตุผู้ใช้และไฟล์แนบ (base64)
+//
+// [แก้ไข] เปลี่ยน generateUserID และ generateTicketId เป็น UUID-based
+// เพื่อป้องกัน Race Condition ใน Serverless (Vercel) ที่รันหลาย instance พร้อมกัน
+// ไม่ต้องอ่าน/เขียน Counter ใน Google Sheets อีกต่อไป
 //
 // โครงสร้างคอลัมน์ VOC_Tickets (15 cols + Pinned + Comments):
 // A:UserID B:TicketID C:Username D:วันที่ E:ประเภทผู้แจ้ง F:ชื่อ
@@ -8,27 +12,11 @@
 // P:Comments(ครู) Q:Pinned R:FileURL
 
 const {
-  getSheetsClient, getSheetData, appendRow, generateUserID,
-  SHEET_TICKETS, SHEET_COUNTERS, SPREADSHEET_ID,
+  getSheetsClient, appendRow,
+  generateUserID, generateTicketId,   // ← ใหม่: ไม่รับ sheets เป็น argument
+  SHEET_TICKETS,
   calcDueDate, formatDateThai, setCorsHeaders,
 } = require('./_sheets');
-
-async function generateTicketId(sheets) {
-  const thYear = String(new Date().getFullYear() + 543);
-  const data   = await getSheetData(sheets, SHEET_COUNTERS);
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === thYear) {
-      const n = Number(data[i][1]) + 1;
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID, range: `VOC_Counters!B${i+1}`,
-        valueInputOption: 'RAW', requestBody: { values: [[n]] },
-      });
-      return `VOC-${thYear}-${String(n).padStart(4,'0')}`;
-    }
-  }
-  await appendRow(sheets, SHEET_COUNTERS, [thYear, 1]);
-  return `VOC-${thYear}-0001`;
-}
 
 async function sendNotifyEmail(ticketId, payload) {
   try {
@@ -51,24 +39,22 @@ module.exports = async function handler(req, res) {
   try {
     const p      = req.body;
     const sheets = await getSheetsClient();
-    const [userId, ticketId] = await Promise.all([
-      generateUserID(sheets), generateTicketId(sheets)
-    ]);
+
+    // [แก้ไข] สร้าง ID ทันทีบน server โดยไม่ต้องอ่าน/เขียน Sheets
+    // ป้องกัน Race Condition อย่างสมบูรณ์
+    const userId   = generateUserID();     // UUID เต็ม: "a1b2c3d4-e5f6-..."
+    const ticketId = generateTicketId();   // VOC-2568-A1B2C3D4
+
     const now     = new Date();
     const dueDate = calcDueDate(now, p.priority);
 
-    // ไฟล์แนบ: เก็บ base64 ใน column R (ถ้ามี)
-    // ในระบบจริงควร upload ไป Google Drive แล้วเก็บ URL
-    // ตอนนี้เก็บชื่อไฟล์ไว้ก่อน
-    // ไฟล์แนบ: ถ้า fileData (base64) มี ให้เก็บ base64 ถ้าไม่มีเก็บแค่ชื่อ
     const fileInfo = p.fileData
-      ? p.fileData          // base64 data:xxx;base64,...
+      ? p.fileData
       : (p.fileName ? `[แนบไฟล์: ${p.fileName}]` : '');
-    // Sanitize userNote: แทน newline ด้วย ↵ เพื่อป้องกัน Sheets แตกแถว
     const userNote = (p.userNote || '').replace(/\r?\n/g, ' ↵ ').trim();
 
     await appendRow(sheets, SHEET_TICKETS, [
-      userId,                                                    // A: UserID
+      userId,                                                    // A: UserID (UUID)
       ticketId,                                                  // B: Ticket ID
       p.username || '',                                          // C: Username
       formatDateThai(now),                                       // D: วันที่แจ้ง
@@ -79,7 +65,7 @@ module.exports = async function handler(req, res) {
       p.priority || 'medium',                                    // I: ความเร่งด่วน
       p.subject || '',                                           // J: หัวข้อ
       p.detail  || '',                                           // K: รายละเอียด
-      userNote,                                                     // L: หมายเหตุ (ผู้ใช้)
+      userNote,                                                  // L: หมายเหตุ (ผู้ใช้)
       'รอดำเนินการ',                                             // M: สถานะ
       '',                                                        // N: ผู้รับผิดชอบ
       dueDate,                                                   // O: กำหนดตอบกลับ

@@ -2,9 +2,9 @@
 // ─────────────────────────────────────────────────────────────
 //  Shared helper: Google Sheets client + utilities
 //
-//  โครงสร้าง VOC_Tickets (ใหม่) — 15 columns:
-//  col1  UserID                ← primary key (auto-increment, unique)
-//  col2  Ticket ID             ← VOC-2568-XXXX
+//  โครงสร้าง VOC_Tickets (ใหม่) — 18 columns:
+//  col1  UserID                ← UUID (crypto.randomUUID)
+//  col2  Ticket ID             ← VOC-2568-XXXXXXXX (UUID-based, ไม่ race condition)
 //  col3  Username              ← เชื่อมบัญชี
 //  col4  วันที่แจ้ง
 //  col5  ประเภทผู้แจ้ง
@@ -14,10 +14,13 @@
 //  col9  ความเร่งด่วน
 //  col10 หัวข้อ
 //  col11 รายละเอียด
-//  col12 สถานะ
-//  col13 ผู้รับผิดชอบ
-//  col14 กำหนดตอบกลับ
-//  col15 หมายเหตุ              ← เดิมชื่อ "ผลการพิจารณา/Feedback"
+//  col12 หมายเหตุผู้ใช้
+//  col13 สถานะ
+//  col14 ผู้รับผิดชอบ
+//  col15 กำหนดตอบกลับ
+//  col16 Comments
+//  col17 Pinned
+//  col18 FileURL
 // ─────────────────────────────────────────────────────────────
 
 const { google } = require('googleapis');
@@ -34,8 +37,8 @@ const SHEET_ADMINS   = 'VOC_Admins';
 // headers ใหม่ตามลำดับที่กำหนด
 function getTicketHeaders() {
   return [
-    'UserID',               // A col1  primary key
-    'Ticket ID',            // B col2
+    'UserID',               // A col1  UUID
+    'Ticket ID',            // B col2  VOC-YYYY-XXXXXXXX
     'Username',             // C col3
     'วันที่แจ้ง',           // D col4
     'ประเภทผู้แจ้ง',        // E col5
@@ -92,7 +95,6 @@ async function appendRow(sheets, sheetName, values) {
 
 // ── อัปเดตหลาย cell พร้อมกัน (batchUpdate) ──
 async function batchUpdate(sheets, updates) {
-  // updates = [{ range: 'SheetName!A2', value: 'xxx' }, ...]
   const data = updates.map(u => ({
     range: u.range,
     values: [[u.value]],
@@ -106,49 +108,23 @@ async function batchUpdate(sheets, updates) {
   });
 }
 
-// ── สร้าง UserID ใหม่ (auto-increment, unique) ──
-// เก็บ counter แยกใน VOC_Counters sheet คอลัมน์ "UserID_Counter"
-async function generateUserID(sheets) {
-  const data = await getSheetData(sheets, SHEET_COUNTERS);
-  const headers = data[0] || [];
+// ── สร้าง UserID แบบ UUID — ไม่มี Race Condition ──
+// เปลี่ยนจาก auto-increment counter (อ่าน→บวก→เขียน) ซึ่งมีปัญหา Race Condition
+// ใน Serverless environment มาเป็น UUID ที่สร้างบน client ทันที
+// ตัวอย่าง: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+function generateUserID() {
+  return crypto.randomUUID();
+}
 
-  // หา index ของ UserID_Counter
-  let colIdx = headers.indexOf('UserID_Counter');
-
-  if (colIdx === -1) {
-    // เพิ่ม header ใหม่ถ้ายังไม่มี
-    colIdx = headers.length;
-    const colLetter = String.fromCharCode(65 + colIdx);
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_COUNTERS}!${colLetter}1`,
-      valueInputOption: 'RAW',
-      requestBody: { values: [['UserID_Counter']] },
-    });
-    // เริ่มที่ 1
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_COUNTERS}!${colLetter}2`,
-      valueInputOption: 'RAW',
-      requestBody: { values: [[1]] },
-    });
-    return 1;
-  }
-
-  // อ่านค่าปัจจุบัน
-  const colLetter = String.fromCharCode(65 + colIdx);
-  const currentVal = data[1] ? Number(data[1][colIdx] || 0) : 0;
-  const newVal = currentVal + 1;
-
-  // อัปเดต counter
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_COUNTERS}!${colLetter}2`,
-    valueInputOption: 'RAW',
-    requestBody: { values: [[newVal]] },
-  });
-
-  return newVal;
+// ── สร้าง Ticket ID แบบ UUID-based — ไม่มี Race Condition ──
+// Format: VOC-{ปีไทย}-{8 ตัวแรกของ UUID} เช่น VOC-2568-A1B2C3D4
+// ยังคง prefix VOC-YYYY ไว้เพื่อให้ติดตามรายงานตามปีได้
+// แต่ใช้ UUID แทน sequence number เพื่อป้องกัน race condition
+function generateTicketId() {
+  const thYear = String(new Date().getFullYear() + 543); // พ.ศ.
+  // ใช้ 8 ตัวแรกของ UUID (hex) เป็น suffix — โอกาสซ้ำต่ำมากในทางปฏิบัติ
+  const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+  return `VOC-${thYear}-${suffix}`;
 }
 
 // ── Hash password (SHA-256) ──
@@ -189,5 +165,6 @@ module.exports = {
   SHEET_TICKETS, SHEET_USERS, SHEET_COUNTERS, SHEET_ADMINS,
   getTicketHeaders,
   getSheetsClient, getSheetData, appendRow, batchUpdate,
-  generateUserID, hashPassword, calcDueDate, formatDateThai, setCorsHeaders,
+  generateUserID, generateTicketId,      // ← export ใหม่ (ไม่ใช้ sheets แล้ว)
+  hashPassword, calcDueDate, formatDateThai, setCorsHeaders,
 };
