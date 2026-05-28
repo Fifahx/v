@@ -1,28 +1,32 @@
-// api/tickets.js v8
-// [แก้ไข v8] แก้ปัญหา comment ไม่แสดงบนเว็บ
-//
-// สาเหตุจริง: rowToObj() ใช้ header จาก Sheet จริงเป็น key
-// แต่ frontend (app.js) ดึงข้อมูลด้วย key ชุดเก่า เช่น:
-//   t['UserID']       ← Sheet มี 'UUID'
-//   t['หมายเหตุผู้ใช้'] ← Sheet มี 'หมายเหตุ(ผู้ใช้)'
-//   t['FileURL']      ← Sheet มี 'ไฟล์แนบ'
-//   t['Comments']     ← ตรงแล้ว แต่ index ผิดเพราะ header อื่นเพี้ยน
-//
-// วิธีแก้: ใช้ HEADER_MAP แมปชื่อ Sheet → ชื่อที่ frontend เข้าใจ
-// ทำให้ rowToObj() ส่ง key ที่ถูกต้องไปให้ frontend เสมอ
+// api/tickets.js v9
+// [แก้ไข v9] อัปเดต HEADER_MAP ให้ตรงกับชื่อ header จริงใน Sheet
+// ยืนยันจาก JSON response จริง:
+//   "ความคิดเห็น"           → Comments
+//   "ข้อกำหนดผู้ใช้"        → หมายเหตุผู้ใช้
+//   "รหัสนักศึกษา/ คณะกรรมการ" → รหัส
+//   "ปักหมุด"               → Pinned
+//   (UserID, FileURL ตรวจจาก response แล้วตรงอยู่แล้ว)
 
 const {
   getSheetsClient, getSheetData, batchUpdate,
   SHEET_TICKETS, SPREADSHEET_ID, setCorsHeaders, formatDateThai,
 } = require('./_sheets');
 
-// แมปชื่อ header ใน Sheet จริง → ชื่อ key ที่ frontend (app.js) ใช้
-// ถ้าชื่อตรงกันอยู่แล้วไม่ต้องใส่
+// แมปชื่อ header ใน Sheet จริง → ชื่อ key ที่ frontend (app.js) ใช้ดึงข้อมูล
+// ยืนยันจาก JSON response จริงของ /api/tickets?action=byId
 const HEADER_MAP = {
-  'UUID':              'UserID',          // Sheet: UUID  → frontend: UserID
-  'หมายเหตุ(ผู้ใช้)': 'หมายเหตุผู้ใช้', // Sheet: หมายเหตุ(ผู้ใช้) → frontend: หมายเหตุผู้ใช้
-  'ไฟล์แนบ':          'FileURL',          // Sheet: ไฟล์แนบ → frontend: FileURL
-  'นักศึกษา/หน่วยงาน': 'รหัส',           // Sheet: นักศึกษา/หน่วยงาน → frontend ไม่ได้ใช้ แต่ map ไว้
+  // ยืนยันแล้วจาก JSON จริง
+  'ความคิดเห็น'               : 'Comments',        // col P
+  'ข้อกำหนดผู้ใช้'            : 'หมายเหตุผู้ใช้',  // col L
+  'ปักหมุด'                   : 'Pinned',           // col Q
+  'รหัสนักศึกษา/ คณะกรรมการ' : 'รหัส',            // col G
+
+  // เผื่อชื่อ header อาจมีรูปแบบอื่น (ป้องกันไว้)
+  'UUID'               : 'UserID',
+  'หมายเหตุ(ผู้ใช้)'  : 'หมายเหตุผู้ใช้',
+  'หมายเหตุผู้ใช้'    : 'หมายเหตุผู้ใช้',
+  'ไฟล์แนบ'           : 'FileURL',
+  'นักศึกษา/หน่วยงาน' : 'รหัส',
 };
 
 // แปลง 0-based column index → Excel letter
@@ -41,7 +45,7 @@ function colLetter(idx) {
 function rowToObj(headers, row) {
   const o = {};
   headers.forEach((h, i) => {
-    const key = HEADER_MAP[h] || h;  // แมปชื่อถ้ามี ไม่งั้นใช้ชื่อเดิม
+    const key = HEADER_MAP[h] || h;
     o[key] = row[i] !== undefined ? String(row[i]) : '';
   });
   return o;
@@ -59,8 +63,7 @@ module.exports = async function handler(req, res) {
 
     const headers = data[0] || [];
 
-    // หา index จากชื่อ header ใน Sheet จริง (ทั้งชื่อเดิมและชื่อที่อาจเปลี่ยน)
-    // รองรับทั้ง 2 รูปแบบเพื่อความปลอดภัย
+    // หา index จากชื่อ header จริงใน Sheet — รองรับทุกชื่อที่เป็นไปได้
     const findIdx = (...names) => {
       for (const n of names) {
         const i = headers.indexOf(n);
@@ -74,8 +77,9 @@ module.exports = async function handler(req, res) {
       username : findIdx('Username'),
       status   : findIdx('สถานะ'),
       assignee : findIdx('ผู้รับผิดชอบ'),
-      comments : findIdx('Comments'),                          // col P
-      pinned   : findIdx('Pinned'),                            // col Q
+      // รองรับทั้งชื่อไทยและชื่ออังกฤษ
+      comments : findIdx('ความคิดเห็น', 'Comments'),
+      pinned   : findIdx('ปักหมุด', 'Pinned'),
     };
 
     // ════════════════ GET ════════════════
@@ -167,7 +171,7 @@ module.exports = async function handler(req, res) {
         if (row < 0)
           return res.json({ success: false, message: 'ไม่พบ Ticket' });
         if (idx.comments === -1)
-          return res.json({ success: false, message: 'ไม่พบ column "Comments" ใน Sheet — header row อาจไม่ตรง' });
+          return res.json({ success: false, message: 'ไม่พบ column Comments/ความคิดเห็น ใน Sheet' });
 
         const dataRow     = data[row - 1];
         const oldComments = (dataRow && dataRow[idx.comments] !== undefined)
@@ -192,7 +196,7 @@ module.exports = async function handler(req, res) {
         const row = findRow(ticketId);
         if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
         if (idx.pinned === -1)
-          return res.json({ success: false, message: 'ไม่พบ column "Pinned" ใน Sheet' });
+          return res.json({ success: false, message: 'ไม่พบ column Pinned/ปักหมุด ใน Sheet' });
         await batchUpdate(sheets, [{
           range: `${SHEET_TICKETS}!${colLetter(idx.pinned)}${row}`,
           value: String(pinned),
