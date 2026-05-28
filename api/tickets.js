@@ -1,52 +1,25 @@
-// api/tickets.js v9
-// [แก้ไข v9] อัปเดต HEADER_MAP ให้ตรงกับชื่อ header จริงใน Sheet
-// ยืนยันจาก JSON response จริง:
-//   "ความคิดเห็น"           → Comments
-//   "ข้อกำหนดผู้ใช้"        → หมายเหตุผู้ใช้
-//   "รหัสนักศึกษา/ คณะกรรมการ" → รหัส
-//   "ปักหมุด"               → Pinned
-//   (UserID, FileURL ตรวจจาก response แล้วตรงอยู่แล้ว)
+// api/tickets.js v10
+// [แก้ไข v10] หลังลบ column ซ้ำ S-V ออกจาก Sheet แล้ว
+// ใช้ findIdx ค้นหา header จริงทุกครั้ง ไม่ hardcode index
 
 const {
   getSheetsClient, getSheetData, batchUpdate,
   SHEET_TICKETS, SPREADSHEET_ID, setCorsHeaders, formatDateThai,
 } = require('./_sheets');
 
-// แมปชื่อ header ใน Sheet จริง → ชื่อ key ที่ frontend (app.js) ใช้ดึงข้อมูล
-// ยืนยันจาก JSON response จริงของ /api/tickets?action=byId
-const HEADER_MAP = {
-  // ยืนยันแล้วจาก JSON จริง
-  'ความคิดเห็น'               : 'Comments',        // col P
-  'ข้อกำหนดผู้ใช้'            : 'หมายเหตุผู้ใช้',  // col L
-  'ปักหมุด'                   : 'Pinned',           // col Q
-  'รหัสนักศึกษา/ คณะกรรมการ' : 'รหัส',            // col G
-
-  // เผื่อชื่อ header อาจมีรูปแบบอื่น (ป้องกันไว้)
-  'UUID'               : 'UserID',
-  'หมายเหตุ(ผู้ใช้)'  : 'หมายเหตุผู้ใช้',
-  'หมายเหตุผู้ใช้'    : 'หมายเหตุผู้ใช้',
-  'ไฟล์แนบ'           : 'FileURL',
-  'นักศึกษา/หน่วยงาน' : 'รหัส',
-};
-
-// แปลง 0-based column index → Excel letter
 function colLetter(idx) {
-  let s = '';
-  let n = idx + 1;
+  let s = '', n = idx + 1;
   while (n > 0) {
-    const rem = (n - 1) % 26;
-    s = String.fromCharCode(65 + rem) + s;
+    s = String.fromCharCode(65 + (n - 1) % 26) + s;
     n = Math.floor((n - 1) / 26);
   }
   return s;
 }
 
-// แปลงแถว → object โดยแมป key ตาม HEADER_MAP
 function rowToObj(headers, row) {
   const o = {};
   headers.forEach((h, i) => {
-    const key = HEADER_MAP[h] || h;
-    o[key] = row[i] !== undefined ? String(row[i]) : '';
+    if (h) o[h] = row[i] !== undefined ? String(row[i]) : '';
   });
   return o;
 }
@@ -58,12 +31,11 @@ module.exports = async function handler(req, res) {
   try {
     const sheets = await getSheetsClient();
     const data   = await getSheetData(sheets, SHEET_TICKETS);
-
     if (!data.length) return res.json({ success: true, tickets: [] });
 
     const headers = data[0] || [];
 
-    // หา index จากชื่อ header จริงใน Sheet — รองรับทุกชื่อที่เป็นไปได้
+    // ค้นหา index จากชื่อ header จริงในแถวแรก
     const findIdx = (...names) => {
       for (const n of names) {
         const i = headers.indexOf(n);
@@ -77,12 +49,11 @@ module.exports = async function handler(req, res) {
       username : findIdx('Username'),
       status   : findIdx('สถานะ'),
       assignee : findIdx('ผู้รับผิดชอบ'),
-      // รองรับทั้งชื่อไทยและชื่ออังกฤษ
-      comments : findIdx('ความคิดเห็น', 'Comments'),
-      pinned   : findIdx('ปักหมุด', 'Pinned'),
+      comments : findIdx('Comments', 'ความคิดเห็น'),
+      pinned   : findIdx('Pinned', 'ปักหมุด'),
     };
 
-    // ════════════════ GET ════════════════
+    // ════ GET ════
     if (req.method === 'GET') {
       const { action, username, id, filter } = req.query;
 
@@ -90,7 +61,7 @@ module.exports = async function handler(req, res) {
         if (idx.pinned === -1) return res.json({ success: true, tickets: [] });
         const results = [];
         for (let i = 1; i < data.length; i++) {
-          if (!data[i] || !data[i][0]) continue;
+          if (!data[i]?.[0]) continue;
           if (String(data[i][idx.pinned] || '').trim().toLowerCase() === 'true')
             results.push(rowToObj(headers, data[i]));
         }
@@ -99,20 +70,17 @@ module.exports = async function handler(req, res) {
 
       if (action === 'byUsername') {
         if (!username) return res.json({ success: false, message: 'ไม่พบ username' });
-        if (idx.username === -1) return res.json({ success: true, tickets: [] });
         const results = [];
         for (let i = 1; i < data.length; i++) {
-          if (!data[i] || !data[i][0]) continue;
+          if (!data[i]?.[0]) continue;
           if (String(data[i][idx.username] || '').toLowerCase().trim()
-              !== username.toLowerCase().trim()) continue;
-          results.push(rowToObj(headers, data[i]));
+              === username.toLowerCase().trim())
+            results.push(rowToObj(headers, data[i]));
         }
         return res.json({ success: true, tickets: results.reverse() });
       }
 
       if (action === 'byId') {
-        if (idx.ticketId === -1)
-          return res.json({ success: false, message: 'ไม่พบ Ticket ID นี้' });
         for (let i = 1; i < data.length; i++) {
           if (String(data[i][idx.ticketId] || '') === String(id))
             return res.json({ success: true, ticket: rowToObj(headers, data[i]) });
@@ -121,14 +89,12 @@ module.exports = async function handler(req, res) {
       }
 
       if (action === 'all') {
-        if (idx.status === -1) return res.json({ success: true, tickets: [] });
         const results = [];
         for (let i = 1; i < data.length; i++) {
-          if (!data[i] || !data[i][0]) continue;
+          if (!data[i]?.[0]) continue;
           const status  = String(data[i][idx.status] || '');
           const include = !filter || filter === 'all' ||
-            (filter === 'pending' &&
-              (status === 'รอดำเนินการ' || status === 'กำลังดำเนินการ')) ||
+            (filter === 'pending' && (status === 'รอดำเนินการ' || status === 'กำลังดำเนินการ')) ||
             status === filter;
           if (include) {
             const t = rowToObj(headers, data[i]);
@@ -142,17 +108,15 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'Unknown action' });
     }
 
-    // ════════════════ POST ════════════════
+    // ════ POST ════
     if (req.method === 'POST') {
       const { action, ticketId, newStatus, assignee, comment, author, pinned } = req.body;
 
-      function findRow(tid) {
-        if (idx.ticketId === -1) return -1;
-        for (let i = 1; i < data.length; i++) {
+      const findRow = (tid) => {
+        for (let i = 1; i < data.length; i++)
           if (String(data[i][idx.ticketId] || '') === String(tid)) return i + 1;
-        }
         return -1;
-      }
+      };
 
       if (action === 'update') {
         const row = findRow(ticketId);
@@ -168,22 +132,16 @@ module.exports = async function handler(req, res) {
 
       if (action === 'addComment') {
         const row = findRow(ticketId);
-        if (row < 0)
-          return res.json({ success: false, message: 'ไม่พบ Ticket' });
+        if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
         if (idx.comments === -1)
-          return res.json({ success: false, message: 'ไม่พบ column Comments/ความคิดเห็น ใน Sheet' });
+          return res.json({ success: false, message: `ไม่พบ column Comments ใน Sheet (headers: ${headers.join(', ')})` });
 
         const dataRow     = data[row - 1];
-        const oldComments = (dataRow && dataRow[idx.comments] !== undefined)
-          ? String(dataRow[idx.comments]).trim()
-          : '';
-
+        const oldComments = String(dataRow?.[idx.comments] || '').trim();
         const timestamp   = formatDateThai(new Date());
         const authorLabel = (author || 'ผู้ดูแล').trim();
         const newEntry    = `[${timestamp}] ${authorLabel}: ${comment}`;
-        const merged      = oldComments
-          ? `${oldComments}\n---\n${newEntry}`
-          : newEntry;
+        const merged      = oldComments ? `${oldComments}\n---\n${newEntry}` : newEntry;
 
         await batchUpdate(sheets, [{
           range: `${SHEET_TICKETS}!${colLetter(idx.comments)}${row}`,
@@ -196,7 +154,7 @@ module.exports = async function handler(req, res) {
         const row = findRow(ticketId);
         if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
         if (idx.pinned === -1)
-          return res.json({ success: false, message: 'ไม่พบ column Pinned/ปักหมุด ใน Sheet' });
+          return res.json({ success: false, message: 'ไม่พบ column Pinned ใน Sheet' });
         await batchUpdate(sheets, [{
           range: `${SHEET_TICKETS}!${colLetter(idx.pinned)}${row}`,
           value: String(pinned),
@@ -207,10 +165,9 @@ module.exports = async function handler(req, res) {
       if (action === 'deleteTicket') {
         const row = findRow(ticketId);
         if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
-        const lastCol = colLetter(headers.length - 1);
         await sheets.spreadsheets.values.clear({
           spreadsheetId: SPREADSHEET_ID,
-          range: `${SHEET_TICKETS}!A${row}:${lastCol}${row}`,
+          range: `${SHEET_TICKETS}!A${row}:${colLetter(headers.length - 1)}${row}`,
         });
         return res.json({ success: true });
       }
