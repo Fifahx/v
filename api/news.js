@@ -64,7 +64,11 @@ module.exports = async function handler(req, res) {
         if (!title || !content) return res.json({ success: false, message: 'กรุณากรอกหัวเรื่องและเนื้อหา' });
         const existIds = data.slice(1).map(r => Number(r[0])||0);
         const newId    = existIds.length ? Math.max(...existIds) + 1 : 1;
-        const { imageUrl } = req.body;
+        let { imageUrl } = req.body;
+        // Limit base64 size to ~45000 chars (Google Sheets cell limit ~50000)
+        if (imageUrl && imageUrl.startsWith('data:') && imageUrl.length > 45000) {
+          return res.json({ success: false, message: 'รูปภาพใหญ่เกินไป กรุณาบีบอัดหรือใช้ URL แทน (ขนาดสูงสุดประมาณ 30KB)' });
+        }
         await appendRow(sheets, SHEET_NEWS, [
           newId, formatDateThai(new Date()), title, content, tag||'ทั่วไป', author||'admin', imageUrl||''
         ]);
@@ -86,7 +90,11 @@ module.exports = async function handler(req, res) {
       }
 
       if (action === 'update') {
-        const { imageUrl } = req.body;
+        let { imageUrl } = req.body;
+        // Limit base64 size
+        if (imageUrl && imageUrl.startsWith('data:') && imageUrl.length > 45000) {
+          return res.json({ success: false, message: 'รูปภาพใหญ่เกินไป กรุณาบีบอัดหรือใช้ URL แทน' });
+        }
         for (let i = 1; i < data.length; i++) {
           if (String(data[i][0]) === String(newsId)) {
             const row = i + 1;

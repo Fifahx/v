@@ -60,7 +60,10 @@ module.exports = async function handler(req, res) {
     // ไฟล์แนบ: เก็บ base64 ใน column R (ถ้ามี)
     // ในระบบจริงควร upload ไป Google Drive แล้วเก็บ URL
     // ตอนนี้เก็บชื่อไฟล์ไว้ก่อน
-    const fileInfo = p.fileName ? `[แนบไฟล์: ${p.fileName}]` : '';
+    // ไฟล์แนบ: ถ้า fileData (base64) มี ให้เก็บ base64 ถ้าไม่มีเก็บแค่ชื่อ
+    const fileInfo = p.fileData
+      ? p.fileData          // base64 data:xxx;base64,...
+      : (p.fileName ? `[แนบไฟล์: ${p.fileName}]` : '');
     // Sanitize userNote: แทน newline ด้วย ↵ เพื่อป้องกัน Sheets แตกแถว
     const userNote = (p.userNote || '').replace(/\r?\n/g, ' ↵ ').trim();
 

@@ -71,7 +71,7 @@ function closeMobileNav(){
 
 // ═══ NAVIGATION ═══
 function navigateTo(pageId){
-  if(pageId==='portal'&&!currentUser)pageId='login';
+  if(pageId==='portal'&&!currentUser){setupGuestPortalView();pageId='portal';}
   closeMobileNav(); // ปิด hamburger menu เมื่อ navigate
   ALL_PAGES.forEach(p=>{const e=document.getElementById('page-'+p);if(e)e.classList.add('hidden');});
   document.querySelectorAll('.nav-menu a').forEach(a=>a.classList.remove('active'));
@@ -79,7 +79,10 @@ function navigateTo(pageId){
   if(page)page.classList.remove('hidden');
   const nav=document.getElementById('nav-'+pageId);
   if(nav)nav.classList.add('active');
-  if(pageId==='portal'){setupPortalView();changeStep(1);}
+  if(pageId==='portal'){
+    if(currentUser) setupPortalView();
+    changeStep(1);
+  }
   if(pageId==='admin-dashboard')loadDashboard();
   if(pageId==='admin-report')loadReport(currentReportType);
   if(pageId==='admin-tickets')loadAdminTickets('pending');
@@ -94,7 +97,47 @@ function navigateTo(pageId){
   if(pageId==='home'){loadPinnedTickets();loadNewsStrip();}
   window.scrollTo(0,0);
 }
+function setupGuestPortalView(){
+  // แสดงตัวเลือกสำหรับผู้ที่ไม่ได้ login
+  const w=document.getElementById('portal-login-warning');
+  const f=document.getElementById('portal-form-content');
+  if(w) w.classList.add('hidden');
+  if(f) {
+    f.classList.remove('hidden');
+    // เพิ่ม banner แจ้งผู้ใช้ว่าร้องเรียนแบบ guest ไม่สามารถติดตามสถานะได้
+    const banner=document.getElementById('guest-mode-banner');
+    if(!banner){
+      const b=document.createElement('div');
+      b.id='guest-mode-banner';
+      b.className='guest-banner';
+      b.innerHTML=`<div class="guest-banner-inner">
+        <i class="fas fa-user-circle" style="font-size:1.4rem;color:#2d6a4f;"></i>
+        <div class="guest-banner-text">
+          <div class="guest-banner-title">คุณยังไม่ได้เข้าสู่ระบบ</div>
+          <div class="guest-banner-sub">สามารถแจ้งเรื่องได้โดยไม่ต้อง login แต่<strong>จะไม่สามารถติดตามสถานะ</strong>ได้ หากต้องการติดตามสถานะ กรุณาเข้าสู่ระบบ</div>
+        </div>
+        <div class="guest-banner-btns">
+          <button class="guest-btn-login" onclick="navigateTo('login')"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</button>
+          <button class="guest-btn-reg" onclick="navigateTo('register')"><i class="fas fa-user-plus"></i> ลงทะเบียน</button>
+          <button class="guest-btn-cont" onclick="dismissGuestBanner()"><i class="fas fa-bullhorn"></i> แจ้งเรื่องโดยไม่ login</button>
+        </div>
+      </div>`;
+      f.insertBefore(b, f.firstChild);
+    }
+  }
+}
+function dismissGuestBanner(){
+  const b=document.getElementById('guest-mode-banner');
+  if(b) b.style.display='none';
+  // แสดง step progress
+  document.querySelector('.step-progress')?.classList.remove('hidden');
+  document.getElementById('step-content-1')?.classList.remove('hidden');
+}
+
 function setupPortalView(){
+  // Remove guest banner if exists
+  const oldBanner=document.getElementById('guest-mode-banner');
+  if(oldBanner) oldBanner.remove();
   const w=document.getElementById('portal-login-warning');
   const f=document.getElementById('portal-form-content');
   if(currentUser&&currentUser.role==='user'){
@@ -435,6 +478,18 @@ function prepareReview(){
   changeStep(4);
 }
 
+async function fileToBase64(file){
+  if(!file) return '';
+  // Limit to ~40KB for Sheets
+  if(file.size > 40*1024) return ''; // too large, skip
+  return new Promise(r=>{
+    const reader=new FileReader();
+    reader.onload=e=>r(e.target.result);
+    reader.onerror=()=>r('');
+    reader.readAsDataURL(file);
+  });
+}
+
 async function finalSubmit(){
   if(!await showConfirm('📋','ยืนยันการส่งเรื่อง','ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้'))return;
   const btn=document.getElementById('btn-final');
@@ -447,14 +502,24 @@ async function finalSubmit(){
       subject:document.getElementById('v-subject').value,
       detail:document.getElementById('v-detail').value,
       userNote:document.getElementById('v-note')?.value.trim()||'', // ข้อ 1
-      fileName:attachedFile?attachedFile.name:'',                    // ข้อ 2
-      username:currentUser?currentUser.username:'',
+      fileName:attachedFile?attachedFile.name:'',
+      fileData:attachedFile?await fileToBase64(attachedFile):'',    // base64 file
+      username:currentUser?currentUser.username:'guest',
     });
     if(res.success){
       document.getElementById('step-content-4')?.classList.add('hidden');
       document.getElementById('success-area')?.classList.remove('hidden');
       document.getElementById('new-ticket-id').innerText=res.ticketId;
       attachedFile=null;
+      // hide tracking button for guests
+      const trackBtn=document.querySelector('#success-area .success-btn-row button:first-child');
+      if(trackBtn&&!currentUser){
+        trackBtn.style.display='none';
+        const guestNote=document.createElement('p');
+        guestNote.style.cssText='font-size:.82rem;color:#f77f00;background:#fff8ec;border-radius:8px;padding:10px 14px;margin-bottom:14px;border-left:3px solid #f77f00;';
+        guestNote.innerHTML='<i class="fas fa-info-circle"></i> คุณแจ้งเรื่องในฐานะ Guest ไม่สามารถติดตามสถานะได้ กรุณาเก็บ Ticket ID ไว้';
+        document.getElementById('success-area').querySelector('.success-wrap').insertBefore(guestNote, trackBtn.parentNode);
+      }
     } else await showAlert('❌','ส่งไม่สำเร็จ',res.error||'เกิดข้อผิดพลาด');
   }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
   finally{btn.innerHTML='<i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่อง';btn.disabled=false;}
@@ -765,8 +830,11 @@ function buildTicketCard(t, showRating=false){
       ${fileInfo?`<div class="ticket-card-section">
         <div class="ticket-card-section-label"><i class="fas fa-paperclip"></i> ไฟล์แนบ</div>
         <div class="file-attach-display">
-          <i class="fas fa-file-alt" style="color:var(--dgreen);font-size:1.1rem;"></i>
-          <span style="font-size:.9rem;color:#333;">${fileInfo.replace(/\[แนบไฟล์:\s*/,'').replace(/\]$/,'')}</span>
+          ${fileInfo.startsWith('data:')
+            ? `<a href="${fileInfo}" download="attached-file" style="display:inline-flex;align-items:center;gap:6px;color:var(--dgreen);font-weight:700;text-decoration:none;"><i class="fas fa-download"></i> ดาวน์โหลดไฟล์แนบ</a>`
+            : `<i class="fas fa-file-alt" style="color:var(--dgreen);font-size:1.1rem;"></i>
+               <span style="font-size:.9rem;color:#555;">${fileInfo.replace(/\[แนบไฟล์:\s*/,'').replace(/\]$/,'')}</span>
+               <span style="font-size:.75rem;color:#aaa;margin-left:4px;">(ชื่อไฟล์เท่านั้น — ไม่มีลิงก์ดาวน์โหลด)</span>`}
         </div>
       </div>`:''}
 
@@ -1746,9 +1814,15 @@ function renderSANews(news){
     <h4><i class="fas fa-plus-circle"></i> เพิ่มข่าวสารใหม่</h4>
     <div class="form-group"><label>หัวเรื่อง <span style="color:#d00000;">*</span></label><input type="text" id="news-title" placeholder="หัวเรื่องข่าว"></div>
     <div class="form-group"><label>เนื้อหา <span style="color:#d00000;">*</span></label><textarea id="news-content" rows="4" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:.93rem;resize:vertical;"></textarea></div>
-    <div class="form-group"><label>URL รูปภาพ <span style="color:#aaa;font-weight:400;">(ไม่บังคับ)</span></label>
-      <input type="url" id="news-image" placeholder="https://example.com/image.jpg" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:.93rem;box-sizing:border-box;">
-      <small style="color:#aaa;font-size:.75rem;">ใส่ URL รูปภาพจากภายนอก เช่น Google Drive, Imgur หรือเว็บโรงเรียน</small>
+    <div class="form-group"><label>รูปภาพ <span style="color:#aaa;font-weight:400;">(ไม่บังคับ)</span></label>
+      <div class="news-img-upload-wrap">
+        <input type="file" id="news-image-file" accept="image/*" onchange="handleNewsImageSelect(this,'news-img-preview','news-image-b64')" style="display:none;">
+        <input type="hidden" id="news-image-b64" value="">
+        <label for="news-image-file" class="news-img-upload-btn"><i class="fas fa-image"></i> เลือกรูปภาพจากเครื่อง</label>
+        <div id="news-img-preview" class="news-img-preview-wrap" style="display:none;margin-top:8px;"></div>
+      </div>
+      <div style="margin-top:6px;display:flex;align-items:center;gap:6px;"><span style="font-size:.75rem;color:#aaa;">หรือใส่ URL รูปภาพ</span></div>
+      <input type="url" id="news-image-url" placeholder="https://example.com/image.jpg" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:.88rem;box-sizing:border-box;margin-top:4px;">
     </div>
     <div class="form-group"><label>Tag</label><select id="news-tag" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;">
       ${tagOpts.map(t=>`<option value="${t}">${t}</option>`).join('')}
@@ -1775,16 +1849,58 @@ function renderSANews(news){
   });
   container.innerHTML=html;
 }
+function handleNewsImageSelect(input, previewId, b64Id){
+  const file=input.files?.[0];
+  const previewEl=document.getElementById(previewId);
+  const b64El=document.getElementById(b64Id);
+  if(!file){if(previewEl)previewEl.style.display='none';if(b64El)b64El.value='';return;}
+  if(file.size>3*1024*1024){showAlert('⚠️','ไฟล์ใหญ่เกินไป','ขนาดรูปไม่เกิน 3 MB');input.value='';return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    if(b64El) b64El.value=e.target.result; // data:image/xxx;base64,...
+    if(previewEl){
+      previewEl.innerHTML=`<div style="position:relative;display:inline-block;">
+        <img src="${e.target.result}" style="max-width:200px;max-height:140px;border-radius:8px;object-fit:cover;">
+        <button onclick="clearNewsImg('${input.id}','${previewId}','${b64Id}')" style="position:absolute;top:-6px;right:-6px;background:#d00000;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:.7rem;cursor:pointer;">✕</button>
+      </div>`;
+      previewEl.style.display='block';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+function clearNewsImg(inputId, previewId, b64Id){
+  const inp=document.getElementById(inputId);
+  if(inp) inp.value='';
+  const prev=document.getElementById(previewId);
+  if(prev){prev.innerHTML='';prev.style.display='none';}
+  const b64=document.getElementById(b64Id);
+  if(b64) b64.value='';
+}
+function getNewsImageData(prefix='news'){
+  // ดึงรูปจาก b64 ก่อน ถ้าไม่มีใช้ url
+  const b64=document.getElementById(prefix+'-image-b64')?.value||'';
+  if(b64) return b64;
+  return document.getElementById(prefix+'-image-url')?.value.trim()||'';
+}
+
 async function addNews(){
   const title=document.getElementById('news-title')?.value.trim();
   const content=document.getElementById('news-content')?.value.trim();
   const tag=document.getElementById('news-tag')?.value;
-  const imageUrl=document.getElementById('news-image')?.value.trim()||'';
+  const imageUrl=getNewsImageData('news');
   if(!title||!content){await showAlert('⚠️','กรุณากรอกข้อมูล','กรุณากรอกหัวเรื่องและเนื้อหา');return;}
   try{
     const res=await api.post('/api/news',{action:'add',title,content,tag,imageUrl,author:currentUser?.username||'admin'});
-    if(res.success){await showAlert('✅','เพิ่มข่าวสำเร็จ','');loadSANews();}
-    else await showAlert('❌','ไม่สำเร็จ',res.message);
+    if(res.success){
+      // reset form
+      document.getElementById('news-title').value='';
+      document.getElementById('news-content').value='';
+      clearNewsImg('news-image-file','news-img-preview','news-image-b64');
+      const urlEl=document.getElementById('news-image-url');
+      if(urlEl) urlEl.value='';
+      await showAlert('✅','เพิ่มข่าวสำเร็จ','');
+      loadSANews();
+    } else await showAlert('❌','ไม่สำเร็จ',res.message);
   }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
 }
 
@@ -1803,8 +1919,16 @@ function editNews(idxOrObj){
       <input type="text" id="edit-news-title" value="${(n.title||'').replace(/"/g,'&quot;')}" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div>
     <div class="form-group"><label>เนื้อหา <span style="color:#d00000;">*</span></label>
       <textarea id="edit-news-content" rows="5" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:.93rem;resize:vertical;box-sizing:border-box;">${n.content||''}</textarea></div>
-    <div class="form-group"><label>URL รูปภาพ</label>
-      <input type="url" id="edit-news-image" value="${n.imageUrl||''}" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;"></div>
+    <div class="form-group"><label>รูปภาพ</label>
+      <input type="hidden" id="edit-news-image-b64" value="">
+      <input type="hidden" id="edit-news-image-existing" value="${n.imageUrl||''}">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+        <input type="file" id="edit-news-image-file" accept="image/*" onchange="handleNewsImageSelect(this,'edit-news-img-preview','edit-news-image-b64')" style="display:none;">
+        <label for="edit-news-image-file" style="display:inline-flex;align-items:center;gap:5px;padding:7px 13px;background:var(--dgreen);color:#fff;border-radius:8px;cursor:pointer;font-size:.82rem;"><i class="fas fa-upload"></i> อัปโหลดรูปใหม่</label>
+        ${n.imageUrl?'<button type="button" onclick="clearExistingImg()" style="padding:6px 12px;background:#fde8e8;color:#d00000;border:1px solid #f5c6c6;border-radius:8px;font-size:.78rem;"><i class=\"fas fa-trash\"></i> ลบรูปเดิม</button>':''}
+      </div>
+      <div id="edit-news-img-preview" class="news-img-preview-wrap" style="display:none;"></div>
+      <input type="url" id="edit-news-image-url" value="" placeholder="หรือวาง URL รูปภาพ" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:.85rem;box-sizing:border-box;margin-top:6px;"></div>
     <div class="form-group"><label>Tag</label>
       <select id="edit-news-tag" style="padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;">
         ${tagOpts.map(t=>`<option value="${t}" ${t===n.tag?'selected':''}>${t}</option>`).join('')}
@@ -1820,7 +1944,11 @@ async function updateNews(newsId){
   const title=document.getElementById('edit-news-title')?.value.trim();
   const content=document.getElementById('edit-news-content')?.value.trim();
   const tag=document.getElementById('edit-news-tag')?.value;
-  const imageUrl=document.getElementById('edit-news-image')?.value.trim()||'';
+  // priority: new uploaded b64 > new URL typed > existing URL preserved
+  const newB64=document.getElementById('edit-news-image-b64')?.value||'';
+  const newUrl=document.getElementById('edit-news-image-url')?.value.trim()||'';
+  const existing=document.getElementById('edit-news-image-existing')?.value||'';
+  const imageUrl=newB64||newUrl||existing;
   if(!title||!content){await showAlert('⚠️','กรุณากรอกข้อมูล','หัวเรื่องและเนื้อหาจำเป็นต้องกรอก');return;}
   try{
     const res=await api.post('/api/news',{action:'update',newsId,title,content,tag,imageUrl});
@@ -1830,6 +1958,14 @@ async function updateNews(newsId){
       loadSANews();
     } else await showAlert('❌','ไม่สำเร็จ',res.message);
   }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+}
+function clearExistingImg(){
+  const ex=document.getElementById('edit-news-image-existing');
+  if(ex) ex.value='';
+  const b64=document.getElementById('edit-news-image-b64');
+  if(b64) b64.value='';
+  const prev=document.getElementById('edit-news-img-preview');
+  if(prev){prev.innerHTML='';prev.style.display='none';}
 }
 async function deleteNews(newsId){
   if(!await showConfirm('🗑️','ลบข่าว','ต้องการลบข่าวนี้ใช่หรือไม่?','danger'))return;
