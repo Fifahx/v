@@ -479,10 +479,13 @@ function updateMenuForUser(){
     <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
     <a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>`;
   document.getElementById('right-menu').innerHTML=`
-    <span class="user-badge" onclick="showProfile()" title="โปรไฟล์">
+    <span class="user-badge header-auth-desktop" onclick="showProfile()" title="โปรไฟล์">
       <i class="fas fa-user-circle"></i>${currentUser.firstname} ${currentUser.lastname}
     </span>
-    <a onclick="doLogout()" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a>`;
+    <a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a>
+    <button class="header-auth-mobile header-auth-mobile--logged" onclick="showProfile()" aria-label="โปรไฟล์">
+      <i class="fas fa-user-circle"></i>
+    </button>`;
 }
 function updateMenuForAdmin(){
   document.getElementById('main-nav').innerHTML=`
@@ -493,8 +496,11 @@ function updateMenuForAdmin(){
     <a onclick="navigateTo('admin-report')" id="nav-admin-report">รายงาน</a>
     <a onclick="navigateTo('faq')" id="nav-faq">FAQ</a>`;
   document.getElementById('right-menu').innerHTML=`
-    <span class="user-badge"><i class="fas fa-shield-alt"></i>${currentUser.fullname||'Admin'}</span>
-    <a onclick="doLogout()" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a>`;
+    <span class="user-badge header-auth-desktop"><i class="fas fa-shield-alt"></i>${currentUser.fullname||'Admin'}</span>
+    <a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a>
+    <button class="header-auth-mobile header-auth-mobile--logged" onclick="doLogout()" aria-label="ออกจากระบบ">
+      <i class="fas fa-shield-alt"></i>
+    </button>`;
 }
 function updateMenuForSuperAdmin(){
   document.getElementById('main-nav').innerHTML=`
@@ -505,8 +511,11 @@ function updateMenuForSuperAdmin(){
     <a onclick="navigateTo('admin-report')" id="nav-admin-report">รายงาน</a>
     <a onclick="navigateTo('superadmin')" id="nav-superadmin">⚙️ ระบบ</a>`;
   document.getElementById('right-menu').innerHTML=`
-    <span class="user-badge superadmin-badge"><i class="fas fa-crown" style="color:#f0a500;"></i>${currentUser.fullname||'SuperAdmin'}</span>
-    <a onclick="doLogout()" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a>`;
+    <span class="user-badge superadmin-badge header-auth-desktop"><i class="fas fa-crown" style="color:#f0a500;"></i>${currentUser.fullname||'SuperAdmin'}</span>
+    <a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a>
+    <button class="header-auth-mobile header-auth-mobile--logged" onclick="doLogout()" aria-label="ออกจากระบบ">
+      <i class="fas fa-crown" style="color:#f0a500;"></i>
+    </button>`;
 }
 async function doLogout(){
   if(!await showConfirm('🚪','ออกจากระบบ','ต้องการออกจากระบบใช่หรือไม่?'))return;
@@ -517,8 +526,11 @@ async function doLogout(){
     <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
     <a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>`;
   document.getElementById('right-menu').innerHTML=`
-    <a onclick="navigateTo('login')" class="nav-menu" style="color:#fff;">เข้าสู่ระบบ</a>
-    <a onclick="navigateTo('register')" class="btn-nav-active nav-menu">ลงทะเบียน</a>`;
+    <a onclick="navigateTo('login')" class="nav-menu header-auth-desktop" style="color:rgba(255,255,255,.85);font-size:.85rem;"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</a>
+    <a onclick="navigateTo('register')" class="btn-nav-active nav-menu header-auth-desktop">ลงทะเบียน</a>
+    <button class="header-auth-mobile" id="header-user-icon-btn" onclick="navigateTo('login')" aria-label="เข้าสู่ระบบ / โปรไฟล์">
+      <i class="fas fa-user-circle"></i>
+    </button>`;
   navigateTo('home');
 }
 

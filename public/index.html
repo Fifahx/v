@@ -32,8 +32,13 @@
         </div>
       </div>
       <div class="header-right-top" id="right-menu">
-        <a onclick="navigateTo('login')" class="nav-menu" style="color:rgba(255,255,255,.85);font-size:.85rem;"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</a>
-        <a onclick="navigateTo('register')" class="btn-nav-active nav-menu">ลงทะเบียน</a>
+        <!-- Desktop: full text buttons -->
+        <a onclick="navigateTo('login')" class="nav-menu header-auth-desktop" style="color:rgba(255,255,255,.85);font-size:.85rem;"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</a>
+        <a onclick="navigateTo('register')" class="btn-nav-active nav-menu header-auth-desktop">ลงทะเบียน</a>
+        <!-- Mobile: icon only -->
+        <button class="header-auth-mobile" id="header-user-icon-btn" onclick="navigateTo('login')" aria-label="เข้าสู่ระบบ / โปรไฟล์">
+          <i class="fas fa-user-circle"></i>
+        </button>
       </div>
     </div>
   </div>
