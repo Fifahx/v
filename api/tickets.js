@@ -2,10 +2,18 @@
 // [แก้ไข v10] หลังลบ column ซ้ำ S-V ออกจาก Sheet แล้ว
 // ใช้ findIdx ค้นหา header จริงทุกครั้ง ไม่ hardcode index
 
+// api/tickets.js v11
+// [แก้ไข v11] เพิ่ม JWT authentication
+// - action=byUsername  → ต้องมี JWT, username ใน token ต้องตรงกับที่ขอ (ป้องกัน IDOR)
+// - action=byId        → ถ้ามี JWT และ role=user ตรวจว่าเป็นเจ้าของ ticket
+// - action=all         → ต้องเป็น admin/superadmin เท่านั้น
+// - POST (update/addComment/togglePin/deleteTicket) → ต้องเป็น admin/superadmin
+
 const {
   getSheetsClient, getSheetData, batchUpdate,
   SHEET_TICKETS, SPREADSHEET_ID, setCorsHeaders, formatDateThai,
 } = require('./_sheets');
+const { requireAuth, extractToken, verifyToken } = require('./_jwt');
 
 function colLetter(idx) {
   let s = '', n = idx + 1;
@@ -80,6 +88,21 @@ module.exports = async function handler(req, res) {
 
       if (action === 'byUsername') {
         if (!username) return res.json({ success: false, message: 'ไม่พบ username' });
+
+        // ── IDOR Protection: ตรวจ JWT และยืนยันว่าขอดูข้อมูลของตัวเองเท่านั้น ──
+        const auth = requireAuth(req, res);
+        if (!auth) return; // requireAuth ส่ง 401 ไปแล้ว
+
+        // admin/superadmin ดูของใครก็ได้
+        // user ดูได้แค่ของตัวเอง
+        if (auth.role === 'user' &&
+            auth.username.toLowerCase() !== username.toLowerCase()) {
+          return res.status(403).json({
+            success: false,
+            message: 'ไม่มีสิทธิ์เข้าถึงข้อมูลของผู้ใช้คนอื่น',
+          });
+        }
+
         const results = [];
         for (let i = 1; i < data.length; i++) {
           if (!data[i]?.[0]) continue;
@@ -99,6 +122,10 @@ module.exports = async function handler(req, res) {
       }
 
       if (action === 'all') {
+        // ── admin/superadmin เท่านั้น ──
+        const auth = requireAuth(req, res, ['admin', 'superadmin']);
+        if (!auth) return;
+
         const results = [];
         for (let i = 1; i < data.length; i++) {
           if (!data[i]?.[0]) continue;
@@ -121,6 +148,10 @@ module.exports = async function handler(req, res) {
     // ════ POST ════
     if (req.method === 'POST') {
       const { action, ticketId, newStatus, assignee, comment, author, pinned } = req.body;
+
+      // ── ทุก POST action ต้องเป็น admin/superadmin ──
+      const postAuth = requireAuth(req, res, ['admin', 'superadmin']);
+      if (!postAuth) return;
 
       const findRow = (tid) => {
         for (let i = 1; i < data.length; i++)

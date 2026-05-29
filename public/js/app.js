@@ -11,15 +11,25 @@ let currentReportType='service';
 
 // ═══ API ═══
 const api={
+  // ── แนบ Authorization: Bearer <token> ทุก request โดยอัตโนมัติ ──
+  _headers(extra={}){
+    const h={'Content-Type':'application/json',...extra};
+    const token=loadToken();
+    if(token) h['Authorization']='Bearer '+token;
+    return h;
+  },
   async post(url,body){
-    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const r=await fetch(url,{method:'POST',headers:this._headers(),body:JSON.stringify(body)});
     return r.json();
   },
   async patch(url,body){
-    const r=await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const r=await fetch(url,{method:'PATCH',headers:this._headers(),body:JSON.stringify(body)});
     return r.json();
   },
-  async get(url){return(await fetch(url)).json();},
+  async get(url){
+    const r=await fetch(url,{headers:this._headers()});
+    return r.json();
+  },
 };
 
 // ═══ MODAL ═══
@@ -246,9 +256,22 @@ function setupPortalView(){
 }
 
 // ═══ SESSION ═══
-function saveSession(u){try{localStorage.setItem('voc_session',JSON.stringify(u));}catch(e){}}
-function clearSession(){try{localStorage.removeItem('voc_session');}catch(e){}}
+// ── Session helpers (user info ใน localStorage, token ใน sessionStorage) ──
+// token อยู่ใน sessionStorage → ล้างอัตโนมัติเมื่อปิด tab ป้องกัน XSS ขโมย token ได้ง่าย
+// user info (ชื่อ, role ฯลฯ) ยังอยู่ใน localStorage เพื่อ restore UI ได้
+function saveSession(u){
+  try{
+    const {token,...rest}=u;
+    localStorage.setItem('voc_session',JSON.stringify(rest));
+    if(token) sessionStorage.setItem('voc_token',token);
+  }catch(e){}
+}
+function clearSession(){
+  try{localStorage.removeItem('voc_session');}catch(e){}
+  try{sessionStorage.removeItem('voc_token');}catch(e){}
+}
 function loadSession(){try{const r=localStorage.getItem('voc_session');return r?JSON.parse(r):null;}catch(e){return null;}}
+function loadToken(){try{return sessionStorage.getItem('voc_token')||'';}catch(e){return '';}}
 
 // ═══ AUTH ═══
 async function doLogin(){

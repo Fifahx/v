@@ -1,10 +1,13 @@
-// api/auth.js v6 — unified admin+superadmin login
-// superadmin ใช้ช่องเดียวกับ admin แต่ตรวจ VOC_SuperAdmins ก่อน → VOC_Admins
+// api/auth.js v7 — unified admin+superadmin login + JWT
+// [แก้ไข v7] เพิ่ม JWT signing หลัง login สำเร็จ
+// token ถูก sign ด้วย JWT_SECRET (env var) และมีอายุ 8 ชั่วโมง
+// client เก็บ token ใน sessionStorage และส่งผ่าน Authorization: Bearer <token>
 const {
   getSheetsClient, getSheetData, appendRow,
   SHEET_USERS, SHEET_ADMINS, SPREADSHEET_ID,
   hashPassword, formatDateThai, setCorsHeaders,
 } = require('./_sheets');
+const { createToken } = require('./_jwt');
 
 const SHEET_SUPERADMINS = 'VOC_SuperAdmins';
 
@@ -43,9 +46,11 @@ module.exports = async function handler(req, res) {
       const h    = hashPassword(password);
       for (let i = 1; i < data.length; i++) {
         if (String(data[i][6]||'').toLowerCase() === String(username).toLowerCase()
-          && String(data[i][7]) === h && String(data[i][8]) === 'active')
-          return res.json({ success:true, role:'user',
+          && String(data[i][7]) === h && String(data[i][8]) === 'active') {
+          const token = createToken({ username: data[i][6], role: 'user' });
+          return res.json({ success:true, role:'user', token,
             username:data[i][6], firstname:data[i][1], lastname:data[i][2], email:data[i][3] });
+        }
       }
       return res.json({ success:false, message:'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
     }
@@ -60,9 +65,11 @@ module.exports = async function handler(req, res) {
       const saData = await getSheetData(sheets, SHEET_SUPERADMINS);
       for (let i = 1; i < saData.length; i++) {
         if (String(saData[i][0]||'').toLowerCase() === String(username).toLowerCase()
-          && String(saData[i][1]) === h && String(saData[i][4]) === 'active')
-          return res.json({ success:true, role:'superadmin',
+          && String(saData[i][1]) === h && String(saData[i][4]) === 'active') {
+          const token = createToken({ username: saData[i][0], role: 'superadmin' });
+          return res.json({ success:true, role:'superadmin', token,
             username:saData[i][0], fullname:saData[i][2], email:saData[i][3] });
+        }
       }
 
       // ตรวจ Admins ปกติ
@@ -74,9 +81,11 @@ module.exports = async function handler(req, res) {
       }
       for (let i = 1; i < aData.length; i++) {
         if (String(aData[i][0]||'').toLowerCase() === String(username).toLowerCase()
-          && String(aData[i][1]) === h && String(aData[i][4]) === 'active')
-          return res.json({ success:true, role:'admin',
+          && String(aData[i][1]) === h && String(aData[i][4]) === 'active') {
+          const token = createToken({ username: aData[i][0], role: 'admin' });
+          return res.json({ success:true, role:'admin', token,
             username:aData[i][0], fullname:aData[i][2], email:aData[i][3] });
+        }
       }
       return res.json({ success:false, message:'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
     }
@@ -89,9 +98,11 @@ module.exports = async function handler(req, res) {
       const h    = hashPassword(password);
       for (let i = 1; i < data.length; i++) {
         if (String(data[i][0]||'').toLowerCase() === String(username).toLowerCase()
-          && String(data[i][1]) === h && String(data[i][4]) === 'active')
-          return res.json({ success:true, role:'superadmin',
+          && String(data[i][1]) === h && String(data[i][4]) === 'active') {
+          const token = createToken({ username: data[i][0], role: 'superadmin' });
+          return res.json({ success:true, role:'superadmin', token,
             username:data[i][0], fullname:data[i][2], email:data[i][3] });
+        }
       }
       return res.json({ success:false, message:'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
     }
