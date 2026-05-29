@@ -1,15 +1,17 @@
-// api/submit.js v6
-// POST /api/submit — บันทึก ticket พร้อมหมายเหตุผู้ใช้และไฟล์แนบ (base64)
+// api/submit.js v7
+// POST /api/submit — บันทึก ticket พร้อมหมายเหตุผู้ใช้และ URL ไฟล์แนบ
 //
-// [แก้ไข v6] เปลี่ยน ID generation เป็น UUID-based
-// ป้องกัน Race Condition ใน Serverless (Vercel) ที่รันหลาย instance พร้อมกัน
+// [แก้ไข v7] เปลี่ยนการรับไฟล์แนบ:
+//   เดิม: รับ fileData (base64) → crash เมื่อไฟล์ > ~35 KB
+//   ใหม่: รับ fileUrl (string URL จาก /api/upload) เท่านั้น
+//         ห้ามบันทึก base64 ลง Google Sheets โดยตรง
 //
 // Column mapping ตรงกับ VOC_Tickets sheet (18 cols):
 // A: UUID        B: Ticket ID     C: Username       D: วันที่แจ้ง
 // E: ประเภทผู้แจ้ง F: ชื่อ        G: นักศึกษา/หน่วยงาน H: ประเภทเรื่อง
 // I: ความเร่งด่วน J: หัวข้อ       K: รายละเอียด    L: หมายเหตุ(ผู้ใช้)
 // M: สถานะ       N: ผู้รับผิดชอบ  O: กำหนดตอบกลับ  P: Comments
-// Q: Pinned      R: ไฟล์แนบ
+// Q: Pinned      R: FileURL (Google Drive link)
 
 const {
   getSheetsClient, appendRow,
@@ -75,20 +77,13 @@ module.exports = async function handler(req, res) {
     const now     = new Date();
     const dueDate = calcDueDate(now, p.priority);
 
-    // ── ประมวลผลไฟล์แนบ ──
-    // ถ้ามี base64 (fileData) ให้เก็บ, ถ้าไม่มีเก็บแค่ชื่อไฟล์
-    // หมายเหตุ: base64 ขนาดใหญ่อาจเกิน limit ของ Google Sheets cell (~50000 chars)
-    let fileInfo = '';
-    if (p.fileData && p.fileData.startsWith('data:')) {
-      if (p.fileData.length > 45000) {
-        // ไฟล์ใหญ่เกินไป — เก็บแค่ชื่อไว้ก่อน
-        fileInfo = p.fileName ? `[แนบไฟล์: ${p.fileName} — ไฟล์ใหญ่เกิน 30KB]` : '[ไฟล์ใหญ่เกินไป]';
-      } else {
-        fileInfo = p.fileData;
-      }
-    } else if (p.fileName) {
-      fileInfo = `[แนบไฟล์: ${p.fileName}]`;
-    }
+    // ── ประมวลผลไฟล์แนบ (v7) ──
+    // รับเฉพาะ URL จาก /api/upload (Google Drive) เท่านั้น
+    // ❌ ห้ามรับ base64 (fileData) — จะทำให้ Google Sheets Crash ทันที
+    //    (ไฟล์ 5 MB → base64 ~6.7 ล้านตัวอักษร แต่ Sheets จำกัด 50,000 ต่อ cell)
+    const fileUrl = (typeof p.fileUrl === 'string' && p.fileUrl.startsWith('https://'))
+      ? p.fileUrl.slice(0, 500)   // ป้องกัน string ยาวผิดปกติ
+      : '';
 
     // ── Sanitize userNote ──
     // แทน newline ด้วย ↵ เพื่อป้องกัน Google Sheets แตกแถว
@@ -122,7 +117,7 @@ module.exports = async function handler(req, res) {
       dueDate,                         // O: กำหนดตอบกลับ
       '',                              // P: Comments (ครู/อาจารย์)
       '',                              // Q: Pinned
-      fileInfo,                        // R: ไฟล์แนบ
+      fileUrl,                         // R: FileURL (Google Drive link หรือ '')
     ]);
 
     // ส่ง email แจ้งเตือน (fire-and-forget ไม่ block response)

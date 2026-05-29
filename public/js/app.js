@@ -600,32 +600,43 @@ function prepareReview(){
   changeStep(4);
 }
 
-async function fileToBase64(file){
-  if(!file) return '';
-  // Limit to ~40KB for Sheets
-  if(file.size > 40*1024) return ''; // too large, skip
-  return new Promise(r=>{
-    const reader=new FileReader();
-    reader.onload=e=>r(e.target.result);
-    reader.onerror=()=>r('');
-    reader.readAsDataURL(file);
-  });
-}
-
 async function finalSubmit(){
   if(!await showConfirm('📋','ยืนยันการส่งเรื่อง','ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้'))return;
   const btn=document.getElementById('btn-final');
-  btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังส่ง...'; btn.disabled=true;
+  btn.disabled=true;
+
   try{
+    // ── Step 1: อัปโหลดไฟล์ไป Google Drive ก่อน (ถ้ามี) ──
+    let fileUrl='';
+    if(attachedFile){
+      btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังอัปโหลดไฟล์...';
+      const formData=new FormData();
+      formData.append('file',attachedFile);
+      const token=loadToken();
+      const uploadRes=await fetch('/api/upload',{
+        method:'POST',
+        headers:token?{Authorization:'Bearer '+token}:{},
+        body:formData,
+      });
+      const uploadData=await uploadRes.json();
+      if(!uploadRes.ok||!uploadData.url){
+        await showAlert('❌','อัปโหลดไฟล์ล้มเหลว',uploadData.error||'กรุณาลองใหม่อีกครั้ง');
+        btn.innerHTML='<i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่อง'; btn.disabled=false;
+        return;
+      }
+      fileUrl=uploadData.url;
+    }
+
+    // ── Step 2: ส่ง form พร้อม fileUrl (URL string เท่านั้น — ห้ามส่ง base64) ──
+    btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังส่ง...';
     const res=await api.post('/api/submit',{
       customerType:vocData.cType, isAnon:document.getElementById('isAnon').checked,
       name:document.getElementById('v-name').value, studentId:document.getElementById('v-sid').value,
       categories:[vocData.category], priority:vocData.priority,
       subject:document.getElementById('v-subject').value,
       detail:document.getElementById('v-detail').value,
-      userNote:document.getElementById('v-note')?.value.trim()||'', // ข้อ 1
-      fileName:attachedFile?attachedFile.name:'',
-      fileData:attachedFile?await fileToBase64(attachedFile):'',    // base64 file
+      userNote:document.getElementById('v-note')?.value.trim()||'',
+      fileUrl,          // ★ URL จาก Google Drive (หรือ '' ถ้าไม่ได้แนบ)
       username:currentUser?currentUser.username:'guest',
     });
     if(res.success){
@@ -952,11 +963,10 @@ function buildTicketCard(t, showRating=false){
       ${fileInfo?`<div class="ticket-card-section">
         <div class="ticket-card-section-label"><i class="fas fa-paperclip"></i> ไฟล์แนบ</div>
         <div class="file-attach-display">
-          ${fileInfo.startsWith('data:')
-            ? `<a href="${fileInfo}" download="attached-file" style="display:inline-flex;align-items:center;gap:6px;color:var(--dgreen);font-weight:700;text-decoration:none;"><i class="fas fa-download"></i> ดาวน์โหลดไฟล์แนบ</a>`
+          ${fileInfo.startsWith('https://')
+            ? `<a href="${fileInfo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:var(--dgreen);font-weight:700;text-decoration:none;"><i class="fas fa-external-link-alt"></i> ดูไฟล์แนบ (Google Drive)</a>`
             : `<i class="fas fa-file-alt" style="color:var(--dgreen);font-size:1.1rem;"></i>
-               <span style="font-size:.9rem;color:#555;">${fileInfo.replace(/\[แนบไฟล์:\s*/,'').replace(/\]$/,'')}</span>
-               <span style="font-size:.75rem;color:#aaa;margin-left:4px;">(ชื่อไฟล์เท่านั้น — ไม่มีลิงก์ดาวน์โหลด)</span>`}
+               <span style="font-size:.9rem;color:#555;">${fileInfo.replace(/\[แนบไฟล์:\s*/,'').replace(/\]$/,'')}</span>`}
         </div>
       </div>`:''}
 
@@ -1646,7 +1656,11 @@ function renderAdminTickets(tickets,currentEmail){
       </div>`:''}
       ${t['FileURL']&&t['FileURL']!==''?`<div class="admin-file-box">
         <span class="admin-note-label"><i class="fas fa-paperclip"></i> ไฟล์แนบ</span>
-        <div class="admin-file-text">${t['FileURL']}</div>
+        <div class="admin-file-text">
+          ${t['FileURL'].startsWith('https://')
+            ? `<a href="${t['FileURL']}" target="_blank" rel="noopener" style="color:var(--dgreen);font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="fas fa-external-link-alt"></i> ดูไฟล์แนบ (Google Drive)</a>`
+            : t['FileURL']}
+        </div>
       </div>`:''}
       <div class="detail-box" id="adm-detail-${tid}">
         ${needExpand?detailShort:detail}
