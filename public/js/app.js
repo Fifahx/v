@@ -254,6 +254,19 @@ function navigateTo(pageId){
 }
 function _doNavigate(pageId){
   closeMobileNav(); // ปิด hamburger menu เมื่อ navigate
+
+  // Guard: หน้า admin ต้องมี token ที่ยังไม่หมดอายุ
+  const adminPages=['admin-dashboard','admin-tickets','admin-reviews','admin-report','superadmin'];
+  if(adminPages.includes(pageId)){
+    const token=loadToken();
+    if(!token||_isTokenExpired(token)){
+      clearSession();
+      currentUser=null;
+      pageId='login';
+      showAlert('⚠️','เซสชันหมดอายุ','กรุณาเข้าสู่ระบบใหม่อีกครั้ง');
+    }
+  }
+
   ALL_PAGES.forEach(p=>{const e=document.getElementById('page-'+p);if(e)e.classList.add('hidden');});
   document.querySelectorAll('.nav-menu a').forEach(a=>a.classList.remove('active'));
   const page=document.getElementById('page-'+pageId);
@@ -333,22 +346,49 @@ function setupPortalView(){
 }
 
 // ═══ SESSION ═══
-// ── Session helpers (user info ใน localStorage, token ใน sessionStorage) ──
-// token อยู่ใน sessionStorage → ล้างอัตโนมัติเมื่อปิด tab ป้องกัน XSS ขโมย token ได้ง่าย
-// user info (ชื่อ, role ฯลฯ) ยังอยู่ใน localStorage เพื่อ restore UI ได้
+// ── Session helpers ──
+// เก็บทั้ง token และ user info ใน localStorage เพื่อให้ยังอยู่หลัง refresh
+// token มี exp claim อยู่แล้ว (8 ชั่วโมง) จาก server ดังนั้น client decode เพื่อตรวจ expiry
+function _isTokenExpired(token){
+  try{
+    const payload=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    return payload.exp && (Math.floor(Date.now()/1000) > payload.exp);
+  }catch(e){return true;}
+}
 function saveSession(u){
   try{
     const {token,...rest}=u;
     localStorage.setItem('voc_session',JSON.stringify(rest));
-    if(token) sessionStorage.setItem('voc_token',token);
+    if(token) localStorage.setItem('voc_token',token);
   }catch(e){}
 }
 function clearSession(){
   try{localStorage.removeItem('voc_session');}catch(e){}
+  try{localStorage.removeItem('voc_token');}catch(e){}
+  // ล้าง sessionStorage เผื่อ legacy
   try{sessionStorage.removeItem('voc_token');}catch(e){}
 }
-function loadSession(){try{const r=localStorage.getItem('voc_session');return r?JSON.parse(r):null;}catch(e){return null;}}
-function loadToken(){try{return sessionStorage.getItem('voc_token')||'';}catch(e){return '';}}
+function loadSession(){
+  try{
+    const r=localStorage.getItem('voc_session');
+    if(!r) return null;
+    // ตรวจว่า token ยังไม่หมดอายุ
+    const token=localStorage.getItem('voc_token')||sessionStorage.getItem('voc_token')||'';
+    if(token && _isTokenExpired(token)){
+      // token หมดอายุ → ล้าง session
+      localStorage.removeItem('voc_session');
+      localStorage.removeItem('voc_token');
+      return null;
+    }
+    return JSON.parse(r);
+  }catch(e){return null;}
+}
+function loadToken(){
+  try{
+    // ลองทั้ง localStorage (ใหม่) และ sessionStorage (เก่า/legacy)
+    return localStorage.getItem('voc_token')||sessionStorage.getItem('voc_token')||'';
+  }catch(e){return '';}
+}
 
 // ═══ AUTH ═══
 async function doLogin(){
