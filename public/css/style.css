@@ -403,7 +403,7 @@ footer{background:#1b4332;color:#fff;padding:44px 20px 32px;margin-top:40px;}
 .news-card-date{font-size:.76rem;color:#bbb;margin-bottom:8px;}
 .news-card-content{font-size:.87rem;color:#555;line-height:1.65;}
 .news-read-more{margin-top:12px;font-size:.82rem;font-weight:700;color:var(--dgreen);display:flex;align-items:center;gap:5px;}
-.news-section-wrap{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);margin-top:24px;padding-bottom:8px;}
+.news-section-wrap{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);margin-top:24px;padding:0 21px 8px;}
 
 /* FILE ATTACH — tracking page */
 .file-attach-display{display:flex;align-items:center;gap:8px;background:#f0faf5;border:1.5px solid #c8e6c9;border-radius:8px;padding:10px 14px;}
