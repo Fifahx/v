@@ -1084,3 +1084,66 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
   .turnstile-wrap { padding: 14px; }
   /* Turnstile widget ปรับขนาดเองโดย Cloudflare */
 }
+
+/* ════ VOC DROPDOWN — shared dropdown component ════ */
+.voc-dropdown-wrap{
+  position:relative;display:inline-block;
+}
+.voc-dropdown-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 16px;border-radius:10px;
+  border:1.5px solid #d0e8d8;background:#fff;
+  color:#2d6a4f;font-family:'Sarabun',sans-serif;
+  font-size:.88rem;font-weight:600;cursor:pointer;
+  transition:.2s;white-space:nowrap;
+  box-shadow:0 1px 4px rgba(45,106,79,.08);
+  min-width:140px;
+}
+.voc-dropdown-btn:hover{border-color:var(--dgreen);background:#f0faf4;}
+.voc-dropdown-arrow{
+  margin-left:auto;font-size:.7rem;color:#888;
+  transition:transform .22s;
+}
+.voc-dropdown-arrow.rotated{transform:rotate(180deg);}
+.voc-dropdown-menu{
+  display:none;position:absolute;top:calc(100% + 6px);left:0;
+  min-width:180px;background:#fff;border-radius:12px;
+  border:1.5px solid #d8eedf;
+  box-shadow:0 8px 28px rgba(45,106,79,.14);
+  z-index:1000;overflow:hidden;
+  animation:ddFadeIn .15s ease;
+}
+.voc-dropdown-menu.open{display:block;}
+@keyframes ddFadeIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.voc-dropdown-item{
+  display:flex;align-items:center;gap:8px;
+  width:100%;padding:10px 16px;
+  background:none;border:none;
+  font-family:'Sarabun',sans-serif;font-size:.88rem;
+  color:#444;cursor:pointer;text-align:left;
+  transition:.15s;white-space:nowrap;
+}
+.voc-dropdown-item:hover{background:#f0faf4;color:var(--dgreen);}
+.voc-dropdown-item.active{
+  background:#e8f5e9;color:var(--dgreen);font-weight:700;
+}
+.voc-dropdown-item+.voc-dropdown-item{border-top:1px solid #f3f3f3;}
+/* สี dot สถานะใน ticket filter */
+.voc-dd-dot{
+  display:inline-block;width:9px;height:9px;border-radius:50%;flex-shrink:0;
+}
+.dot-pending{background:#f59e0b;}
+.dot-inprogress{background:#3b82f6;}
+.dot-done{background:#22c55e;}
+.dot-rejected{background:#ef4444;}
+/* ขนาด dropdown ในหน้า admin */
+.admin-filters .voc-dropdown-wrap{margin-bottom:0;}
+.admin-filters{display:flex;gap:8px;margin-bottom:18px;align-items:center;}
+/* report type dropdown อยู่ใน section */
+#report-type-dropdown-wrap .voc-dropdown-btn{min-width:190px;}
+#report-type-dropdown{min-width:200px;}
+/* mobile */
+@media(max-width:600px){
+  .voc-dropdown-btn{font-size:.83rem;padding:7px 12px;min-width:120px;}
+  .voc-dropdown-item{font-size:.83rem;padding:9px 14px;}
+}

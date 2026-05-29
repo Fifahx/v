@@ -437,10 +437,35 @@
       </button>
     </div>
     <div class="admin-filters">
-      <button class="filter-btn active" id="filter-pending" onclick="loadAdminTickets('pending');setFilter('pending')">รอดำเนินการ</button>
-      <button class="filter-btn" id="filter-inprogress" onclick="loadAdminTickets('กำลังดำเนินการ');setFilter('inprogress')">กำลังดำเนินการ</button>
-      <button class="filter-btn" id="filter-all" onclick="loadAdminTickets('all');setFilter('all')">ทั้งหมด</button>
-      <button class="filter-btn" id="filter-done" onclick="loadAdminTickets('เสร็จสิ้น');setFilter('done')">เสร็จสิ้น</button>
+      <div class="voc-dropdown-wrap" id="ticket-filter-dropdown-wrap">
+        <button class="voc-dropdown-btn" id="ticket-filter-dropdown-btn" onclick="toggleDropdown('ticket-filter-dropdown')" type="button">
+          <i class="fas fa-filter"></i>
+          <span id="ticket-filter-label">รอดำเนินการ</span>
+          <i class="fas fa-chevron-down voc-dropdown-arrow" id="ticket-filter-arrow"></i>
+        </button>
+        <div class="voc-dropdown-menu" id="ticket-filter-dropdown">
+          <button class="voc-dropdown-item active" id="filter-pending"
+            onclick="selectTicketFilter('pending','รอดำเนินการ',this)">
+            <span class="voc-dd-dot dot-pending"></span> รอดำเนินการ
+          </button>
+          <button class="voc-dropdown-item" id="filter-inprogress"
+            onclick="selectTicketFilter('กำลังดำเนินการ','กำลังดำเนินการ',this)">
+            <span class="voc-dd-dot dot-inprogress"></span> กำลังดำเนินการ
+          </button>
+          <button class="voc-dropdown-item" id="filter-all"
+            onclick="selectTicketFilter('all','ทั้งหมด',this)">
+            <i class="fas fa-list" style="font-size:.75rem;color:#888;"></i> ทั้งหมด
+          </button>
+          <button class="voc-dropdown-item" id="filter-done"
+            onclick="selectTicketFilter('เสร็จสิ้น','เสร็จสิ้น',this)">
+            <span class="voc-dd-dot dot-done"></span> เสร็จสิ้น
+          </button>
+          <button class="voc-dropdown-item" id="filter-rejected"
+            onclick="selectTicketFilter('ปฏิเสธ','ปฏิเสธ',this)">
+            <span class="voc-dd-dot dot-rejected"></span> ปฏิเสธ
+          </button>
+        </div>
+      </div>
     </div>
     <div id="admin-ticket-list">
       <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>
@@ -487,11 +512,26 @@
         </button>
       </div>
     </div>
-    <div class="report-type-tabs">
-      <button class="report-tab active" id="rtab-service"  onclick="loadReport('service')"><i class="fas fa-clipboard-list"></i> สรุปการให้บริการ</button>
-      <button class="report-tab" id="rtab-users"    onclick="loadReport('users')"><i class="fas fa-users"></i> ผู้ใช้บริการ</button>
-      <button class="report-tab" id="rtab-duration" onclick="loadReport('duration')"><i class="fas fa-stopwatch"></i> เวลาให้บริการ</button>
-      <button class="report-tab" id="rtab-monthly"  onclick="loadReport('monthly')"><i class="fas fa-calendar-alt"></i> รายเดือน</button>
+    <div class="voc-dropdown-wrap" id="report-type-dropdown-wrap">
+      <button class="voc-dropdown-btn" id="report-type-dropdown-btn" onclick="toggleDropdown('report-type-dropdown')" type="button">
+        <i class="fas fa-clipboard-list" id="report-type-icon"></i>
+        <span id="report-type-label">สรุปการให้บริการ</span>
+        <i class="fas fa-chevron-down voc-dropdown-arrow" id="report-type-arrow"></i>
+      </button>
+      <div class="voc-dropdown-menu" id="report-type-dropdown">
+        <button class="voc-dropdown-item active" id="rtab-service" onclick="selectReportType('service','สรุปการให้บริการ','fas fa-clipboard-list',this)">
+          <i class="fas fa-clipboard-list"></i> สรุปการให้บริการ
+        </button>
+        <button class="voc-dropdown-item" id="rtab-users" onclick="selectReportType('users','ผู้ใช้บริการ','fas fa-users',this)">
+          <i class="fas fa-users"></i> ผู้ใช้บริการ
+        </button>
+        <button class="voc-dropdown-item" id="rtab-duration" onclick="selectReportType('duration','เวลาให้บริการ','fas fa-stopwatch',this)">
+          <i class="fas fa-stopwatch"></i> เวลาให้บริการ
+        </button>
+        <button class="voc-dropdown-item" id="rtab-monthly" onclick="selectReportType('monthly','รายเดือน','fas fa-calendar-alt',this)">
+          <i class="fas fa-calendar-alt"></i> รายเดือน
+        </button>
+      </div>
     </div>
     <div id="report-content">
       <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>

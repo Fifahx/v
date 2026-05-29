@@ -156,6 +156,58 @@ function closeMobileNav(){
   if(btn)btn.classList.remove('open');
 }
 
+// ════ DROPDOWN HELPERS ════
+function toggleDropdown(id){
+  const menu=document.getElementById(id);
+  if(!menu)return;
+  const isOpen=menu.classList.contains('open');
+  // ปิดทุก dropdown ก่อน
+  document.querySelectorAll('.voc-dropdown-menu.open').forEach(m=>m.classList.remove('open'));
+  document.querySelectorAll('.voc-dropdown-arrow.rotated').forEach(a=>a.classList.remove('rotated'));
+  if(!isOpen){
+    menu.classList.add('open');
+    // หา arrow ของ dropdown นี้
+    const wrap=menu.closest('.voc-dropdown-wrap');
+    if(wrap){const arrow=wrap.querySelector('.voc-dropdown-arrow');if(arrow)arrow.classList.add('rotated');}
+  }
+}
+// ปิด dropdown เมื่อคลิกนอก
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.voc-dropdown-wrap')){
+    document.querySelectorAll('.voc-dropdown-menu.open').forEach(m=>m.classList.remove('open'));
+    document.querySelectorAll('.voc-dropdown-arrow.rotated').forEach(a=>a.classList.remove('rotated'));
+  }
+});
+
+// เลือกประเภทรายงาน
+function selectReportType(type,label,iconCls,btn){
+  document.querySelectorAll('#report-type-dropdown .voc-dropdown-item').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const lbl=document.getElementById('report-type-label');
+  const ico=document.getElementById('report-type-icon');
+  if(lbl)lbl.textContent=label;
+  if(ico){ico.className=iconCls;}
+  const dd=document.getElementById('report-type-dropdown');
+  if(dd)dd.classList.remove('open');
+  const arrow=document.querySelector('#report-type-dropdown-wrap .voc-dropdown-arrow');
+  if(arrow)arrow.classList.remove('rotated');
+  loadReport(type);
+}
+
+// เลือก filter ticket
+function selectTicketFilter(filter,label,btn){
+  document.querySelectorAll('#ticket-filter-dropdown .voc-dropdown-item').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const lbl=document.getElementById('ticket-filter-label');
+  if(lbl)lbl.textContent=label;
+  const dd=document.getElementById('ticket-filter-dropdown');
+  if(dd)dd.classList.remove('open');
+  const arrow=document.querySelector('#ticket-filter-dropdown-wrap .voc-dropdown-arrow');
+  if(arrow)arrow.classList.remove('rotated');
+  loadAdminTickets(filter);
+  setFilter(filter==='pending'?'pending':filter==='all'?'all':filter==='เสร็จสิ้น'?'done':filter==='ปฏิเสธ'?'rejected':'inprogress');
+}
+
 // ═══ COMPLAINT TYPE MODAL ═══
 function showComplaintTypeModal(callback){
   const o=document.createElement('div');
@@ -1386,11 +1438,18 @@ function printReport(){
 // ═══════════════════════════════════════════════════════════════
 async function loadReport(type){
   currentReportType = type || 'service';
-  // sync tab active state
+  // sync dropdown active state
   ['service','users','duration','monthly'].forEach(t=>{
     const el=document.getElementById('rtab-'+t);
     if(el) el.classList.toggle('active', t===currentReportType);
   });
+  // sync dropdown label & icon
+  const _rptNames={service:'สรุปการให้บริการ',users:'ผู้ใช้บริการ',duration:'เวลาให้บริการ',monthly:'รายเดือน'};
+  const _rptIcons={service:'fas fa-clipboard-list',users:'fas fa-users',duration:'fas fa-stopwatch',monthly:'fas fa-calendar-alt'};
+  const _lbl=document.getElementById('report-type-label');
+  const _ico=document.getElementById('report-type-icon');
+  if(_lbl)_lbl.textContent=_rptNames[currentReportType]||'รายงาน';
+  if(_ico)_ico.className=_rptIcons[currentReportType]||'fas fa-clipboard-list';
   const box=document.getElementById('report-content');
   if(!box)return;
   box.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลดรายงาน...</p></div>';
@@ -1743,12 +1802,26 @@ function renderAdminTickets(tickets,currentEmail){
     ${currentEmail?`<p style="font-size:.8rem;color:#2d6a4f;margin-top:8px;"><i class="fas fa-check-circle"></i> ${currentEmail}</p>`:''}
   </div>`;
 
-  // ── Category filter bar ──
+  // ── Category filter dropdown ──
   if(categories.length){
-    html+=`<div class="admin-cat-filter" id="admin-cat-filter">
-      <span class="admin-cat-label"><i class="fas fa-filter"></i> กรองหมวดหมู่:</span>
-      <button class="cat-filter-btn active" onclick="filterByCategory('all',this)">ทั้งหมด</button>
-      ${categories.map(c=>`<button class="cat-filter-btn" onclick="filterByCategory('${c.replace(/'/g,'&#39;')}',this)">${c}</button>`).join('')}
+    const catItems=categories.map(c=>`
+      <button class="voc-dropdown-item" data-cat="${c.replace(/"/g,'&quot;')}"
+        onclick="filterByCategory('${c.replace(/'/g,'&#39;')}',this)">
+        ${c}
+      </button>`).join('');
+    html+=`<div class="voc-dropdown-wrap" id="admin-cat-filter">
+      <button class="voc-dropdown-btn" onclick="toggleDropdown('admin-cat-dd')" type="button">
+        <i class="fas fa-filter"></i>
+        <span id="admin-cat-label">ทั้งหมด</span>
+        <i class="fas fa-chevron-down voc-dropdown-arrow"></i>
+      </button>
+      <div class="voc-dropdown-menu" id="admin-cat-dd">
+        <button class="voc-dropdown-item active" data-cat="all"
+          onclick="filterByCategory('all',this)">
+          <i class="fas fa-list" style="font-size:.75rem;color:#888;"></i> ทั้งหมด
+        </button>
+        ${catItems}
+      </div>
     </div>`;
   }
 
@@ -1858,9 +1931,15 @@ function renderAdminTickets(tickets,currentEmail){
 
 // ── filter admin tickets by category (client-side) ──
 function filterByCategory(cat, btn){
-  // update active button
-  document.querySelectorAll('.cat-filter-btn').forEach(b=>b.classList.remove('active'));
+  // update active item
+  document.querySelectorAll('#admin-cat-dd .voc-dropdown-item').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
+  // update label
+  const label=document.getElementById('admin-cat-label');
+  if(label) label.textContent=btn?btn.textContent.trim():'ทั้งหมด';
+  // close dropdown
+  const dd=document.getElementById('admin-cat-dd');
+  if(dd) dd.classList.remove('open');
   // show/hide cards
   const cards=document.querySelectorAll('.admin-ticket-card[data-category]');
   let shown=0;
