@@ -86,7 +86,7 @@ a,button,.opt-btn,.main-card,.filter-btn,.btn-auth,.btn-submit,.btn-back,
 .voc-panel{background:#f8faf9;border:1px solid #e5ede9;border-radius:var(--radius);padding:24px;margin-bottom:20px;}
 .voc-title{font-weight:700;margin-bottom:16px;display:block;font-size:1rem;color:var(--dgreen);}
 .grid-options{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.opt-btn{background:#fff;border:1.5px solid #ddd;padding:11px 8px;border-radius:10px;font-size:.82rem;text-align:center;transition:.2s;font-family:'Sarabun',sans-serif;}
+.opt-btn{background:#fff;border:1.5px solid #ddd;padding:11px 8px;border-radius:10px;font-size:.90rem;text-align:center;transition:.2s;font-family:'Sarabun',sans-serif;}
 .opt-btn:hover{border-color:var(--mgreen);background:#f0faf4;}
 .opt-btn.selected{background:var(--dgreen);color:#fff;border-color:var(--dgreen);box-shadow:0 2px 8px rgba(45,106,79,.25);}
 .btn-submit{background:var(--dgreen);color:#fff;border:none;padding:13px 28px;border-radius:10px;font-size:1rem;font-weight:700;flex:1;transition:.3s;font-family:'Sarabun',sans-serif;}
@@ -536,7 +536,7 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 .hamburger-btn{
   display:none;flex-direction:column;justify-content:center;gap:5px;
   background:none;border:none;padding:10px 12px;cursor:pointer;
-  position:absolute;right:12px;top:50%;transform:translateY(-50%);z-index:10;
+  position:absolute;right:12px;top:50%;transform:translateY(-130%);z-index:10;
 }
 .hamburger-btn span{
   display:block;width:22px;height:2.5px;background:#fff;border-radius:2px;
