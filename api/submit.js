@@ -1,17 +1,26 @@
-// api/submit.js v7
-// POST /api/submit — บันทึก ticket พร้อมหมายเหตุผู้ใช้และ URL ไฟล์แนบ
+// api/submit.js v8
+// POST /api/submit — บันทึก ticket พร้อม:
+//   1. Cloudflare Turnstile server-side verification (anti-spam)
+//   2. IP-based rate limiting via in-memory store (ป้องกัน script-spamming)
+//   3. รับ fileUrl (string URL จาก /api/upload) เท่านั้น — ห้าม base64
 //
-// [แก้ไข v7] เปลี่ยนการรับไฟล์แนบ:
-//   เดิม: รับ fileData (base64) → crash เมื่อไฟล์ > ~35 KB
-//   ใหม่: รับ fileUrl (string URL จาก /api/upload) เท่านั้น
-//         ห้ามบันทึก base64 ลง Google Sheets โดยตรง
+// Environment Variables ที่ต้องเพิ่มใน Vercel:
+//   TURNSTILE_SECRET_KEY  = <Secret Key จาก Cloudflare Turnstile Dashboard>
+//   (ถ้าไม่ตั้งค่า → ระบบจะข้าม Turnstile verify เพื่อ backward-compat ในระหว่าง dev)
+//
+// วิธีหา Turnstile Secret Key:
+//   1. ไปที่ https://dash.cloudflare.com → "Turnstile"
+//   2. "Add Site" → ใส่โดเมน vercel ของคุณ
+//   3. Widget Type: "Managed"
+//   4. คัดลอก "Site Key" ไปใส่ใน index.html (data-sitekey)
+//   5. คัดลอก "Secret Key" ไปใส่ใน Vercel Env Var: TURNSTILE_SECRET_KEY
 //
 // Column mapping ตรงกับ VOC_Tickets sheet (18 cols):
-// A: UUID        B: Ticket ID     C: Username       D: วันที่แจ้ง
-// E: ประเภทผู้แจ้ง F: ชื่อ        G: นักศึกษา/หน่วยงาน H: ประเภทเรื่อง
-// I: ความเร่งด่วน J: หัวข้อ       K: รายละเอียด    L: หมายเหตุ(ผู้ใช้)
-// M: สถานะ       N: ผู้รับผิดชอบ  O: กำหนดตอบกลับ  P: Comments
-// Q: Pinned      R: FileURL (Google Drive link)
+// A: UUID       B: Ticket ID     C: Username      D: วันที่แจ้ง
+// E: ประเภทผู้แจ้ง F: ชื่อ       G: นักศึกษา/หน่วยงาน H: ประเภทเรื่อง
+// I: ความเร่งด่วน J: หัวข้อ      K: รายละเอียด   L: หมายเหตุ(ผู้ใช้)
+// M: สถานะ      N: ผู้รับผิดชอบ  O: กำหนดตอบกลับ P: Comments
+// Q: Pinned     R: FileURL (Google Drive link)
 
 const {
   getSheetsClient, appendRow,
@@ -21,19 +30,128 @@ const {
 
 const crypto = require('crypto');
 
-// ── สร้าง UserID แบบ UUID (ไม่มี Race Condition) ──
+// ════════════════════════════════════════════════════════
+//  1. CLOUDFLARE TURNSTILE — Server-side verify
+// ════════════════════════════════════════════════════════
+// Docs: https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
+async function verifyTurnstile(token, remoteIp) {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+
+  // ── Dev mode: ถ้าไม่ได้ตั้ง secret หรือ token เป็น placeholder → ข้ามไป ──
+  if (!secret) {
+    console.warn('[Turnstile] TURNSTILE_SECRET_KEY not set — skipping verification (dev mode)');
+    return { success: true, skipped: true };
+  }
+
+  // token = '' → ไม่ผ่าน ไม่ต้องเรียก Cloudflare
+  if (!token || typeof token !== 'string' || token.length < 10) {
+    return { success: false, error: 'กรุณายืนยัน CAPTCHA ก่อนส่งเรื่อง' };
+  }
+
+  try {
+    const body = new URLSearchParams({
+      secret,
+      response: token,
+      ...(remoteIp ? { remoteip: remoteIp } : {}),
+    });
+
+    const resp = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+
+    const result = await resp.json();
+
+    if (result.success) {
+      return { success: true };
+    }
+
+    // Cloudflare ส่ง error-codes กลับมา
+    const errCode = (result['error-codes'] || [])[0] || 'unknown';
+    const errMap = {
+      'missing-input-secret'  : 'ไม่พบ Turnstile Secret Key (ตั้งค่า env var)',
+      'invalid-input-secret'  : 'Turnstile Secret Key ไม่ถูกต้อง',
+      'missing-input-response': 'ไม่พบ Turnstile token',
+      'invalid-input-response': 'Turnstile token ไม่ถูกต้องหรือหมดอายุ กรุณาลองใหม่',
+      'timeout-or-duplicate'  : 'Turnstile token หมดอายุหรือถูกใช้ไปแล้ว กรุณาลองใหม่',
+    };
+    return {
+      success: false,
+      error: errMap[errCode] || `CAPTCHA ไม่ผ่าน (${errCode})`,
+    };
+  } catch (e) {
+    console.error('[Turnstile] verify error:', e.message);
+    // ถ้า Cloudflare API ล่ม → allow ผ่านเพื่อไม่ให้ service down
+    // (เลือกความ availability เหนือ strict security ในกรณีนี้)
+    return { success: true, fallback: true };
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  2. IP-BASED RATE LIMITING (In-Memory)
+// ════════════════════════════════════════════════════════
+// เหมาะสำหรับ Vercel Serverless แบบ single-instance
+// ถ้า traffic สูงมากควรเปลี่ยนไปใช้ Upstash Redis
+//
+// กฎ: 1 IP → ส่งได้สูงสุด MAX_REQUESTS ครั้ง ภายใน WINDOW_MS
+const RATE_LIMIT = {
+  WINDOW_MS    : 60 * 60 * 1000, // window 1 ชั่วโมง
+  MAX_REQUESTS : 5,               // สูงสุด 5 เรื่องต่อ IP ต่อชั่วโมง
+};
+
+// Map<ip, { count, windowStart }>
+const _ipStore = new Map();
+
+// cleanup เมื่อ store ใหญ่เกิน (ป้องกัน memory leak)
+const _IP_STORE_MAX = 2000;
+function _cleanupStore() {
+  if (_ipStore.size < _IP_STORE_MAX) return;
+  const now = Date.now();
+  for (const [ip, entry] of _ipStore) {
+    if (now - entry.windowStart > RATE_LIMIT.WINDOW_MS) _ipStore.delete(ip);
+  }
+}
+
+function checkRateLimit(ip) {
+  _cleanupStore();
+  const now = Date.now();
+  const entry = _ipStore.get(ip);
+
+  if (!entry || now - entry.windowStart > RATE_LIMIT.WINDOW_MS) {
+    // window ใหม่ หรือ IP ใหม่
+    _ipStore.set(ip, { count: 1, windowStart: now });
+    return { allowed: true, remaining: RATE_LIMIT.MAX_REQUESTS - 1 };
+  }
+
+  if (entry.count >= RATE_LIMIT.MAX_REQUESTS) {
+    const resetInMin = Math.ceil((RATE_LIMIT.WINDOW_MS - (now - entry.windowStart)) / 60000);
+    return {
+      allowed: false,
+      resetInMin,
+      message: `คุณส่งเรื่องครบ ${RATE_LIMIT.MAX_REQUESTS} ครั้งต่อชั่วโมงแล้ว กรุณารออีก ${resetInMin} นาที`,
+    };
+  }
+
+  entry.count += 1;
+  return { allowed: true, remaining: RATE_LIMIT.MAX_REQUESTS - entry.count };
+}
+
+// ════════════════════════════════════════════════════════
+//  3. TICKET ID & USER ID
+// ════════════════════════════════════════════════════════
 function generateUserID() {
   return crypto.randomUUID();
 }
-
-// ── สร้าง Ticket ID แบบ UUID-based (ไม่มี Race Condition) ──
-// Format: VOC-{ปีไทย}-{8 hex} เช่น VOC-2568-A1B2C3D4
 function generateTicketId() {
   const thYear = String(new Date().getFullYear() + 543);
   const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
   return `VOC-${thYear}-${suffix}`;
 }
 
+// ════════════════════════════════════════════════════════
+//  4. NOTIFY EMAIL (fire-and-forget)
+// ════════════════════════════════════════════════════════
 async function sendNotifyEmail(ticketId, payload) {
   try {
     const base = process.env.VERCEL_URL
@@ -55,6 +173,9 @@ async function sendNotifyEmail(ticketId, payload) {
   }
 }
 
+// ════════════════════════════════════════════════════════
+//  5. MAIN HANDLER
+// ════════════════════════════════════════════════════════
 module.exports = async function handler(req, res) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -63,67 +184,91 @@ module.exports = async function handler(req, res) {
   try {
     const p = req.body;
 
-    // Validation เบื้องต้น
+    // ── Validation เบื้องต้น ──
     if (!p.subject || !p.detail) {
       return res.status(400).json({ success: false, message: 'กรุณากรอกหัวข้อและรายละเอียด' });
     }
 
+    // ── ดึง IP จาก Vercel headers ──
+    const remoteIp =
+      String(req.headers['x-real-ip'] ||
+             req.headers['x-forwarded-for'] ||
+             req.socket?.remoteAddress || 'unknown')
+        .split(',')[0].trim();
+
+    // ── [A] IP Rate Limit ──
+    const rateLimitResult = checkRateLimit(remoteIp);
+    if (!rateLimitResult.allowed) {
+      return res.status(429).json({
+        success: false,
+        message: rateLimitResult.message,
+        retryAfterMin: rateLimitResult.resetInMin,
+      });
+    }
+
+    // ── [B] Cloudflare Turnstile Verify ──
+    const turnstileResult = await verifyTurnstile(p.turnstileToken, remoteIp);
+    if (!turnstileResult.success) {
+      // ถ้า Turnstile fail → คืน count กลับ (ไม่นับ quota)
+      const entry = _ipStore.get(remoteIp);
+      if (entry && entry.count > 0) entry.count -= 1;
+
+      return res.status(400).json({
+        success: false,
+        message: turnstileResult.error || 'CAPTCHA ไม่ผ่าน กรุณาลองใหม่',
+      });
+    }
+
+    // ── [C] ประมวลผลข้อมูล ──
     const sheets   = await getSheetsClient();
+    const userId   = generateUserID();
+    const ticketId = generateTicketId();
+    const now      = new Date();
+    const dueDate  = calcDueDate(now, p.priority);
 
-    // สร้าง ID ทันทีบน server — ไม่ต้องอ่าน/เขียน Sheets เลย ไม่มี Race Condition
-    const userId   = generateUserID();    // UUID เต็ม เช่น "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-    const ticketId = generateTicketId(); // VOC-2568-A1B2C3D4
-
-    const now     = new Date();
-    const dueDate = calcDueDate(now, p.priority);
-
-    // ── ประมวลผลไฟล์แนบ (v7) ──
-    // รับเฉพาะ URL จาก /api/upload (Google Drive) เท่านั้น
-    // ❌ ห้ามรับ base64 (fileData) — จะทำให้ Google Sheets Crash ทันที
-    //    (ไฟล์ 5 MB → base64 ~6.7 ล้านตัวอักษร แต่ Sheets จำกัด 50,000 ต่อ cell)
+    // รับเฉพาะ URL จาก /api/upload — ห้าม base64
     const fileUrl = (typeof p.fileUrl === 'string' && p.fileUrl.startsWith('https://'))
-      ? p.fileUrl.slice(0, 500)   // ป้องกัน string ยาวผิดปกติ
+      ? p.fileUrl.slice(0, 500)
       : '';
 
-    // ── Sanitize userNote ──
-    // แทน newline ด้วย ↵ เพื่อป้องกัน Google Sheets แตกแถว
     const userNote = (p.userNote || '').replace(/\r?\n/g, ' ↵ ').trim();
 
-    // ── ชื่อและรหัส: แยกกรณีนิรนาม ──
     const displayName = p.isAnon ? 'นิรนาม' : (p.name      || '');
     const displayId   = p.isAnon ? '-'       : (p.studentId || '');
 
-    // ── ประเภทเรื่อง: รองรับทั้ง Array และ String ──
     const categories = Array.isArray(p.categories)
       ? p.categories.join(', ')
       : (p.categories || '');
 
-    // ── append ลง Sheet ตาม column order ที่กำหนด ──
     await appendRow(sheets, SHEET_TICKETS, [
-      userId,                          // A: UUID
-      ticketId,                        // B: Ticket ID (VOC-2568-XXXXXXXX)
-      p.username      || 'guest',      // C: Username
-      formatDateThai(now),             // D: วันที่แจ้ง
-      p.customerType  || '',           // E: ประเภทผู้แจ้ง
-      displayName,                     // F: ชื่อ
-      displayId,                       // G: นักศึกษา/หน่วยงาน
-      categories,                      // H: ประเภทเรื่อง
-      p.priority      || 'medium',     // I: ความเร่งด่วน
-      p.subject       || '',           // J: หัวข้อ
-      p.detail        || '',           // K: รายละเอียด
-      userNote,                        // L: หมายเหตุ(ผู้ใช้)
-      'รอดำเนินการ',                   // M: สถานะ
-      '',                              // N: ผู้รับผิดชอบ
-      dueDate,                         // O: กำหนดตอบกลับ
-      '',                              // P: Comments (ครู/อาจารย์)
-      '',                              // Q: Pinned
-      fileUrl,                         // R: FileURL (Google Drive link หรือ '')
+      userId,
+      ticketId,
+      p.username      || 'guest',
+      formatDateThai(now),
+      p.customerType  || '',
+      displayName,
+      displayId,
+      categories,
+      p.priority      || 'medium',
+      p.subject       || '',
+      p.detail        || '',
+      userNote,
+      'รอดำเนินการ',
+      '',
+      dueDate,
+      '',
+      '',
+      fileUrl,
     ]);
 
-    // ส่ง email แจ้งเตือน (fire-and-forget ไม่ block response)
     sendNotifyEmail(ticketId, p);
 
-    return res.json({ success: true, ticketId, userId });
+    return res.json({
+      success: true,
+      ticketId,
+      userId,
+      rateLimitRemaining: rateLimitResult.remaining,
+    });
 
   } catch (e) {
     console.error('submit error:', e);

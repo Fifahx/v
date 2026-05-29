@@ -1001,3 +1001,56 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 .ctype-confirm-msg { border-radius: 10px; padding: 12px 14px; font-size: .88rem; line-height: 1.6; }
 .ctype-confirm-warn { background: #fff3cd; border: 1px solid #ffc107; border-radius: 10px; padding: 12px 14px; color: #7c5a00; }
 .ctype-confirm-ok   { background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 10px; padding: 12px 14px; color: #1b5e20; }
+
+/* ════════════════════════════════════════════════════════
+   CLOUDFLARE TURNSTILE — Anti-spam widget (spam protection)
+   ════════════════════════════════════════════════════════ */
+.turnstile-wrap {
+  background: linear-gradient(135deg, #f0faf4, #e8f5e9);
+  border: 1.5px solid #c8e6c9;
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin: 16px 0 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.turnstile-label {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--dgreen);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+}
+.turnstile-label i { font-size: .9rem; }
+
+/* status messages */
+.turnstile-status-msg {
+  font-size: .82rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  padding: 8px 14px;
+  min-height: 36px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.turnstile-ok  { background: #e8f5e9; color: #2d6a4f; border: 1px solid #a5d6a7; }
+.turnstile-warn{ background: #fff8e1; color: #856404; border: 1px solid #ffe082; }
+.turnstile-err { background: #fde8e8; color: #c62828; border: 1px solid #f5c6c6; }
+
+/* disable btn-submit until Turnstile passes */
+#btn-final:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+@media(max-width:600px){
+  .turnstile-wrap { padding: 14px; }
+  /* Turnstile widget ปรับขนาดเองโดย Cloudflare */
+}

@@ -7,6 +7,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
+  <!-- Cloudflare Turnstile — Anti-spam widget -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
 
@@ -339,10 +341,24 @@
       <!-- Step 4 — Review Card -->
       <div id="step-content-4" class="hidden">
         <div id="review-area"></div>
+        <!-- Cloudflare Turnstile widget — แสดงก่อนกดยืนยัน -->
+        <div class="turnstile-wrap">
+          <div class="turnstile-label"><i class="fas fa-shield-alt"></i> ยืนยันว่าคุณไม่ใช่บอต</div>
+          <div class="cf-turnstile"
+               id="cf-turnstile-widget"
+               data-sitekey="0x4AAAAAAA_PLACEHOLDER_SITEKEY"
+               data-theme="light"
+               data-language="th"
+               data-callback="onTurnstileSuccess"
+               data-expired-callback="onTurnstileExpire"
+               data-error-callback="onTurnstileError">
+          </div>
+          <div id="turnstile-status" class="turnstile-status-msg"></div>
+        </div>
         <div style="display:flex;margin-top:16px;">
           <button class="btn-back" onclick="changeStep(3)">← ย้อนกลับ</button>
-          <button class="btn-submit" id="btn-final" onclick="finalSubmit()">
-            <i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่องร้องเรียน
+          <button class="btn-submit" id="btn-final" onclick="finalSubmit()" disabled>
+            <i class="fas fa-shield-alt"></i> ยืนยันการส่งเรื่อง (รอการยืนยัน)
           </button>
         </div>
       </div>

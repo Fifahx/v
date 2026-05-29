@@ -5,6 +5,30 @@ let currentStep=1, currentUser=null, ratingSelection=0;
 let vocData={cType:'นักศึกษา',priority:'medium',category:'ข้อเสนอแนะหลักสูตร'};
 let attachedFile=null;
 
+// ── Cloudflare Turnstile state ──
+let _turnstileToken = '';   // token จาก Turnstile widget (set โดย callback)
+let _turnstileReady = false; // true เมื่อ widget ผ่านการยืนยันแล้ว
+
+// ── Client-side Rate Limit (ป้องกันสแปมขั้นพื้นฐาน) ──
+// ตรวจ localStorage ว่า submit ครั้งล่าสุดเมื่อใด
+const SUBMIT_COOLDOWN_MS = 5 * 60 * 1000; // 5 นาทีต่อการส่ง 1 ครั้ง
+function isClientRateLimited(){
+  try{
+    const last=Number(localStorage.getItem('voc_last_submit')||0);
+    return Date.now()-last < SUBMIT_COOLDOWN_MS;
+  }catch(e){return false;}
+}
+function markClientSubmit(){
+  try{ localStorage.setItem('voc_last_submit',String(Date.now())); }catch(e){}
+}
+function clientCooldownRemaining(){
+  try{
+    const last=Number(localStorage.getItem('voc_last_submit')||0);
+    const rem=Math.ceil((SUBMIT_COOLDOWN_MS-(Date.now()-last))/1000/60);
+    return rem>0?rem:0;
+  }catch(e){return 0;}
+}
+
 const ALL_PAGES=['home','login','register','portal','tracking',
   'faq','admin-dashboard','admin-tickets','admin-reviews','admin-report','user-report','superadmin'];
 let currentReportType='service';
@@ -64,7 +88,60 @@ function showConfirm(icon,title,msg,type='warning'){
   });
 }
 
-// ═══ HAMBURGER MENU (mobile) ═══
+// ═══ CLOUDFLARE TURNSTILE CALLBACKS ═══
+// ถูกเรียกโดย Turnstile widget โดยอัตโนมัติ
+function onTurnstileSuccess(token){
+  _turnstileToken = token;
+  _turnstileReady = true;
+  const btn=document.getElementById('btn-final');
+  const status=document.getElementById('turnstile-status');
+  if(btn){
+    btn.disabled=false;
+    btn.innerHTML='<i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่องร้องเรียน';
+  }
+  if(status){
+    status.className='turnstile-status-msg turnstile-ok';
+    status.innerHTML='<i class="fas fa-check-circle"></i> ยืนยันตัวตนสำเร็จ พร้อมส่งเรื่องแล้ว';
+  }
+}
+function onTurnstileExpire(){
+  _turnstileToken='';
+  _turnstileReady=false;
+  const btn=document.getElementById('btn-final');
+  const status=document.getElementById('turnstile-status');
+  if(btn){
+    btn.disabled=true;
+    btn.innerHTML='<i class="fas fa-shield-alt"></i> กรุณายืนยันอีกครั้ง';
+  }
+  if(status){
+    status.className='turnstile-status-msg turnstile-warn';
+    status.innerHTML='<i class="fas fa-exclamation-triangle"></i> หมดเวลา กรุณายืนยันอีกครั้ง';
+  }
+}
+function onTurnstileError(){
+  _turnstileToken='';
+  _turnstileReady=false;
+  const status=document.getElementById('turnstile-status');
+  if(status){
+    status.className='turnstile-status-msg turnstile-err';
+    status.innerHTML='<i class="fas fa-times-circle"></i> ไม่สามารถโหลด CAPTCHA ได้ กรุณาลองรีเฟรชหน้า';
+  }
+}
+
+// Reset Turnstile เมื่อ navigate ออกจาก step 4
+function resetTurnstile(){
+  _turnstileToken='';
+  _turnstileReady=false;
+  const btn=document.getElementById('btn-final');
+  if(btn){
+    btn.disabled=true;
+    btn.innerHTML='<i class="fas fa-shield-alt"></i> ยืนยันการส่งเรื่อง (รอการยืนยัน)';
+  }
+  // สั่ง reset widget ถ้า Turnstile JS โหลดแล้ว
+  try{
+    if(window.turnstile) window.turnstile.reset('#cf-turnstile-widget');
+  }catch(e){}
+}
 function toggleMobileNav(){
   const menu=document.getElementById('main-nav');
   const btn=document.getElementById('hamburger-btn');
@@ -508,6 +585,8 @@ function changeStep(step){
   document.getElementById('success-area')?.classList.add('hidden');
   document.getElementById('step-content-'+step)?.classList.remove('hidden');
   for(let i=1;i<=step;i++) document.getElementById('node'+i)?.classList.add('active');
+  // Reset Turnstile เมื่อกลับออกจาก step 4
+  if(step !== 4) resetTurnstile();
 }
 function setOption(el,key,val){
   el.parentElement.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('selected'));
@@ -601,6 +680,21 @@ function prepareReview(){
 }
 
 async function finalSubmit(){
+  // ── Client-side Rate Limit ──
+  // ป้องกัน submit ซ้ำ ๆ จากคน login อยู่ (Logged-in users cooldown)
+  // ผู้ใช้ guest ที่แจ้งเรื่องบ่อย ๆ จะโดน server-side block ด้วย Turnstile verify
+  if(!currentUser && isClientRateLimited()){
+    await showAlert('⏱️','กรุณารอสักครู่',
+      `คุณเพิ่งส่งเรื่องไปแล้ว กรุณารออีก ${clientCooldownRemaining()} นาทีก่อนส่งเรื่องถัดไป`);
+    return;
+  }
+
+  // ── ตรวจ Turnstile token ──
+  if(!_turnstileReady || !_turnstileToken){
+    await showAlert('🛡️','กรุณายืนยันตัวตน','กรุณายืนยัน CAPTCHA ก่อนส่งเรื่อง');
+    return;
+  }
+
   if(!await showConfirm('📋','ยืนยันการส่งเรื่อง','ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้'))return;
   const btn=document.getElementById('btn-final');
   btn.disabled=true;
@@ -627,7 +721,7 @@ async function finalSubmit(){
       fileUrl=uploadData.url;
     }
 
-    // ── Step 2: ส่ง form พร้อม fileUrl (URL string เท่านั้น — ห้ามส่ง base64) ──
+    // ── Step 2: ส่ง form พร้อม fileUrl และ turnstileToken ──
     btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังส่ง...';
     const res=await api.post('/api/submit',{
       customerType:vocData.cType, isAnon:document.getElementById('isAnon').checked,
@@ -636,10 +730,13 @@ async function finalSubmit(){
       subject:document.getElementById('v-subject').value,
       detail:document.getElementById('v-detail').value,
       userNote:document.getElementById('v-note')?.value.trim()||'',
-      fileUrl,          // ★ URL จาก Google Drive (หรือ '' ถ้าไม่ได้แนบ)
+      fileUrl,
       username:currentUser?currentUser.username:'guest',
+      turnstileToken: _turnstileToken,   // ★ ส่ง token ไปยืนยันฝั่ง server
     });
     if(res.success){
+      markClientSubmit(); // บันทึกเวลา submit สำเร็จสำหรับ client-rate-limit
+      resetTurnstile();   // reset widget สำหรับ session ต่อไป
       document.getElementById('step-content-4')?.classList.add('hidden');
       document.getElementById('success-area')?.classList.remove('hidden');
       document.getElementById('new-ticket-id').innerText=res.ticketId;
