@@ -1759,29 +1759,14 @@ async function loadAdminTickets(filter){
   document.getElementById('admin-ticket-list').innerHTML=
     '<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
   try{
-    const [tr,nr]=await Promise.all([
-      api.get(`/api/tickets?action=all&filter=${encodeURIComponent(filter)}`),
-      api.get('/api/notify?action=getEmail'),
-    ]);
-    const ce=nr.success?(nr.email||''):'';
-    if(tr.success) renderAdminTickets(tr.tickets,ce);
+    const tr=await api.get(`/api/tickets?action=all&filter=${encodeURIComponent(filter)}`);
+    if(tr.success) renderAdminTickets(tr.tickets);
     else document.getElementById('admin-ticket-list').innerHTML='<p style="color:red;">โหลดไม่สำเร็จ</p>';
   }catch(e){ document.getElementById('admin-ticket-list').innerHTML=`<p style="color:red;">${e.message}</p>`; }
 }
-async function saveNotifyEmail(){
-  const email=document.getElementById('notify-email-input')?.value.trim();
-  if(!email){await showAlert('⚠️','กรุณากรอก email','');return;}
-  const btn=document.getElementById('btn-save-notify');
-  if(btn){btn.disabled=true;btn.innerHTML='บันทึก...';}
-  try{
-    const res=await api.post('/api/notify',{action:'setEmail',email});
-    if(res.success) await showAlert('✅','บันทึกสำเร็จ',`จะส่งแจ้งเตือนไปที่ ${email}`);
-    else await showAlert('❌','ไม่สำเร็จ',res.message);
-  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
-  finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-save"></i> บันทึก';}}
-}
 
-function renderAdminTickets(tickets,currentEmail){
+
+function renderAdminTickets(tickets){
   const container=document.getElementById('admin-ticket-list');
   const po={'high':0,'medium':1,'low':2};
   tickets.sort((a,b)=>(po[a['ความเร่งด่วน']]??9)-(po[b['ความเร่งด่วน']]??9));
@@ -1793,14 +1778,7 @@ function renderAdminTickets(tickets,currentEmail){
   // ── สร้าง list หมวดหมู่จาก ticket ที่มีอยู่ ──
   const categories = [...new Set(tickets.map(t=>t['ประเภทเรื่อง']).filter(Boolean))].sort();
 
-  let html=`<div class="notify-box">
-    <h4><i class="fas fa-bell"></i> Email แจ้งเตือน</h4>
-    <div class="notify-row">
-      <input type="email" id="notify-email-input" placeholder="admin@gmail.com" value="${currentEmail}">
-      <button class="btn-notify" id="btn-save-notify" onclick="saveNotifyEmail()"><i class="fas fa-save"></i> บันทึก</button>
-    </div>
-    ${currentEmail?`<p style="font-size:.8rem;color:#2d6a4f;margin-top:8px;"><i class="fas fa-check-circle"></i> ${currentEmail}</p>`:''}
-  </div>`;
+  let html=``;
 
   // ── Category filter dropdown ──
   if(categories.length){

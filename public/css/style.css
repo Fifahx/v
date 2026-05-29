@@ -234,11 +234,7 @@ a,button,.opt-btn,.main-card,.filter-btn,.btn-auth,.btn-submit,.btn-back,
 .comment-add-box textarea:focus{outline:none;border-color:var(--dgreen);}
 .btn-comment{padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-weight:600;font-size:.85rem;}
 /* notify */
-.notify-box{background:#f0faf4;border:1px solid #c8e6c9;border-radius:var(--radius);padding:16px 20px;margin-bottom:18px;}
-.notify-box h4{color:var(--dgreen);margin-bottom:12px;font-size:.92rem;}
-.notify-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-.notify-row input{flex:1;min-width:200px;padding:9px 14px;border:1.5px solid #c8e6c9;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:.9rem;background:#fff;}
-.btn-notify{padding:9px 18px;background:var(--dgreen);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;}
+
 /* priority badges */
 .priority-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:10px;font-size:.74rem;font-weight:700;white-space:nowrap;}
 .p-high{background:#fde8e8;color:#d00000;border:1px solid #f5c6c6;} .p-medium{background:#fff7e6;color:#b25f00;border:1px solid #f5dfa6;} .p-low{background:#e8f5e9;color:#2d6a4f;border:1px solid #c8e6c9;}
