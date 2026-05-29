@@ -16,10 +16,20 @@ function colLetter(idx) {
   return s;
 }
 
+// แมปชื่อ header ใน Sheet → ชื่อ key ที่ frontend (app.js) ใช้
+const HEADER_MAP = {
+  'หมายเหตุ(ผู้ใช้)' : 'หมายเหตุผู้ใช้',  // col L — frontend ใช้ t['หมายเหตุผู้ใช้']
+  'ความคิดเห็น'       : 'Comments',          // เผื่อ sheet ใช้ชื่อไทย
+  'ปักหมุด'           : 'Pinned',            // เผื่อ sheet ใช้ชื่อไทย
+  'ไฟล์แนบ'           : 'FileURL',           // เผื่อ sheet ใช้ชื่อไทย
+};
+
 function rowToObj(headers, row) {
   const o = {};
   headers.forEach((h, i) => {
-    if (h) o[h] = row[i] !== undefined ? String(row[i]) : '';
+    if (!h) return;
+    const key = HEADER_MAP[h] || h;
+    o[key] = row[i] !== undefined ? String(row[i]) : '';
   });
   return o;
 }
