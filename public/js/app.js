@@ -170,6 +170,7 @@ async function finalSubmit() {
   if(!_turnstileReady||!_turnstileToken){await showAlert('🛡️','กรุณายืนยันตัวตน','กรุณายืนยัน CAPTCHA ก่อนส่งเรื่อง');return;}
   if(!await showConfirm('📋','ยืนยันการส่งเรื่อง','ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้'))return;
   const btn=document.getElementById('btn-final'); btn.disabled=true;
+  let submitted=false; // ← flag: ถ้า true แล้ว finally จะไม่ re-enable ปุ่ม
   try {
     let fileUrl='';
     if(attachedFile){
@@ -178,15 +179,30 @@ async function finalSubmit() {
       const token=loadToken();
       const uploadRes=await fetch('/api/upload',{method:'POST',headers:token?{Authorization:'Bearer '+token}:{},body:formData});
       const uploadData=await uploadRes.json();
-      if(!uploadRes.ok||!uploadData.url){await showAlert('❌','อัปโหลดไฟล์ล้มเหลว',uploadData.error||'กรุณาลองใหม่');btn.innerHTML='<i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่อง';btn.disabled=false;return;}
+      if(!uploadRes.ok||!uploadData.url){await showAlert('❌','อัปโหลดไฟล์ล้มเหลว',uploadData.error||'กรุณาลองใหม่');return;}
       fileUrl=uploadData.url;
     }
     btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังส่ง...';
     const res=await api.post('/api/submit',{customerType:vocData.cType,isAnon:document.getElementById('isAnon').checked,name:document.getElementById('v-name').value,studentId:document.getElementById('v-sid').value,categories:[vocData.category],priority:vocData.priority,subject:document.getElementById('v-subject').value,detail:document.getElementById('v-detail').value,userNote:document.getElementById('v-note')?.value.trim()||'',fileUrl,username:currentUser?currentUser.username:'guest',turnstileToken:_turnstileToken});
-    if(res.success){markClientSubmit();resetTurnstile();document.getElementById('step-content-4')?.classList.add('hidden');document.getElementById('success-area')?.classList.remove('hidden');document.getElementById('new-ticket-id').innerText=res.ticketId;attachedFile=null;}
-    else await showAlert('❌','ส่งไม่สำเร็จ',res.error||'เกิดข้อผิดพลาด');
-  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
-  finally{btn.innerHTML='<i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่อง';btn.disabled=false;}
+    if(res.success){
+      submitted=true; // ← mark ว่าส่งสำเร็จแล้ว finally จะไม่แตะปุ่ม
+      markClientSubmit(); resetTurnstile(); attachedFile=null;
+      document.getElementById('step-content-4')?.classList.add('hidden');
+      document.getElementById('success-area')?.classList.remove('hidden');
+      document.getElementById('new-ticket-id').innerText=res.ticketId;
+    } else {
+      await showAlert('❌','ส่งไม่สำเร็จ',res.error||res.message||'เกิดข้อผิดพลาด');
+    }
+  } catch(e) {
+    await showAlert('❌','เกิดข้อผิดพลาด',e.message);
+  } finally {
+    // re-enable ปุ่มเฉพาะกรณีที่ยังไม่สำเร็จ (error/cancel)
+    // ถ้า submitted=true → ปุ่มอยู่ใน step-4 ที่ซ่อนแล้ว ไม่ต้อง restore
+    if(!submitted){
+      btn.innerHTML='<i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่อง (รอการยืนยัน)';
+      btn.disabled=true; // ← disable ไว้เพราะ Turnstile ถูก reset แล้ว ต้องยืนยันใหม่
+    }
+  }
 }
 
 // ════ PROGRESS BAR ════
