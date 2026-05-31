@@ -461,6 +461,7 @@ function _exposeGlobals() {
   G.submitUpdate=submitUpdate; G.deleteTicket=deleteTicket;
   G.filterByCategory=filterByCategory; G.expandAdminDetail=expandAdminDetail;
   G.selectTicketFilter=selectTicketFilter; G.setFilter=setFilter;
+  G.loadDashboard=loadDashboard; G.loadReviews=loadReviews;
   G.loadReport=loadReport; G.selectReportType=selectReportType;
   G.printReport=printReport; G.showUserReport=showUserReport; G.closeUserReport=closeUserReport;
   G.loadSuperAdmin=loadSuperAdmin; G.showSATab=showSATab;

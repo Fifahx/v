@@ -23,7 +23,7 @@
 const { google }     = require('googleapis');
 const { Readable }   = require('stream');
 const { setCorsHeaders } = require('./_sheets');
-const { requireAuth }    = require('./_jwt');
+// _jwt imported inline in handler for optional auth
 
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
@@ -97,9 +97,14 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
-  // ต้อง login ก่อนอัปโหลดไฟล์ (ป้องกันคนแปลกหน้าใช้ storage)
-  const auth = requireAuth(req, res);
-  if (!auth) return; // requireAuth ส่ง 401 ไปแล้ว
+  // ตรวจ JWT แบบ optional: login แล้ว = ผ่าน, guest = ผ่านได้
+  // submit.js verify Turnstile อีกรอบอยู่แล้ว ป้องกัน abuse
+  let _uploadUser = null;
+  try {
+    const { extractToken, verifyToken } = require('./_jwt');
+    const tok = extractToken(req);
+    if (tok) _uploadUser = verifyToken(tok);
+  } catch (e) { /* guest mode — allow */ }
 
   try {
     // 1. Parse multipart
