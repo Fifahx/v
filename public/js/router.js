@@ -19,7 +19,15 @@ export const ALL_PAGES = [
 // เพื่อหลีกเลี่ยง circular dependency
 let _appCallbacks = {};
 export function registerRouterCallbacks(callbacks) {
-  _appCallbacks = { ..._appCallbacks, ...callbacks };
+  // ✅ ใช้ Object.defineProperties เพื่อ copy property descriptor ทั้งหมด
+  //    รวมถึง getter: get currentUser() { return currentUser } ด้วย
+  // ❌ ห้ามใช้ spread { ..._appCallbacks, ...callbacks }
+  //    เพราะ spread เรียก getter แล้ว snapshot ค่า ณ ขณะนั้นเป็น plain value
+  //    ทำให้ currentUser กลายเป็น null ถาวร แม้ login แล้ว
+  Object.defineProperties(
+    _appCallbacks,
+    Object.getOwnPropertyDescriptors(callbacks),
+  );
 }
 
 export function toggleMobileNav() {

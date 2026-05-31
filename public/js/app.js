@@ -9,7 +9,13 @@ import { showAlert, showConfirm } from './ui.js';
 import { validateRegister, updateStrengthBar, clearFieldErrors } from './validation.js';
 import { navigateTo, _doNavigate, registerRouterCallbacks, closeMobileNav, toggleMobileNav } from './router.js';
 
-// ════ GLOBAL STATE ════
+// ════ EARLY GLOBAL BINDING ════
+// expose navigateTo ทันทีที่ module โหลด (ก่อน window.onload)
+// เพื่อป้องกัน ReferenceError เมื่อผู้ใช้คลิกปุ่มเร็วก่อน onload จะ fire
+// (Bug #4: ES Module ไม่ leak ออก global scope, onclick attribute ต้องการ window.xxx)
+window.navigateTo    = (...a) => navigateTo(...a);
+window.toggleMobileNav = (...a) => toggleMobileNav(...a);
+window.closeMobileNav  = (...a) => closeMobileNav(...a);
 let currentUser     = null;
 let currentStep     = 1;
 let ratingSelection = 0;
@@ -71,8 +77,7 @@ async function doRegister() {
 async function doLogout() {
   if(!await showConfirm('🚪','ออกจากระบบ','ต้องการออกจากระบบใช่หรือไม่?'))return;
   currentUser=null; clearSession();
-  document.getElementById('main-nav').innerHTML=`<a onclick="navigateTo('home')" id="nav-home" class="active">หน้าหลัก</a><a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a><a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a><a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>`;
-  document.getElementById('right-menu').innerHTML=`<a onclick="navigateTo('login')" class="nav-menu header-auth-desktop" style="color:rgba(255,255,255,.85);font-size:.85rem;"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</a><a onclick="navigateTo('register')" class="btn-nav-active nav-menu header-auth-desktop">ลงทะเบียน</a><button class="header-auth-mobile" onclick="navigateTo('login')" aria-label="เข้าสู่ระบบ"><i class="fas fa-user-circle"></i></button>`;
+  _resetMenuToGuest();
   navigateTo('home');
 }
 
@@ -390,11 +395,29 @@ async function updateFaq(faqId){const category=document.getElementById('edit-faq
 async function addFaq(){const cat=document.getElementById('faq-cat-new')?.value;const q=document.getElementById('faq-q-new')?.value.trim();const a=document.getElementById('faq-a-new')?.value.trim();if(!q||!a){await showAlert('⚠️','กรุณากรอกข้อมูล','');return;}try{const res=await api.post('/api/faq',{action:'add',category:cat,question:q,answer:a});if(res.success){await showAlert('✅','เพิ่มสำเร็จ','');loadSAFaq();}else await showAlert('❌','ไม่สำเร็จ',res.message);}catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}}
 async function deleteFaq(faqId){if(!await showConfirm('🗑️','ลบคำถาม','','danger'))return;try{const res=await api.post('/api/faq',{action:'delete',faqId});if(res.success)loadSAFaq();else await showAlert('❌','ลบไม่สำเร็จ',res.message);}catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}}
 
+function _resetMenuToGuest() {
+  const nav = document.getElementById('main-nav');
+  const right = document.getElementById('right-menu');
+  if (nav) nav.innerHTML = `
+    <a onclick="navigateTo('home')"     id="nav-home">หน้าหลัก</a>
+    <a onclick="navigateTo('portal')"   id="nav-portal">แจ้งเรื่อง</a>
+    <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
+    <a onclick="navigateTo('faq')"      id="nav-faq">คำถามที่พบบ่อย</a>`;
+  if (right) right.innerHTML = `
+    <a onclick="navigateTo('login')"    class="nav-menu header-auth-desktop" style="color:rgba(255,255,255,.85);font-size:.85rem;"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</a>
+    <a onclick="navigateTo('register')" class="btn-nav-active nav-menu header-auth-desktop">ลงทะเบียน</a>
+    <button class="header-auth-mobile" onclick="navigateTo('login')" aria-label="เข้าสู่ระบบ"><i class="fas fa-user-circle"></i></button>`;
+}
+
 // ════ INIT ════
 function _registerCallbacks() {
   registerRouterCallbacks({
     get currentUser() { return currentUser; },
-    onSessionExpired() { currentUser = null; },
+    onSessionExpired() {
+      // Bug #2 fix: ต้อง reset ทั้ง state และ menu ไม่ใช่แค่ currentUser
+      currentUser = null;
+      _resetMenuToGuest();
+    },
     setupPortalView, setupGuestPortalView, changeStep,
     showComplaintTypeModal, loadDashboard,
     loadReport: () => loadReport(currentReportType),
