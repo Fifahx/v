@@ -41,7 +41,10 @@ export function loadSession() {
       localStorage.removeItem('voc_token');
       return null;
     }
-    return JSON.parse(r);
+    const parsed = JSON.parse(r);
+    // ตรวจว่ามี role จึงจะถือว่าเป็น session ที่ valid
+    if (!parsed || !parsed.role) return null;
+    return parsed;
   } catch (e) {
     return null;
   }

@@ -435,12 +435,16 @@ function _exposeGlobals() {
 }
 
 window.onload = function () {
-  _registerCallbacks();
+  // Restore session ก่อนทุกอย่าง เพื่อให้ currentUser พร้อมก่อน callbacks ถูกเรียก
+  const saved = loadSession();
+  if (saved) {
+    currentUser = saved;
+  }
+
+  _registerCallbacks(); // register callbacks หลังจาก currentUser ถูก set แล้ว
   _exposeGlobals();
 
-  const saved = loadSession();
-  if (saved && saved.success) {
-    currentUser = saved;
+  if (saved) {
     if (saved.role==='superadmin') updateMenuForSuperAdmin();
     else if (saved.role==='admin') updateMenuForAdmin();
     else updateMenuForUser();

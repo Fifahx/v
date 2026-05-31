@@ -97,24 +97,33 @@ export function _doNavigate(pageId) {
 
 export function navigateTo(pageId) {
   const currentUser = _appCallbacks.currentUser;
-  if (pageId === 'portal' && (!currentUser || currentUser.role === 'admin' || currentUser.role === 'superadmin')) {
+
+  if (pageId === 'portal') {
+    // admin/superadmin: ผ่านตรงไป setupPortalView จะจัดการแสดง warning เอง
     if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')) {
-      // admin ไม่มีสิทธิ์แจ้งเรื่อง — ไปต่อตามปกติ
-    } else {
-      if (_appCallbacks.showComplaintTypeModal) {
-        _appCallbacks.showComplaintTypeModal(function (choice) {
-          if (choice === 'oneway') {
-            if (_appCallbacks.setupGuestPortalView) _appCallbacks.setupGuestPortalView();
-            _doNavigate('portal');
-          } else {
-            _doNavigate('login');
-            showAlert('ℹ️', 'กรุณาเข้าสู่ระบบ', 'เข้าสู่ระบบหรือลงทะเบียนก่อนนะคะ');
-            sessionStorage.setItem('voc_after_login', 'portal');
-          }
-        });
-        return;
-      }
+      _doNavigate(pageId);
+      return;
+    }
+    // user ที่ login แล้ว: ผ่านตรงไปเลย ไม่ต้องแสดง modal
+    if (currentUser && currentUser.role === 'user') {
+      _doNavigate(pageId);
+      return;
+    }
+    // ยังไม่ login: แสดง modal ให้เลือกประเภท
+    if (_appCallbacks.showComplaintTypeModal) {
+      _appCallbacks.showComplaintTypeModal(function (choice) {
+        if (choice === 'oneway') {
+          if (_appCallbacks.setupGuestPortalView) _appCallbacks.setupGuestPortalView();
+          _doNavigate('portal');
+        } else {
+          _doNavigate('login');
+          showAlert('ℹ️', 'กรุณาเข้าสู่ระบบ', 'เข้าสู่ระบบหรือลงทะเบียนก่อนนะคะ');
+          sessionStorage.setItem('voc_after_login', 'portal');
+        }
+      });
+      return;
     }
   }
+
   _doNavigate(pageId);
 }
