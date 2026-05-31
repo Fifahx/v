@@ -290,6 +290,7 @@ function searchFaq(){const q=document.getElementById('faq-search')?.value.trim()
 function printReport(){const content=document.getElementById('report-content');if(!content||content.querySelector('.loading-spinner')){showAlert('⚠️','รายงานยังไม่โหลด','');return;}const rptNames={service:'สรุปการให้บริการ',users:'ผู้ใช้บริการ',duration:'เวลาให้บริการ',monthly:'สรุปรายเดือน'};const now=new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'});const printWin=window.open('','_blank','width=900,height=700');printWin.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>VOC รายงาน</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Sarabun',sans-serif;background:#fff;color:#222;padding:32px 40px;}.print-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2d6a4f;padding-bottom:16px;margin-bottom:24px;}.print-header h1{font-size:1.4rem;color:#2d6a4f;font-weight:800;}@media print{body{padding:16px 20px;}}</style></head><body><div class="print-header"><div><h1>🎙️ VOC System — ${rptNames[currentReportType]||'รายงาน'}</h1><p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร · มหาวิทยาลัยราชภัฏยะลา</p></div><div style="text-align:right;font-size:.8rem;color:#888;"><div>วันที่พิมพ์: ${now}</div><div>ผู้พิมพ์: ${currentUser?.fullname||currentUser?.username||'admin'}</div></div></div>${content.innerHTML}<script>setTimeout(function(){window.print();},600);<\/script></body></html>`);printWin.document.close();}
 
 async function loadReport(type){
+  window._currentReportType = type || currentReportType;
   currentReportType=type||'service';
   const _rptNames={service:'สรุปการให้บริการ',users:'ผู้ใช้บริการ',duration:'เวลาให้บริการ',monthly:'รายเดือน'};
   const _rptIcons={service:'fas fa-clipboard-list',users:'fas fa-users',duration:'fas fa-stopwatch',monthly:'fas fa-calendar-alt'};
@@ -456,7 +457,7 @@ window.onload = function () {
   loginPairs.forEach(([f1,f2,fn])=>{const e1=document.getElementById(f1);const e2=document.getElementById(f2);if(e1)e1.addEventListener('keydown',e=>{if(e.key==='Enter'&&e2)e2.focus();});if(e2)e2.addEventListener('keydown',e=>{if(e.key==='Enter')fn();});});
 
   const regFields=['reg-firstname','reg-lastname','reg-email','reg-phone','reg-username','reg-pass','reg-pass2'];
-  regFields.forEach((id,idx)=>{const el=document.getElementById(id);if(!el)return;el.addEventListener('input',()=>{const {clearFieldErrors}=window;});if(idx<regFields.length-1)el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const nx=document.getElementById(regFields[idx+1]);if(nx)nx.focus();}});});
+  regFields.forEach((id,idx)=>{const el=document.getElementById(id);if(!el)return;el.addEventListener('input', clearFieldErrors);if(idx<regFields.length-1)el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const nx=document.getElementById(regFields[idx+1]);if(nx)nx.focus();}});});
   const pw=document.getElementById('reg-pass'); if(pw)pw.addEventListener('input',updateStrengthBar);
   const lastReg=document.getElementById('reg-pass2'); if(lastReg)lastReg.addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});
   const ti=document.getElementById('track-input'); if(ti)ti.addEventListener('keydown',e=>{if(e.key==='Enter')doTrack();});
@@ -465,3 +466,62 @@ window.onload = function () {
   if(window.initMgmtSlider) window.initMgmtSlider();
   navigateTo('home');
 };
+
+// ════ MGMT SLIDER (ต้องอยู่หลัง INIT section เพื่อให้ window.initMgmtSlider พร้อมก่อน onload) ════
+(function () {
+  const MGMT_PEOPLE = [
+    { img:'/img/คณะผู้บริหารคณะวิทย์/wilaiwan.png',    name:'ผศ.ดร.วิไลวัลย์ แก้วตาทิพย์',   pos:'คณบดีคณะวิทยาศาสตร์เทคโนโลยีและการเกษตร' },
+    { img:'/img/คณะผู้บริหารคณะวิทย์/ดาว.png',         name:'ผศ.ดร.ปัทมา พิศภักดิ์',          pos:'รองคณบดีฝ่ายบริหารและเครือข่ายสัมพันธ์' },
+    { img:'/img/คณะผู้บริหารคณะวิทย์/ely(nw).png',     name:'ผศ.ดร.อีลีหย๊ะ สนิโซ',           pos:'รองคณบดีฝ่ายวิจัย บริการวิชาการและกิจการนักศึกษา' },
+    { img:'/img/คณะผู้บริหารคณะวิทย์/อาบีดีน.png',     name:'ผศ.ดร.อาบีดีน ดะแซสาเมาะ',      pos:'รองคณบดีฝ่ายวิชาการและพัฒนาคุณภาพบัณฑิต' },
+    { img:'/img/คณะผู้บริหารคณะวิทย์/1759376222_.png',  name:'นางอธิพร สมจิตต์',               pos:'รักษาการในตำแหน่งผู้อำนวยการสำนักงานคณบดี' },
+    { img:'/img/คณะผู้บริหารคณะวิทย์/zl.png',           name:'ผศ.ดร.อิมรอน มีชัย',             pos:'ผู้ช่วยคณบดี ฝ่ายการสรรหานักศึกษาเชิงรุก' },
+    { img:'/img/คณะผู้บริหารคณะวิทย์/Screenshot 2025_09_24 153629.png', name:'ผศ.รอมลี เจะดอเลาะ', pos:'ผู้ช่วยคณบดี ฝ่ายการประเมินผลกระทบการบริการวิชาการ' },
+    { img:'/img/คณะผู้บริหารคณะวิทย์/Gemini_Generated_Image_z9sopgz9sopgz9so_removebg_preview.png', name:'อ.ดร.อดุลย์สมาน สุขแก้ว', pos:'ผู้ช่วยคณบดี ฝ่ายงานวิเทศสัมพันธ์และการสื่อสารองค์กร' },
+  ];
+  let current=0, timer=null, slides=[];
+
+  function buildSlides() {
+    const track=document.getElementById('mgmt-h-track'); if(!track)return;
+    track.innerHTML='';
+    slides=MGMT_PEOPLE.map(p=>{
+      const div=document.createElement('div'); div.className='mgmt-h-item';
+      div.innerHTML=`<img class="mgmt-h-img" src="${p.img}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="mgmt-h-img-fallback" style="display:none;"><i class="fas fa-user-tie"></i></div>`;
+      track.appendChild(div); return div;
+    });
+    updateInfo(0);
+  }
+  function updateInfo(idx) {
+    const nameEl=document.getElementById('mgmt-h-name'); const posEl=document.getElementById('mgmt-h-pos');
+    if(!nameEl||!posEl)return;
+    const p=MGMT_PEOPLE[idx]; if(!p)return;
+    nameEl.style.opacity='0'; posEl.style.opacity='0';
+    setTimeout(()=>{nameEl.textContent=p.name;posEl.textContent=p.pos;nameEl.style.opacity='1';posEl.style.opacity='1';},220);
+  }
+  function buildDots() {
+    const dotsEl=document.getElementById('mgmt-dots'); if(!dotsEl)return; dotsEl.innerHTML='';
+    MGMT_PEOPLE.forEach((_,i)=>{const d=document.createElement('div');d.className='mgmt-dot'+(i===0?' active':'');d.onclick=()=>goTo(i);dotsEl.appendChild(d);});
+  }
+  function updateDots() {
+    const dotsEl=document.getElementById('mgmt-dots'); if(!dotsEl)return;
+    dotsEl.querySelectorAll('.mgmt-dot').forEach((d,i)=>d.classList.toggle('active',i===current));
+  }
+  function goTo(idx) {
+    if(!slides.length)return;
+    current=(idx+MGMT_PEOPLE.length)%MGMT_PEOPLE.length;
+    const track=document.getElementById('mgmt-h-track');
+    if(track)track.style.transform=`translateX(-${current*100}%)`;
+    updateDots(); updateInfo(current);
+  }
+  function startAuto(){stopAuto();timer=setInterval(()=>goTo(current+1),3500);}
+  function stopAuto(){if(timer){clearInterval(timer);timer=null;}}
+
+  window.initMgmtSlider=function(){
+    buildSlides(); buildDots(); startAuto();
+    const panel=document.querySelector('.hero-mgmt-panel');
+    if(panel){panel.addEventListener('mouseenter',stopAuto);panel.addEventListener('mouseleave',startAuto);}
+    const track=document.getElementById('mgmt-h-track');
+    if(track){let tx=0;track.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});track.addEventListener('touchend',e=>{const diff=tx-e.changedTouches[0].clientX;if(Math.abs(diff)>40)goTo(current+(diff>0?1:-1));});}
+  };
+  window._mgmtGoTo=function(dir){goTo(current+dir);};
+})();

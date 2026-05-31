@@ -2,7 +2,7 @@
 // GET   /api/profile?username=xxx
 // PATCH /api/profile  { username, email?, phone?, lineId? }  ← แก้ได้เฉพาะ 3 field
 
-const { getSheetsClient, getSheetData, SHEET_USERS, SPREADSHEET_ID, setCorsHeaders } = require('./_sheets');
+const { getSheetsClient, getSheetData, withRetry, SHEET_USERS, SPREADSHEET_ID, setCorsHeaders } = require('./_sheets');
 
 module.exports = async function handler(req, res) {
   setCorsHeaders(res);
@@ -62,13 +62,16 @@ module.exports = async function handler(req, res) {
           if (phone  !== undefined) updates.push({ range: `${SHEET_USERS}!F${row}`, value: phone });
 
           if (updates.length > 0) {
-            await sheets.spreadsheets.values.batchUpdate({
-              spreadsheetId: SPREADSHEET_ID,
-              requestBody: {
-                valueInputOption: 'RAW',
-                data: updates.map(u => ({ range: u.range, values: [[u.value]] })),
-              },
-            });
+            await withRetry(
+              () => sheets.spreadsheets.values.batchUpdate({
+                spreadsheetId: SPREADSHEET_ID,
+                requestBody: {
+                  valueInputOption: 'RAW',
+                  data: updates.map(u => ({ range: u.range, values: [[u.value]] })),
+                },
+              }),
+              'profile:batchUpdate'
+            );
           }
           return res.json({ success: true, message: 'อัปเดตข้อมูลสำเร็จ' });
         }

@@ -5,7 +5,7 @@
 // POST /api/faq { action:'update', faqId, question, answer, category }
 
 const {
-  getSheetsClient, getSheetData, appendRow,
+  getSheetsClient, getSheetData, appendRow, withRetry,
   SPREADSHEET_ID, setCorsHeaders,
 } = require('./_sheets');
 
@@ -16,16 +16,16 @@ async function ensureFaqSheet(sheets) {
     const d = await getSheetData(sheets, SHEET_FAQ);
     if (!d.length) throw new Error('empty');
   } catch {
-    await sheets.spreadsheets.batchUpdate({
+    await withRetry(() => sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
       requestBody: { requests: [{ addSheet: { properties: { title: SHEET_FAQ } } }] },
-    }).catch(() => {});
-    await sheets.spreadsheets.values.update({
+    }), 'ensureSheet:addSheet').catch(() => {});
+    await withRetry(() => sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_FAQ}!A1`,
       valueInputOption: 'RAW',
       requestBody: { values: [['FaqID', 'หมวดหมู่', 'คำถาม', 'คำตอบ']] },
-    });
+    }), 'faq:initHeader');
     // เพิ่มคำถาม default
     const defaults = [
       [1, 'การใช้งาน', 'จะแจ้งเรื่องร้องเรียนได้อย่างไร?', 'กด "แจ้งเรื่อง" ในเมนูหลัก กรอกข้อมูลให้ครบ แล้วกดยืนยัน ระบบจะให้ Ticket ID ไว้ติดตามสถานะ'],
@@ -75,10 +75,10 @@ module.exports = async function handler(req, res) {
       if (action === 'delete') {
         for (let i = 1; i < data.length; i++) {
           if (String(data[i][0]) === String(faqId)) {
-            await sheets.spreadsheets.values.clear({
+            await withRetry(() => sheets.spreadsheets.values.clear({
               spreadsheetId: SPREADSHEET_ID,
               range: `${SHEET_FAQ}!A${i+1}:D${i+1}`,
-            });
+            }), 'faq:delete');
             return res.json({ success: true });
           }
         }
@@ -88,12 +88,12 @@ module.exports = async function handler(req, res) {
       if (action === 'update') {
         for (let i = 1; i < data.length; i++) {
           if (String(data[i][0]) === String(faqId)) {
-            await sheets.spreadsheets.values.update({
+            await withRetry(() => sheets.spreadsheets.values.update({
               spreadsheetId: SPREADSHEET_ID,
               range: `${SHEET_FAQ}!B${i+1}:D${i+1}`,
               valueInputOption: 'RAW',
               requestBody: { values: [[category||data[i][1], question||data[i][2], answer||data[i][3]]] },
-            });
+            }), 'faq:update');
             return res.json({ success: true });
           }
         }

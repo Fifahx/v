@@ -3,7 +3,7 @@
 // token ถูก sign ด้วย JWT_SECRET (env var) และมีอายุ 8 ชั่วโมง
 // client เก็บ token ใน sessionStorage และส่งผ่าน Authorization: Bearer <token>
 const {
-  getSheetsClient, getSheetData, appendRow,
+  getSheetsClient, getSheetData, appendRow, withRetry,
   SHEET_USERS, SHEET_ADMINS, SPREADSHEET_ID,
   hashPassword, formatDateThai, setCorsHeaders,
 } = require('./_sheets');
@@ -16,15 +16,15 @@ async function ensureSuperAdminSheet(sheets) {
     const d = await getSheetData(sheets, SHEET_SUPERADMINS);
     if (!d.length || d.length <= 1) throw new Error('empty');
   } catch {
-    await sheets.spreadsheets.batchUpdate({
+    await withRetry(() => sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
       requestBody: { requests: [{ addSheet: { properties: { title: SHEET_SUPERADMINS } } }] },
-    }).catch(()=>{});
-    await sheets.spreadsheets.values.update({
+    }), 'auth:addSuperAdminSheet').catch(()=>{});
+    await withRetry(() => sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID, range: `${SHEET_SUPERADMINS}!A1`,
       valueInputOption: 'RAW',
       requestBody: { values: [['Username','Password','ชื่อ-นามสกุล','อีเมล','สถานะ']] },
-    }).catch(()=>{});
+    }), 'auth:initSuperAdminHeader').catch(()=>{});
     await appendRow(sheets, SHEET_SUPERADMINS,
       ['superadmin', hashPassword('super1234'), 'ผู้ดูแลระดับสูง', 'superadmin@yru.ac.th', 'active'])
       .catch(()=>{});

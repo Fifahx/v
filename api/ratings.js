@@ -5,7 +5,7 @@
 // GET  /api/ratings?action=summary      ← สรุปคะแนนเฉลี่ย
 
 const {
-  getSheetsClient, getSheetData, appendRow,
+  getSheetsClient, getSheetData, appendRow, withRetry,
   SPREADSHEET_ID, setCorsHeaders, formatDateThai,
 } = require('./_sheets');
 
@@ -16,16 +16,16 @@ async function ensureRatingsSheet(sheets) {
     await getSheetData(sheets, SHEET_RATINGS);
   } catch (e) {
     // สร้าง sheet ใหม่ถ้ายังไม่มี
-    await sheets.spreadsheets.batchUpdate({
+    await withRetry(() => sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
       requestBody: { requests: [{ addSheet: { properties: { title: SHEET_RATINGS } } }] },
-    });
-    await sheets.spreadsheets.values.update({
+    }), 'ratings:addSheet');
+    await withRetry(() => sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_RATINGS}!A1`,
       valueInputOption: 'RAW',
       requestBody: { values: [['วันที่', 'Ticket ID', 'Username', 'คะแนน', 'ความคิดเห็น']] },
-    });
+    }), 'ratings:initHeader');
   }
 }
 

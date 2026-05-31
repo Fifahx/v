@@ -13,7 +13,7 @@
 //   Google Account → Security → 2-Step Verification → App passwords
 //   สร้าง App สำหรับ "Mail" → คัดลอก 16 หลักมาใส่ GMAIL_PASS
 
-const { getSheetsClient, getSheetData, SHEET_COUNTERS, setCorsHeaders, SPREADSHEET_ID } = require('./_sheets');
+const { getSheetsClient, getSheetData, withRetry, SHEET_COUNTERS, setCorsHeaders, SPREADSHEET_ID } = require('./_sheets');
 
 // ── ส่ง email ผ่าน Gmail SMTP ──
 async function sendEmail(to, subject, htmlBody) {
@@ -56,26 +56,26 @@ async function setNotifyEmail(sheets, email) {
   if (colIdx === -1) {
     colIdx = headers.length;
     const colLetter = String.fromCharCode(65 + colIdx);
-    await sheets.spreadsheets.values.update({
+    await withRetry(() => sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `VOC_Counters!${colLetter}1`,
       valueInputOption: 'RAW',
       requestBody: { values: [['NotifyEmail']] },
-    });
-    await sheets.spreadsheets.values.update({
+    }), 'notify:setHeader');
+    await withRetry(() => sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `VOC_Counters!${colLetter}2`,
       valueInputOption: 'RAW',
       requestBody: { values: [[email]] },
-    });
+    }), 'notify:setValue1');
   } else {
     const colLetter = String.fromCharCode(65 + colIdx);
-    await sheets.spreadsheets.values.update({
+    await withRetry(() => sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `VOC_Counters!${colLetter}2`,
       valueInputOption: 'RAW',
       requestBody: { values: [[email]] },
-    });
+    }), 'notify:setValue2');
   }
 }
 

@@ -10,7 +10,7 @@
 // - POST (update/addComment/togglePin/deleteTicket) → ต้องเป็น admin/superadmin
 
 const {
-  getSheetsClient, getSheetData, batchUpdate,
+  getSheetsClient, getSheetData, batchUpdate, withRetry,
   SHEET_TICKETS, SPREADSHEET_ID, setCorsHeaders, formatDateThai,
 } = require('./_sheets');
 const { requireAuth, extractToken, verifyToken } = require('./_jwt');
@@ -206,10 +206,13 @@ module.exports = async function handler(req, res) {
       if (action === 'deleteTicket') {
         const row = findRow(ticketId);
         if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
-        await sheets.spreadsheets.values.clear({
-          spreadsheetId: SPREADSHEET_ID,
-          range: `${SHEET_TICKETS}!A${row}:${colLetter(headers.length - 1)}${row}`,
-        });
+        await withRetry(
+          () => sheets.spreadsheets.values.clear({
+            spreadsheetId: SPREADSHEET_ID,
+            range: `${SHEET_TICKETS}!A${row}:${colLetter(headers.length - 1)}${row}`,
+          }),
+          'tickets:deleteTicket'
+        );
         return res.json({ success: true });
       }
 

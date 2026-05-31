@@ -482,7 +482,7 @@
         <button onclick="printReport()" style="padding:7px 16px;background:#3a86ff;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
           <i class="fas fa-print"></i> พิมพ์/PDF
         </button>
-        <button onclick="loadReport(currentReportType)" style="padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
+        <button onclick="loadReport(window._currentReportType||'service')" style="padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
           <i class="fas fa-sync-alt"></i> รีเฟรช
         </button>
       </div>

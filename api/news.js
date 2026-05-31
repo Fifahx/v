@@ -5,7 +5,7 @@
 // POST /api/news { action:'update', newsId, title, content, tag }
 
 const {
-  getSheetsClient, getSheetData, appendRow,
+  getSheetsClient, getSheetData, appendRow, withRetry,
   SPREADSHEET_ID, setCorsHeaders, formatDateThai,
 } = require('./_sheets');
 
@@ -16,16 +16,16 @@ async function ensureNewsSheet(sheets) {
     const d = await getSheetData(sheets, SHEET_NEWS);
     if (!d.length) throw new Error('empty');
   } catch {
-    await sheets.spreadsheets.batchUpdate({
+    await withRetry(() => sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
       requestBody: { requests: [{ addSheet: { properties: { title: SHEET_NEWS } } }] },
-    }).catch(() => {}); // ถ้า sheet มีอยู่แล้ว ไม่ error
-    await sheets.spreadsheets.values.update({
+    }), 'news:addSheet').catch(() => {});
+    await withRetry(() => sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_NEWS}!A1`,
       valueInputOption: 'RAW',
       requestBody: { values: [['NewsID', 'วันที่', 'หัวเรื่อง', 'เนื้อหา', 'Tag', 'Author', 'ImageURL']] },
-    });
+    }), 'news:initHeader');
   }
 }
 
@@ -79,10 +79,10 @@ module.exports = async function handler(req, res) {
         // หา row แล้วลบ (clear)
         for (let i = 1; i < data.length; i++) {
           if (String(data[i][0]) === String(newsId)) {
-            await sheets.spreadsheets.values.clear({
+            await withRetry(() => sheets.spreadsheets.values.clear({
               spreadsheetId: SPREADSHEET_ID,
               range: `${SHEET_NEWS}!A${i+1}:F${i+1}`,
-            });
+            }), 'news:delete');
             return res.json({ success: true });
           }
         }
@@ -99,7 +99,7 @@ module.exports = async function handler(req, res) {
           if (String(data[i][0]) === String(newsId)) {
             const row = i + 1;
             // อัปเดต C:G (title, content, tag, author, imageUrl)
-            await sheets.spreadsheets.values.update({
+            await withRetry(() => sheets.spreadsheets.values.update({
               spreadsheetId: SPREADSHEET_ID,
               range: `${SHEET_NEWS}!C${row}:G${row}`,
               valueInputOption: 'RAW',
@@ -110,7 +110,7 @@ module.exports = async function handler(req, res) {
                 data[i][5] || '',        // author ไม่เปลี่ยน
                 imageUrl !== undefined ? imageUrl : (data[i][6] || ''),
               ]] },
-            });
+            }), 'news:update');
             return res.json({ success: true });
           }
         }
