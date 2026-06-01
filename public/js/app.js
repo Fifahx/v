@@ -466,7 +466,35 @@ async function submitUpdate(tid){
     const res=await api.post('/api/tickets',{action:'update',ticketId:tid,newStatus:ns,assignee:as});
     if(res.success){
       const card=document.getElementById('card-'+tid);
-      if(card){card.style.transition='background .4s';card.style.background='#d4edda';setTimeout(()=>{card.style.background='';},1500);}
+      if(card){
+        // ── อัปเดต badge สถานะใน card header ──
+        const badge=card.querySelector('.admin-card-top .status');
+        // ใช้ค่าเดียวกับ renderAdminTickets
+        const scTag={
+          'รอดำเนินการ':'status-pending','กำลังดำเนินการ':'status-inprogress',
+          'รอตรวจสอบ':'status-pending','เสร็จสิ้น':'status-success','ปฏิเสธ':'status-reject'
+        };
+        const scColor={
+          'รอดำเนินการ':'pending','กำลังดำเนินการ':'inprogress',
+          'รอตรวจสอบ':'inprogress','เสร็จสิ้น':'done','ปฏิเสธ':'rejected'
+        };
+        if(badge){
+          // ลบ class เก่าทั้งหมดที่เป็น status-*
+          badge.className=badge.className.replace(/\bstatus-\S+/g,'').trim();
+          badge.classList.add('status', scTag[ns]||'status-pending');
+          badge.textContent=ns;
+        }
+        // อัปเดต class สีของ card ด้วย
+        ['pending','inprogress','review','done','rejected'].forEach(c=>card.classList.remove(c));
+        card.classList.add(scColor[ns]||'pending');
+        // อัปเดต assignee ที่แสดงใน footer
+        const footerAssignee=card.querySelector('.ticket-card-footer span:last-child');
+        if(footerAssignee&&as) footerAssignee.innerHTML=`<i class="fas fa-user-tie"></i>${as}`;
+        // กะพริบเขียวยืนยัน
+        card.style.transition='background .4s';
+        card.style.background='#d4edda';
+        setTimeout(()=>{card.style.background='';},1500);
+      }
     } else {
       // ถ้า 401 → token หมดอายุ ให้แจ้งเตือนชัดเจน
       const msg = (res.message||'').includes('กรุณาเข้าสู่ระบบ') || (res.message||'').includes('token')
