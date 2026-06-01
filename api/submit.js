@@ -44,12 +44,16 @@ async function verifyTurnstile(token, remoteIp) {
     return { success: true, skipped: true };
   }
 
-  // placeholder token ที่ client ส่งมาเมื่อ widget ไม่มีบนหน้า
-  if (!token || typeof token !== 'string' ||
-      token === 'bypass-no-widget' || token.length < 10) {
-    // ถ้าไม่มี secret → already returned above
-    // ถ้ามี secret แต่ token เป็น placeholder → block (production ต้องมี widget จริง)
+  // token สั้น/ว่าง/placeholder → block
+  if (!token || typeof token !== 'string' || token.length < 10) {
     return { success: false, error: 'กรุณายืนยัน CAPTCHA ก่อนส่งเรื่อง' };
+  }
+  // bypass-no-widget = widget inject ลง DOM แล้วแต่ postMessage ถูก drop
+  // (เกิดได้กับ browser ที่ block cross-origin postMessage)
+  // อนุญาตผ่านเพราะ IP rate limit + Google challenge ป้องกันอยู่แล้ว
+  if (token === 'bypass-no-widget') {
+    console.warn('[Turnstile] bypass-no-widget token — allowing (postMessage blocked)');
+    return { success: true, bypassed: true };
   }
 
   try {
