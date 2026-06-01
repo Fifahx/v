@@ -172,7 +172,12 @@ function setupPortalView() {
   const w=document.getElementById('portal-login-warning'); const f=document.getElementById('portal-form-content');
   if(_guestPortalMode&&!currentUser){setupGuestPortalView();return;}
   _guestPortalMode=false;
-  if(currentUser&&currentUser.role==='user'){w.classList.add('hidden');f.classList.remove('hidden');const nf=document.getElementById('v-name');if(nf&&currentUser.firstname)nf.value=(currentUser.firstname||'')+' '+(currentUser.lastname||'');updatePortalStepValidation();}
+  if(currentUser&&currentUser.role==='user'){
+    w.classList.add('hidden');
+    f.classList.remove('hidden');
+    setIdentityPanelMode('user');
+    updatePortalStepValidation();
+  }
   else if(currentUser&&(currentUser.role==='admin'||currentUser.role==='superadmin')){w.classList.remove('hidden');w.innerHTML='<i class="fas fa-info-circle"></i><span>ผู้ดูแลระบบไม่สามารถแจ้งเรื่องได้</span>';f.classList.add('hidden');}
   else{w.classList.remove('hidden');f.classList.add('hidden');}
 }
@@ -181,6 +186,7 @@ function setupGuestPortalView() {
   const w=document.getElementById('portal-login-warning'); const f=document.getElementById('portal-form-content');
   if(w)w.classList.add('hidden');
   if(f){f.classList.remove('hidden');if(!document.getElementById('guest-mode-banner')){const b=document.createElement('div');b.id='guest-mode-banner';b.className='guest-banner';b.innerHTML=`<div class="guest-banner-inner"><i class="fas fa-user-circle" style="font-size:1.4rem;color:#2d6a4f;"></i><div class="guest-banner-text"><div class="guest-banner-title">คุณยังไม่ได้เข้าสู่ระบบ</div><div class="guest-banner-sub"><strong>จะไม่สามารถติดตามสถานะ</strong>ได้</div></div><div class="guest-banner-btns"><button class="guest-btn-login" onclick="navigateTo('login')"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</button><button class="guest-btn-cont" onclick="dismissGuestBanner()"><i class="fas fa-bullhorn"></i> แจ้งเรื่องโดยไม่ login</button></div></div>`;f.insertBefore(b,f.firstChild);}}
+  updatePortalStepValidation();
 }
 function dismissGuestBanner() { const b=document.getElementById('guest-mode-banner'); if(b)b.style.display='none'; document.querySelector('.step-progress')?.classList.remove('hidden'); document.getElementById('step-content-1')?.classList.remove('hidden'); }
 
@@ -202,8 +208,35 @@ async function saveProfile(username) {
 }
 
 // ════ VOC FORM ════
+function setIdentityPanelMode(mode) {
+  const panel=document.getElementById('identity-panel');
+  const anon=document.getElementById('isAnon');
+  const nf=document.getElementById('v-name');
+  const sf=document.getElementById('v-sid');
+  if (mode === 'user') {
+    if(panel)panel.classList.add('hidden');
+    if(anon)anon.checked=false;
+    if(nf)nf.value=((currentUser?.firstname||'')+' '+(currentUser?.lastname||'')).trim();
+    if(sf)sf.value=currentUser?.studentId||currentUser?.username||'';
+    return;
+  }
+  if(panel)panel.classList.remove('hidden');
+  if(nf && !nf.value && currentUser?.firstname) nf.value=((currentUser.firstname||'')+' '+(currentUser.lastname||'')).trim();
+  toggleAnon();
+}
+function getSubmitIdentity() {
+  const loggedInUser = currentUser && currentUser.role === 'user';
+  const isAnon = loggedInUser ? false : !!document.getElementById('isAnon')?.checked;
+  const accountName = ((currentUser?.firstname||'')+' '+(currentUser?.lastname||'')).trim();
+  return {
+    isAnon,
+    name: isAnon ? 'ไม่ระบุตัวตน' : (loggedInUser ? accountName : (document.getElementById('v-name')?.value||'-')),
+    studentId: isAnon ? '-' : (loggedInUser ? (currentUser?.studentId||currentUser?.username||'') : (document.getElementById('v-sid')?.value||'-')),
+  };
+}
 function isStepValid(step) {
   if (step === 1) {
+    if (currentUser && currentUser.role === 'user') return !!vocData.cType;
     if (document.getElementById('isAnon')?.checked) return !!vocData.cType;
     return !!vocData.cType && !!document.getElementById('v-name')?.value.trim();
   }
@@ -239,7 +272,13 @@ function changeStep(step) {
   if(step!==4)resetTurnstile();
 }
 function setOption(el,key,val) { el.parentElement.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); vocData[key]=val; updatePortalStepValidation(); }
-function toggleAnon() { document.getElementById('identity-fields').style.opacity=document.getElementById('isAnon').checked?'0.3':'1'; updatePortalStepValidation(); }
+function toggleAnon() {
+  const isAnon=!!document.getElementById('isAnon')?.checked;
+  const fields=document.getElementById('identity-fields');
+  if(fields)fields.style.opacity=isAnon?'0.3':'1';
+  ['v-name','v-sid'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=isAnon;});
+  updatePortalStepValidation();
+}
 function handleFileSelect(inputEl) {
   // Legacy: ไม่ใช้แล้ว — ใช้ link input แทน
 }
@@ -247,7 +286,7 @@ function prepareReview() {
   if (!isStepValid(3)) { updatePortalStepValidation(); return; }
   const subject=document.getElementById('v-subject')?.value.trim(); const detail=document.getElementById('v-detail')?.value.trim(); const note=document.getElementById('v-note')?.value.trim()||'';
   if(!subject){showAlert('⚠️','กรุณากรอกหัวข้อ','');return;} if(!detail){showAlert('⚠️','กรุณากรอกรายละเอียด','');return;}
-  const isAnon=document.getElementById('isAnon')?.checked; const name=isAnon?'ไม่ระบุตัวตน':(document.getElementById('v-name')?.value||'-'); const sid=isAnon?'-':(document.getElementById('v-sid')?.value||'-');
+  const identity=getSubmitIdentity(); const name=identity.name; const sid=identity.studentId;
   const pMap={high:{label:'🔴 เร่งด่วน',sub:'ภายใน 24 ชม.',cls:'high'},medium:{label:'🟡 ปานกลาง',sub:'ภายใน 3 วัน',cls:'medium'},low:{label:'🟢 ทั่วไป',sub:'ภายใน 7 วัน',cls:'low'}};
   const pInfo=pMap[vocData.priority]||pMap.medium; const detailHtml=detail.replace(/\n/g,'<br>');
   const _rl=document.getElementById('v-file-link')?.value.trim()||'';
@@ -283,7 +322,8 @@ async function finalSubmit() {
       ? _linkInput.value.trim()
       : '';
     btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังส่ง...';
-    const res=await api.post('/api/submit',{customerType:vocData.cType,isAnon:document.getElementById('isAnon').checked,name:document.getElementById('v-name').value,studentId:document.getElementById('v-sid').value,categories:[vocData.category],priority:vocData.priority,subject:document.getElementById('v-subject').value,detail:document.getElementById('v-detail').value,userNote:document.getElementById('v-note')?.value.trim()||'',fileUrl,username:currentUser?currentUser.username:'guest',turnstileToken:_turnstileToken||'bypass-no-widget'});
+    const identity=getSubmitIdentity();
+    const res=await api.post('/api/submit',{customerType:vocData.cType,isAnon:identity.isAnon,name:identity.name,studentId:identity.studentId,categories:[vocData.category],priority:vocData.priority,subject:document.getElementById('v-subject').value,detail:document.getElementById('v-detail').value,userNote:document.getElementById('v-note')?.value.trim()||'',fileUrl,username:currentUser?currentUser.username:'guest',turnstileToken:_turnstileToken||'bypass-no-widget'});
     if(res.success){
       submitted=true; // ← mark ว่าส่งสำเร็จแล้ว finally จะไม่แตะปุ่ม
       markClientSubmit(); resetTurnstile(); attachedFile=null;
