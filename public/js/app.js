@@ -80,6 +80,7 @@ async function doRegister() {
 async function doLogout() {
   if(!await showConfirm('🚪','ออกจากระบบ','ต้องการออกจากระบบใช่หรือไม่?'))return;
   currentUser=null; clearSession();
+  _clearAdminPageContent(); // ล้าง admin content ออกจาก DOM เมื่อ logout
   _resetMenuToGuest();
   navigateTo('home');
 }
@@ -90,13 +91,54 @@ function updateMenuForUser() {
   document.getElementById('right-menu').innerHTML=`<span class="user-badge header-auth-desktop" onclick="showProfile()" title="โปรไฟล์"><i class="fas fa-user-circle"></i>${currentUser.firstname} ${currentUser.lastname}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="showProfile()" aria-label="โปรไฟล์" title="โปรไฟล์"><i class="fas fa-user-circle"></i></button><button class="header-auth-mobile header-auth-mobile--logout" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>`;
 }
 function updateMenuForAdmin() {
+  _initAdminPageContent('admin');
   document.getElementById('main-nav').innerHTML=`<a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a><a onclick="navigateTo('admin-dashboard')" id="nav-admin-dashboard">สถิติ</a><a onclick="navigateTo('admin-tickets')" id="nav-admin-tickets">จัดการเรื่อง</a><a onclick="navigateTo('admin-reviews')" id="nav-admin-reviews">รีวิว</a><a onclick="navigateTo('admin-report')" id="nav-admin-report">รายงาน</a><a onclick="navigateTo('faq')" id="nav-faq">FAQ</a>`;
   document.getElementById('right-menu').innerHTML=`<span class="user-badge header-auth-desktop"><i class="fas fa-shield-alt"></i>${currentUser.fullname||'Admin'}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ (Admin)"><i class="fas fa-shield-alt"></i></button><button class="header-auth-mobile header-auth-mobile--logout" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>`;
 }
 function updateMenuForSuperAdmin() {
+  _initAdminPageContent('superadmin');
   document.getElementById('main-nav').innerHTML=`<a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a><a onclick="navigateTo('admin-dashboard')" id="nav-admin-dashboard">สถิติ</a><a onclick="navigateTo('admin-tickets')" id="nav-admin-tickets">จัดการเรื่อง</a><a onclick="navigateTo('admin-reviews')" id="nav-admin-reviews">รีวิว</a><a onclick="navigateTo('admin-report')" id="nav-admin-report">รายงาน</a><a onclick="navigateTo('superadmin')" id="nav-superadmin">⚙️ ระบบ</a>`;
   document.getElementById('right-menu').innerHTML=`<span class="user-badge superadmin-badge header-auth-desktop"><i class="fas fa-crown" style="color:#f0a500;"></i>${currentUser.fullname||'SuperAdmin'}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ (SuperAdmin)"><i class="fas fa-crown" style="color:#f0a500;"></i></button><button class="header-auth-mobile header-auth-mobile--logout" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>`;
 }
+
+// ════ ROLE-BASED DOM INJECTION ════
+// inject skeleton HTML เข้า admin pages เฉพาะเมื่อ login เป็น admin/superadmin
+// เมื่อ logout → ลบ innerHTML ทิ้งเพื่อป้องกัน user เห็น
+function _initAdminPageContent(role) {
+  // dash-content
+  const dc = document.getElementById('dash-content');
+  if (dc && !dc.innerHTML.trim()) dc.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
+
+  // admin-ticket-list
+  const tl = document.getElementById('admin-ticket-list');
+  if (tl && !tl.innerHTML.trim()) tl.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
+
+  // review-content
+  const rc = document.getElementById('review-content');
+  if (rc && !rc.innerHTML.trim()) rc.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
+
+  // report-content
+  const rpc = document.getElementById('report-content');
+  if (rpc && !rpc.innerHTML.trim()) rpc.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
+
+  // superadmin-content — เฉพาะ superadmin เท่านั้น
+  if (role === 'superadmin') {
+    const sc = document.getElementById('superadmin-content');
+    if (sc && !sc.innerHTML.trim()) sc.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
+  }
+}
+
+function _clearAdminPageContent() {
+  // ล้าง content ทั้งหมดออกจาก DOM เมื่อ logout
+  // เพื่อป้องกัน user เห็น admin data หลัง logout
+  ['dash-content','admin-ticket-list','review-content',
+   'report-content','superadmin-content','user-report-content'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+}
+
+
 
 // ════ COMPLAINT TYPE MODAL ════
 function showComplaintTypeModal(callback) {
@@ -342,6 +384,8 @@ function printReport(){const content=document.getElementById('report-content');i
 async function loadReport(type){
   window._currentReportType = type || currentReportType;
   currentReportType=type||'service';
+  const _rc=document.getElementById('report-content');
+  if(_rc)_rc.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
   const _rptNames={service:'สรุปการให้บริการ',users:'ผู้ใช้บริการ',duration:'เวลาให้บริการ',monthly:'รายเดือน'};
   const _rptIcons={service:'fas fa-clipboard-list',users:'fas fa-users',duration:'fas fa-stopwatch',monthly:'fas fa-calendar-alt'};
   const _lbl=document.getElementById('report-type-label'); const _ico=document.getElementById('report-type-icon');
