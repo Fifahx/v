@@ -10,12 +10,16 @@ import { validateRegister, updateStrengthBar, clearFieldErrors } from './validat
 import { navigateTo, _doNavigate, registerRouterCallbacks, closeMobileNav, toggleMobileNav } from './router.js';
 
 // ════ EARLY GLOBAL BINDING ════
-// expose navigateTo ทันทีที่ module โหลด (ก่อน window.onload)
-// เพื่อป้องกัน ReferenceError เมื่อผู้ใช้คลิกปุ่มเร็วก่อน onload จะ fire
-// (Bug #4: ES Module ไม่ leak ออก global scope, onclick attribute ต้องการ window.xxx)
-window.navigateTo    = (...a) => navigateTo(...a);
+// expose navigateTo + Turnstile callbacks ทันทีที่ module โหลด (ก่อน window.onload)
+// สำคัญมาก: Turnstile widget render ตอน DOMContentLoaded และเรียก window.onTurnstileSuccess
+// ทันทีที่ user ผ่าน ถ้ารอ window.onload จะไม่มี callback ให้เรียก → ปุ่มไม่ enable
+window.navigateTo      = (...a) => navigateTo(...a);
 window.toggleMobileNav = (...a) => toggleMobileNav(...a);
 window.closeMobileNav  = (...a) => closeMobileNav(...a);
+// Turnstile callbacks ต้องเป็น global ก่อน widget โหลด
+window.onTurnstileSuccess = (token) => onTurnstileSuccess(token);
+window.onTurnstileExpire  = ()      => onTurnstileExpire();
+window.onTurnstileError   = ()      => onTurnstileError();
 let currentUser     = null;
 let currentStep     = 1;
 let ratingSelection = 0;
@@ -34,10 +38,10 @@ function markClientSubmit()    { try { localStorage.setItem('voc_last_submit',St
 function clientCooldownRemaining() { try { const rem=Math.ceil((SUBMIT_COOLDOWN_MS-(Date.now()-Number(localStorage.getItem('voc_last_submit')||0)))/60000); return rem>0?rem:0; } catch(e){return 0;} }
 
 // ════ TURNSTILE ════
-// function onTurnstileSuccess(token) { _turnstileToken=token; _turnstileReady=true; const btn=document.getElementById('btn-final'); const st=document.getElementById('turnstile-status'); if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่องร้องเรียน';} if(st){st.className='turnstile-status-msg turnstile-ok';st.innerHTML='<i class="fas fa-check-circle"></i> ยืนยันตัวตนสำเร็จ';} }
-// function onTurnstileExpire()  { _turnstileToken=''; _turnstileReady=false; const btn=document.getElementById('btn-final'); if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-shield-alt"></i> กรุณายืนยันอีกครั้ง';} }
-// function onTurnstileError()   { _turnstileToken=''; _turnstileReady=false; const st=document.getElementById('turnstile-status'); if(st){st.className='turnstile-status-msg turnstile-err';st.innerHTML='<i class="fas fa-times-circle"></i> ไม่สามารถโหลด CAPTCHA ได้';} }
-// function resetTurnstile() { _turnstileToken=''; _turnstileReady=false; const btn=document.getElementById('btn-final'); if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-shield-alt"></i> ยืนยันการส่งเรื่อง (รอการยืนยัน)';} try{if(window.turnstile)window.turnstile.reset('#cf-turnstile-widget');}catch(e){} }
+function onTurnstileSuccess(token) { _turnstileToken=token; _turnstileReady=true; const btn=document.getElementById('btn-final'); const st=document.getElementById('turnstile-status'); if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่องร้องเรียน';} if(st){st.className='turnstile-status-msg turnstile-ok';st.innerHTML='<i class="fas fa-check-circle"></i> ยืนยันตัวตนสำเร็จ';} }
+function onTurnstileExpire()  { _turnstileToken=''; _turnstileReady=false; const btn=document.getElementById('btn-final'); if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-shield-alt"></i> กรุณายืนยันอีกครั้ง';} }
+function onTurnstileError()   { _turnstileToken=''; _turnstileReady=false; const st=document.getElementById('turnstile-status'); if(st){st.className='turnstile-status-msg turnstile-err';st.innerHTML='<i class="fas fa-times-circle"></i> ไม่สามารถโหลด CAPTCHA ได้';} }
+function resetTurnstile() { _turnstileToken=''; _turnstileReady=false; const btn=document.getElementById('btn-final'); if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-shield-alt"></i> ยืนยันการส่งเรื่อง (รอการยืนยัน)';} try{if(window.turnstile)window.turnstile.reset('#cf-turnstile-widget');}catch(e){} }
 
 // ════ DROPDOWN ════
 function toggleDropdown(id) { const menu=document.getElementById(id); if(!menu)return; const isOpen=menu.classList.contains('open'); document.querySelectorAll('.voc-dropdown-menu.open').forEach(m=>m.classList.remove('open')); document.querySelectorAll('.voc-dropdown-arrow.rotated').forEach(a=>a.classList.remove('rotated')); if(!isOpen){menu.classList.add('open');const wrap=menu.closest('.voc-dropdown-wrap');if(wrap){const arrow=wrap.querySelector('.voc-dropdown-arrow');if(arrow)arrow.classList.add('rotated');}} }
@@ -167,7 +171,12 @@ function prepareReview() {
 
 async function finalSubmit() {
   if(!currentUser&&isClientRateLimited()){await showAlert('⏱️','กรุณารอสักครู่',`กรุณารออีก ${clientCooldownRemaining()} นาที`);return;}
-  if(!_turnstileReady||!_turnstileToken){await showAlert('🛡️','กรุณายืนยันตัวตน','กรุณายืนยัน CAPTCHA ก่อนส่งเรื่อง');return;}
+  // ตรวจ Turnstile: ถ้ามี widget บนหน้า (cf-turnstile element อยู่) → ต้องผ่านก่อน
+  // ถ้าไม่มี widget หรือ widget โหลดไม่ขึ้น → bypass ได้ (server จะ skip verify เองถ้าไม่มี secret)
+  const _hasTurnstileWidget = !!document.getElementById('cf-turnstile-widget');
+  if(_hasTurnstileWidget && (!_turnstileReady||!_turnstileToken)){
+    await showAlert('🛡️','กรุณายืนยันตัวตน','กรุณายืนยัน CAPTCHA ก่อนส่งเรื่อง');return;
+  }
   if(!await showConfirm('📋','ยืนยันการส่งเรื่อง','ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้'))return;
   const btn=document.getElementById('btn-final'); btn.disabled=true;
   let submitted=false; // ← flag: ถ้า true แล้ว finally จะไม่ re-enable ปุ่ม
@@ -183,7 +192,7 @@ async function finalSubmit() {
       fileUrl=uploadData.url;
     }
     btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังส่ง...';
-    const res=await api.post('/api/submit',{customerType:vocData.cType,isAnon:document.getElementById('isAnon').checked,name:document.getElementById('v-name').value,studentId:document.getElementById('v-sid').value,categories:[vocData.category],priority:vocData.priority,subject:document.getElementById('v-subject').value,detail:document.getElementById('v-detail').value,userNote:document.getElementById('v-note')?.value.trim()||'',fileUrl,username:currentUser?currentUser.username:'guest',turnstileToken:_turnstileToken});
+    const res=await api.post('/api/submit',{customerType:vocData.cType,isAnon:document.getElementById('isAnon').checked,name:document.getElementById('v-name').value,studentId:document.getElementById('v-sid').value,categories:[vocData.category],priority:vocData.priority,subject:document.getElementById('v-subject').value,detail:document.getElementById('v-detail').value,userNote:document.getElementById('v-note')?.value.trim()||'',fileUrl,username:currentUser?currentUser.username:'guest',turnstileToken:_turnstileToken||'bypass-no-widget'});
     if(res.success){
       submitted=true; // ← mark ว่าส่งสำเร็จแล้ว finally จะไม่แตะปุ่ม
       markClientSubmit(); resetTurnstile(); attachedFile=null;
@@ -461,7 +470,6 @@ function _exposeGlobals() {
   G.submitUpdate=submitUpdate; G.deleteTicket=deleteTicket;
   G.filterByCategory=filterByCategory; G.expandAdminDetail=expandAdminDetail;
   G.selectTicketFilter=selectTicketFilter; G.setFilter=setFilter;
-  G.loadDashboard=loadDashboard; G.loadReviews=loadReviews;
   G.loadReport=loadReport; G.selectReportType=selectReportType;
   G.printReport=printReport; G.showUserReport=showUserReport; G.closeUserReport=closeUserReport;
   G.loadSuperAdmin=loadSuperAdmin; G.showSATab=showSATab;

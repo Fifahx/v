@@ -353,8 +353,10 @@
                id="cf-turnstile-widget"
                data-sitekey="1x00000000000000000000BB"
                data-theme="light"
-               data-language="th">
-               <!----------Call back functions-------- -->
+               data-language="th"
+               data-callback="onTurnstileSuccess"
+               data-expired-callback="onTurnstileExpire"
+               data-error-callback="onTurnstileError">
           </div>
           <div id="turnstile-status" class="turnstile-status-msg"></div>
         </div>

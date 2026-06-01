@@ -37,14 +37,18 @@ const crypto = require('crypto');
 async function verifyTurnstile(token, remoteIp) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
 
-  // ── Dev mode: ถ้าไม่ได้ตั้ง secret หรือ token เป็น placeholder → ข้ามไป ──
+  // ── Dev mode / No-widget mode ──
+  // ถ้าไม่มี TURNSTILE_SECRET_KEY → skip (dev mode)
   if (!secret) {
-    console.warn('[Turnstile] TURNSTILE_SECRET_KEY not set — skipping verification (dev mode)');
+    console.warn('[Turnstile] TURNSTILE_SECRET_KEY not set — skipping verification');
     return { success: true, skipped: true };
   }
 
-  // token = '' → ไม่ผ่าน ไม่ต้องเรียก Cloudflare
-  if (!token || typeof token !== 'string' || token.length < 10) {
+  // placeholder token ที่ client ส่งมาเมื่อ widget ไม่มีบนหน้า
+  if (!token || typeof token !== 'string' ||
+      token === 'bypass-no-widget' || token.length < 10) {
+    // ถ้าไม่มี secret → already returned above
+    // ถ้ามี secret แต่ token เป็น placeholder → block (production ต้องมี widget จริง)
     return { success: false, error: 'กรุณายืนยัน CAPTCHA ก่อนส่งเรื่อง' };
   }
 
