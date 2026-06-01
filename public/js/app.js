@@ -30,6 +30,7 @@ let _newsCache      = [];
 let _saNewsCache    = [];
 let _turnstileToken = '';
 let _turnstileReady = false;
+let _turnstileWatchTimer = null;
 let _guestPortalMode = false;
 
 const SUBMIT_COOLDOWN_MS = 5 * 60 * 1000;
@@ -45,10 +46,41 @@ function skeletonHtml(type='list', count=3) {
 }
 
 // ════ TURNSTILE ════
-function onTurnstileSuccess(token) { _turnstileToken=token; _turnstileReady=true; const btn=document.getElementById('btn-final'); const st=document.getElementById('turnstile-status'); if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่องร้องเรียน';} if(st){st.className='turnstile-status-msg turnstile-ok';st.innerHTML='<i class="fas fa-check-circle"></i> ยืนยันตัวตนสำเร็จ';} }
-function onTurnstileExpire()  { _turnstileToken=''; _turnstileReady=false; const btn=document.getElementById('btn-final'); if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-shield-alt"></i> กรุณายืนยันอีกครั้ง';} }
+function getTurnstileDomToken() {
+  const selectors = [
+    '#cf-turnstile-widget [name="cf-turnstile-response"]',
+    '[name="cf-turnstile-response"]',
+    'input[name="cf-turnstile-response"]',
+    'textarea[name="cf-turnstile-response"]',
+  ];
+  for (const selector of selectors) {
+    const el = document.querySelector(selector);
+    if (el?.value && el.value.length > 10) return el.value;
+  }
+  return '';
+}
+function applyTurnstileVerified(token) {
+  if (!token || token.length <= 10) return false;
+  _turnstileToken=token;
+  _turnstileReady=true;
+  const btn=document.getElementById('btn-final');
+  const st=document.getElementById('turnstile-status');
+  if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่องร้องเรียน';}
+  if(st){st.className='turnstile-status-msg turnstile-ok';st.innerHTML='<i class="fas fa-check-circle"></i> ยืนยันตัวตนสำเร็จ';}
+  return true;
+}
+function startTurnstileWatcher() {
+  if (_turnstileWatchTimer) clearInterval(_turnstileWatchTimer);
+  _turnstileWatchTimer=setInterval(()=>{
+    if (_turnstileReady) { clearInterval(_turnstileWatchTimer); _turnstileWatchTimer=null; return; }
+    const token=getTurnstileDomToken();
+    if (applyTurnstileVerified(token)) { clearInterval(_turnstileWatchTimer); _turnstileWatchTimer=null; }
+  }, 400);
+}
+function onTurnstileSuccess(token) { applyTurnstileVerified(token || getTurnstileDomToken()); }
+function onTurnstileExpire()  { _turnstileToken=''; _turnstileReady=false; const btn=document.getElementById('btn-final'); if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-shield-alt"></i> กรุณายืนยันอีกครั้ง';} startTurnstileWatcher(); }
 function onTurnstileError()   { _turnstileToken=''; _turnstileReady=false; const st=document.getElementById('turnstile-status'); if(st){st.className='turnstile-status-msg turnstile-err';st.innerHTML='<i class="fas fa-times-circle"></i> ไม่สามารถโหลด CAPTCHA ได้';} }
-function resetTurnstile() { _turnstileToken=''; _turnstileReady=false; const btn=document.getElementById('btn-final'); if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-shield-alt"></i> ยืนยันการส่งเรื่อง (รอการยืนยัน)';} try{if(window.turnstile)window.turnstile.reset('#cf-turnstile-widget');}catch(e){} }
+function resetTurnstile() { _turnstileToken=''; _turnstileReady=false; if(_turnstileWatchTimer){clearInterval(_turnstileWatchTimer);_turnstileWatchTimer=null;} const btn=document.getElementById('btn-final'); if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-shield-alt"></i> ยืนยันการส่งเรื่อง (รอการยืนยัน)';} try{if(window.turnstile)window.turnstile.reset('#cf-turnstile-widget');}catch(e){} }
 
 // ════ DROPDOWN ════
 function toggleDropdown(id) { const menu=document.getElementById(id); if(!menu)return; const isOpen=menu.classList.contains('open'); document.querySelectorAll('.voc-dropdown-menu.open').forEach(m=>m.classList.remove('open')); document.querySelectorAll('.voc-dropdown-arrow.rotated').forEach(a=>a.classList.remove('rotated')); if(!isOpen){menu.classList.add('open');const wrap=menu.closest('.voc-dropdown-wrap');if(wrap){const arrow=wrap.querySelector('.voc-dropdown-arrow');if(arrow)arrow.classList.add('rotated');}} }
@@ -268,7 +300,9 @@ function changeStep(step) {
   }
   document.getElementById('success-area')?.classList.add('hidden');
   document.getElementById('step-content-'+step)?.classList.remove('hidden');
+  document.querySelector('.step-progress')?.setAttribute('data-current-step', String(step));
   updatePortalStepValidation();
+  if(step===4)startTurnstileWatcher();
   if(step!==4)resetTurnstile();
 }
 function setOption(el,key,val) { el.parentElement.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); vocData[key]=val; updatePortalStepValidation(); }
@@ -300,8 +334,7 @@ async function finalSubmit() {
   // ถ้า onTurnstileSuccess ถูกเรียกแล้วแต่ _turnstileReady ยัง false (race condition)
   // ให้ fallback อ่าน token จาก widget DOM โดยตรง
   if (!_turnstileReady || !_turnstileToken) {
-    const _widgetEl = document.querySelector('#cf-turnstile-widget [name="cf-turnstile-response"]');
-    const _domToken = _widgetEl ? _widgetEl.value : '';
+    const _domToken = getTurnstileDomToken();
     if (_domToken && _domToken.length > 10) {
       _turnstileToken = _domToken;
       _turnstileReady = true;
