@@ -10,13 +10,12 @@ import { validateRegister, updateStrengthBar, clearFieldErrors } from './validat
 import { navigateTo, _doNavigate, registerRouterCallbacks, closeMobileNav, toggleMobileNav } from './router.js';
 
 // ════ EARLY GLOBAL BINDING ════
-// expose navigateTo + Turnstile callbacks ทันทีที่ module โหลด (ก่อน window.onload)
-// สำคัญมาก: Turnstile widget render ตอน DOMContentLoaded และเรียก window.onTurnstileSuccess
-// ทันทีที่ user ผ่าน ถ้ารอ window.onload จะไม่มี callback ให้เรียก → ปุ่มไม่ enable
+// expose globals ทันทีที่ module โหลด — ก่อน window.onload เสมอ
+// Turnstile widget render ตอน DOMContentLoaded แล้วเรียก window.onTurnstileSuccess
+// ถ้ารอ window.onload จะไม่มี callback → ปุ่มไม่ enable ตลอดกาล
 window.navigateTo      = (...a) => navigateTo(...a);
 window.toggleMobileNav = (...a) => toggleMobileNav(...a);
 window.closeMobileNav  = (...a) => closeMobileNav(...a);
-// Turnstile callbacks ต้องเป็น global ก่อน widget โหลด
 window.onTurnstileSuccess = (token) => onTurnstileSuccess(token);
 window.onTurnstileExpire  = ()      => onTurnstileExpire();
 window.onTurnstileError   = ()      => onTurnstileError();
@@ -171,11 +170,20 @@ function prepareReview() {
 
 async function finalSubmit() {
   if(!currentUser&&isClientRateLimited()){await showAlert('⏱️','กรุณารอสักครู่',`กรุณารออีก ${clientCooldownRemaining()} นาที`);return;}
-  // ตรวจ Turnstile: ถ้ามี widget บนหน้า (cf-turnstile element อยู่) → ต้องผ่านก่อน
-  // ถ้าไม่มี widget หรือ widget โหลดไม่ขึ้น → bypass ได้ (server จะ skip verify เองถ้าไม่มี secret)
+  // ถ้า onTurnstileSuccess ถูกเรียกแล้วแต่ _turnstileReady ยัง false (race condition)
+  // ให้ fallback อ่าน token จาก widget DOM โดยตรง
+  if (!_turnstileReady || !_turnstileToken) {
+    const _widgetEl = document.querySelector('#cf-turnstile-widget [name="cf-turnstile-response"]');
+    const _domToken = _widgetEl ? _widgetEl.value : '';
+    if (_domToken && _domToken.length > 10) {
+      _turnstileToken = _domToken;
+      _turnstileReady = true;
+    }
+  }
   const _hasTurnstileWidget = !!document.getElementById('cf-turnstile-widget');
-  if(_hasTurnstileWidget && (!_turnstileReady||!_turnstileToken)){
-    await showAlert('🛡️','กรุณายืนยันตัวตน','กรุณายืนยัน CAPTCHA ก่อนส่งเรื่อง');return;
+  if (_hasTurnstileWidget && (!_turnstileReady || !_turnstileToken)) {
+    await showAlert('🛡️','กรุณายืนยันตัวตน','กรุณายืนยัน CAPTCHA ก่อนส่งเรื่อง');
+    return;
   }
   if(!await showConfirm('📋','ยืนยันการส่งเรื่อง','ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้'))return;
   const btn=document.getElementById('btn-final'); btn.disabled=true;
