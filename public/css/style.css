@@ -1144,7 +1144,7 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
   .voc-dropdown-item{font-size:.83rem;padding:9px 14px;}
 }
 
-
+/* ----MOBILE---- */
 /* ── ข้อ 1: ลดระยะห่างระหว่างโลโก้บนมือถือ ── */
 @media (max-width: 700px) {
   .header-logos {
@@ -1238,6 +1238,7 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
 
   /* จัด right-menu ให้มี gap พอดี */
   .header-right-top {
+    margin-right: 20px;
     display: flex;
     align-items: center;
     gap: 5px;
