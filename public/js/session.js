@@ -20,7 +20,9 @@ export function _isTokenExpired(token) {
 export function saveSession(u) {
   try {
     const { token, ...rest } = u;
-    localStorage.setItem('voc_session', JSON.stringify(rest));
+    // เก็บ success:true เพื่อให้ loadSession ตรวจสอบได้
+    const sessionData = { ...rest, success: true };
+    localStorage.setItem('voc_session', JSON.stringify(sessionData));
     if (token) localStorage.setItem('voc_token', token);
   } catch (e) {}
 }
@@ -44,7 +46,8 @@ export function loadSession() {
     const parsed = JSON.parse(r);
     // ตรวจว่ามี role จึงจะถือว่าเป็น session ที่ valid
     if (!parsed || !parsed.role) return null;
-    return parsed;
+    // ต้องคืน object ที่มี success:true เพื่อให้ระบบใช้งานได้
+    return { ...parsed, success: true };
   } catch (e) {
     return null;
   }

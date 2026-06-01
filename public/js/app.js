@@ -450,7 +450,33 @@ function expandAdminDetail(tid,enc){const el=document.getElementById('adm-detail
 
 async function addComment(ticketId){const commentEl=document.getElementById('new-comment-'+ticketId);const comment=commentEl?.value.trim();if(!comment){await showAlert('⚠️','กรุณาพิมพ์ความคิดเห็น','');return;}try{const res=await api.post('/api/tickets',{action:'addComment',ticketId,comment,author:currentUser?.fullname||currentUser?.username||'ผู้ดูแล'});if(res.success){if(commentEl)commentEl.value='';await showAlert('✅','บันทึกความคิดเห็นสำเร็จ','');loadAdminTickets(document.querySelector('.filter-btn.active')?.id?.replace('filter-','')||'pending');}else await showAlert('❌','ไม่สำเร็จ',res.message||'');}catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}}
 async function togglePin(tid,ns){if(!await showConfirm('📌',ns?'ปักหมุด':'ยกเลิกปักหมุด',''))return;try{const res=await api.post('/api/tickets',{action:'togglePin',ticketId:tid,pinned:ns});if(res.success){const btn=document.getElementById(`pin-btn-${tid}`);if(btn){btn.style.border=`1px solid ${ns?'#2d6a4f':'#ddd'}`;btn.style.background=ns?'#e8f5e9':'#fff';btn.style.color=ns?'#2d6a4f':'#aaa';btn.innerHTML=`<i class="fas fa-thumbtack"></i>${ns?'แสดงอยู่':'ปักหมุด'}`;btn.setAttribute('onclick',`togglePin('${tid}',${!ns})`);}}  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}}
-async function submitUpdate(tid){const ns=document.getElementById('status-'+tid).value;const as=document.getElementById('assignee-'+tid).value;if(!await showConfirm('💾','ยืนยันการบันทึก',`Ticket: <strong>${tid}</strong><br>สถานะ: <strong>${ns}</strong>`))return;const btn=document.querySelector(`#card-${tid} .btn-update`);if(btn){btn.innerHTML='<i class="fas fa-spinner fa-spin"></i>';btn.disabled=true;}try{const res=await api.post('/api/tickets',{action:'update',ticketId:tid,newStatus:ns,assignee:as});if(res.success){const card=document.getElementById('card-'+tid);if(card){card.style.transition='background .4s';card.style.background='#d4edda';setTimeout(()=>{card.style.background='';},1500);}}else await showAlert('❌','บันทึกไม่สำเร็จ',res.message||'');}catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}finally{if(btn){btn.innerHTML='<i class="fas fa-save"></i> บันทึก';btn.disabled=false;}}}
+async function submitUpdate(tid){
+  // ตรวจสอบ token ก่อน — ถ้าไม่มีให้แจ้งเตือนทันที
+  const _tok = loadToken();
+  if (!_tok) {
+    await showAlert('⚠️','กรุณาเข้าสู่ระบบใหม่','Session หมดอายุ กรุณา Login ใหม่อีกครั้ง');
+    return;
+  }
+  const ns=document.getElementById('status-'+tid).value;
+  const as=document.getElementById('assignee-'+tid).value;
+  if(!await showConfirm('💾','ยืนยันการบันทึก',`Ticket: <strong>${tid}</strong><br>สถานะ: <strong>${ns}</strong>`))return;
+  const btn=document.querySelector(`#card-${tid} .btn-update`);
+  if(btn){btn.innerHTML='<i class="fas fa-spinner fa-spin"></i>';btn.disabled=true;}
+  try {
+    const res=await api.post('/api/tickets',{action:'update',ticketId:tid,newStatus:ns,assignee:as});
+    if(res.success){
+      const card=document.getElementById('card-'+tid);
+      if(card){card.style.transition='background .4s';card.style.background='#d4edda';setTimeout(()=>{card.style.background='';},1500);}
+    } else {
+      // ถ้า 401 → token หมดอายุ ให้แจ้งเตือนชัดเจน
+      const msg = (res.message||'').includes('กรุณาเข้าสู่ระบบ') || (res.message||'').includes('token')
+        ? 'Session หมดอายุ กรุณา Login ใหม่'
+        : res.message||'บันทึกไม่สำเร็จ';
+      await showAlert('❌','บันทึกไม่สำเร็จ', msg);
+    }
+  } catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+  finally{if(btn){btn.innerHTML='<i class="fas fa-save"></i> บันทึก';btn.disabled=false;}}
+}
 async function deleteTicket(tid){if(!await showConfirm('🗑️','ลบ Ticket',`ต้องการลบ <strong>${tid}</strong>?<br><small style="color:#d00000;">ไม่สามารถเรียกคืนได้</small>`,'danger'))return;try{const res=await api.post('/api/tickets',{action:'deleteTicket',ticketId:tid});if(res.success){const card=document.getElementById('card-'+tid);if(card){card.style.transition='opacity .4s';card.style.opacity='0';setTimeout(()=>card.remove(),400);}await showAlert('✅','ลบสำเร็จ',`Ticket ${tid} ถูกลบแล้ว`);}else await showAlert('❌','ลบไม่สำเร็จ',res.message||'');}catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}}
 
 // ════ ADMIN REVIEWS ════

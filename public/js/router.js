@@ -100,7 +100,10 @@ export function _doNavigate(pageId) {
     if (cb.loadPinnedTickets) cb.loadPinnedTickets();
     if (cb.loadNewsStrip)     cb.loadNewsStrip();
   }
-  window.scrollTo(0, 0);
+  // scroll ขึ้นบนสุดหลัง DOM render เสร็จ (requestAnimationFrame ให้ browser paint ก่อน)
+  requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  });
 }
 
 export function navigateTo(pageId) {
