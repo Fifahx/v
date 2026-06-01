@@ -87,15 +87,15 @@ async function doLogout() {
 // ════ MENU ════
 function updateMenuForUser() {
   document.getElementById('main-nav').innerHTML=`<a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a><a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a><a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a><a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>`;
-  document.getElementById('right-menu').innerHTML=`<span class="user-badge header-auth-desktop" onclick="showProfile()" title="โปรไฟล์"><i class="fas fa-user-circle"></i>${currentUser.firstname} ${currentUser.lastname}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="showProfile()" aria-label="โปรไฟล์"><i class="fas fa-user-circle"></i></button>`;
+  document.getElementById('right-menu').innerHTML=`<span class="user-badge header-auth-desktop" onclick="showProfile()" title="โปรไฟล์"><i class="fas fa-user-circle"></i>${currentUser.firstname} ${currentUser.lastname}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="showProfile()" aria-label="โปรไฟล์" title="โปรไฟล์"><i class="fas fa-user-circle"></i></button><button class="header-auth-mobile header-auth-mobile--logout" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>`;
 }
 function updateMenuForAdmin() {
   document.getElementById('main-nav').innerHTML=`<a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a><a onclick="navigateTo('admin-dashboard')" id="nav-admin-dashboard">สถิติ</a><a onclick="navigateTo('admin-tickets')" id="nav-admin-tickets">จัดการเรื่อง</a><a onclick="navigateTo('admin-reviews')" id="nav-admin-reviews">รีวิว</a><a onclick="navigateTo('admin-report')" id="nav-admin-report">รายงาน</a><a onclick="navigateTo('faq')" id="nav-faq">FAQ</a>`;
-  document.getElementById('right-menu').innerHTML=`<span class="user-badge header-auth-desktop"><i class="fas fa-shield-alt"></i>${currentUser.fullname||'Admin'}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="doLogout()" aria-label="ออกจากระบบ"><i class="fas fa-shield-alt"></i></button>`;
+  document.getElementById('right-menu').innerHTML=`<span class="user-badge header-auth-desktop"><i class="fas fa-shield-alt"></i>${currentUser.fullname||'Admin'}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ (Admin)"><i class="fas fa-shield-alt"></i></button><button class="header-auth-mobile header-auth-mobile--logout" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>`;
 }
 function updateMenuForSuperAdmin() {
   document.getElementById('main-nav').innerHTML=`<a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a><a onclick="navigateTo('admin-dashboard')" id="nav-admin-dashboard">สถิติ</a><a onclick="navigateTo('admin-tickets')" id="nav-admin-tickets">จัดการเรื่อง</a><a onclick="navigateTo('admin-reviews')" id="nav-admin-reviews">รีวิว</a><a onclick="navigateTo('admin-report')" id="nav-admin-report">รายงาน</a><a onclick="navigateTo('superadmin')" id="nav-superadmin">⚙️ ระบบ</a>`;
-  document.getElementById('right-menu').innerHTML=`<span class="user-badge superadmin-badge header-auth-desktop"><i class="fas fa-crown" style="color:#f0a500;"></i>${currentUser.fullname||'SuperAdmin'}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="doLogout()" aria-label="ออกจากระบบ"><i class="fas fa-crown" style="color:#f0a500;"></i></button>`;
+  document.getElementById('right-menu').innerHTML=`<span class="user-badge superadmin-badge header-auth-desktop"><i class="fas fa-crown" style="color:#f0a500;"></i>${currentUser.fullname||'SuperAdmin'}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ (SuperAdmin)"><i class="fas fa-crown" style="color:#f0a500;"></i></button><button class="header-auth-mobile header-auth-mobile--logout" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>`;
 }
 
 // ════ COMPLAINT TYPE MODAL ════
@@ -153,10 +153,7 @@ function changeStep(step) { currentStep=step; for(let i=1;i<=4;i++){document.get
 function setOption(el,key,val) { el.parentElement.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); vocData[key]=val; }
 function toggleAnon() { document.getElementById('identity-fields').style.opacity=document.getElementById('isAnon').checked?'0.3':'1'; }
 function handleFileSelect(inputEl) {
-  const file=inputEl.files?inputEl.files[0]:(inputEl.target?inputEl.target.files[0]:null); const infoEl=document.getElementById('file-info');
-  if(!file){attachedFile=null;if(infoEl)infoEl.innerText='';return;}
-  if(file.size>2*1024*1024){showAlert('⚠️','ไฟล์ใหญ่เกินไป','ขนาดไฟล์ต้องไม่เกิน 2 MB');inputEl.value='';attachedFile=null;if(infoEl)infoEl.innerText='';return;}
-  attachedFile=file; if(infoEl)infoEl.innerHTML=`<i class="fas fa-check-circle" style="color:#2d6a4f;"></i> ${file.name} <span style="color:#aaa;">(${(file.size/1024).toFixed(1)} KB)</span>`;
+  // Legacy: ไม่ใช้แล้ว — ใช้ link input แทน
 }
 function prepareReview() {
   const subject=document.getElementById('v-subject')?.value.trim(); const detail=document.getElementById('v-detail')?.value.trim(); const note=document.getElementById('v-note')?.value.trim()||'';
@@ -164,7 +161,9 @@ function prepareReview() {
   const isAnon=document.getElementById('isAnon')?.checked; const name=isAnon?'ไม่ระบุตัวตน':(document.getElementById('v-name')?.value||'-'); const sid=isAnon?'-':(document.getElementById('v-sid')?.value||'-');
   const pMap={high:{label:'🔴 เร่งด่วน',sub:'ภายใน 24 ชม.',cls:'high'},medium:{label:'🟡 ปานกลาง',sub:'ภายใน 3 วัน',cls:'medium'},low:{label:'🟢 ทั่วไป',sub:'ภายใน 7 วัน',cls:'low'}};
   const pInfo=pMap[vocData.priority]||pMap.medium; const detailHtml=detail.replace(/\n/g,'<br>');
-  document.getElementById('review-area').innerHTML=`<div class="review-card"><div class="review-card-header"><h3>📋 ตรวจสอบข้อมูลก่อนส่ง</h3></div><div class="review-section"><div class="review-section-title">👤 ข้อมูลผู้แจ้ง</div><div class="review-row"><span class="ri">🏷️</span><span class="rl">ประเภท</span><span class="rv">${vocData.cType}</span></div><div class="review-row"><span class="ri">🪪</span><span class="rl">ชื่อ-นามสกุล</span><span class="rv">${name}</span></div><div class="review-row"><span class="ri">🎓</span><span class="rl">รหัส/หน่วยงาน</span><span class="rv">${sid}</span></div></div><div class="review-section"><div class="review-section-title">📂 รายละเอียดเรื่อง</div><div class="review-row"><span class="ri">📌</span><span class="rl">ประเภทเรื่อง</span><span class="rv">${vocData.category}</span></div><div class="review-row"><span class="ri">⚡</span><span class="rl">ความเร่งด่วน</span><span class="rv"><span class="priority-pill ${pInfo.cls}">${pInfo.label}</span><small style="color:#999;margin-left:6px;">${pInfo.sub}</small></span></div><div class="review-row"><span class="ri">📝</span><span class="rl">หัวข้อ</span><span class="rv" style="font-weight:700;">${subject}</span></div></div><div class="review-section"><div class="review-section-title">📄 รายละเอียด</div><div style="background:#f8faf9;border-radius:10px;padding:14px;font-size:.9rem;color:#444;line-height:1.75;border-left:3px solid var(--dgreen);">${detailHtml}</div></div>${note?`<div class="review-section"><div class="review-section-title">📝 หมายเหตุ</div><div style="background:#fffbf0;border-radius:10px;padding:12px 14px;font-size:.88rem;color:#555;border-left:3px solid #f77f00;">${note}</div></div>`:''}<div style="background:#e8f5e9;border-radius:10px;padding:12px 16px;margin:16px 24px;font-size:.82rem;color:#2d6a4f;"><i class="fas fa-info-circle"></i> ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้</div></div>`;
+  const _rl=document.getElementById('v-file-link')?.value.trim()||'';
+  const _fileLinkHtml=_rl&&_rl.startsWith('http')?`<div class="review-section"><div class="review-section-title">📎 ลิงก์ไฟล์แนบ</div><div style="padding:10px 14px;background:#f5f5f5;border-radius:8px;"><a href="${_rl}" target="_blank" style="color:#2d6a4f;word-break:break-all;font-size:.87rem;"><i class="fas fa-external-link-alt"></i> ${_rl}</a></div></div>`:'';
+  document.getElementById('review-area').innerHTML=`<div class="review-card"><div class="review-card-header"><h3>📋 ตรวจสอบข้อมูลก่อนส่ง</h3></div><div class="review-section"><div class="review-section-title">👤 ข้อมูลผู้แจ้ง</div><div class="review-row"><span class="ri">🏷️</span><span class="rl">ประเภท</span><span class="rv">${vocData.cType}</span></div><div class="review-row"><span class="ri">🪪</span><span class="rl">ชื่อ-นามสกุล</span><span class="rv">${name}</span></div><div class="review-row"><span class="ri">🎓</span><span class="rl">รหัส/หน่วยงาน</span><span class="rv">${sid}</span></div></div><div class="review-section"><div class="review-section-title">📂 รายละเอียดเรื่อง</div><div class="review-row"><span class="ri">📌</span><span class="rl">ประเภทเรื่อง</span><span class="rv">${vocData.category}</span></div><div class="review-row"><span class="ri">⚡</span><span class="rl">ความเร่งด่วน</span><span class="rv"><span class="priority-pill ${pInfo.cls}">${pInfo.label}</span><small style="color:#999;margin-left:6px;">${pInfo.sub}</small></span></div><div class="review-row"><span class="ri">📝</span><span class="rl">หัวข้อ</span><span class="rv" style="font-weight:700;">${subject}</span></div></div><div class="review-section"><div class="review-section-title">📄 รายละเอียด</div><div style="background:#f8faf9;border-radius:10px;padding:14px;font-size:.9rem;color:#444;line-height:1.75;border-left:3px solid var(--dgreen);">${detailHtml}</div></div>${note?`<div class="review-section"><div class="review-section-title">📝 หมายเหตุ</div><div style="background:#fffbf0;border-radius:10px;padding:12px 14px;font-size:.88rem;color:#555;border-left:3px solid #f77f00;">${note}</div></div>`:''}${_fileLinkHtml}<div style="background:#e8f5e9;border-radius:10px;padding:12px 16px;margin:16px 24px;font-size:.82rem;color:#2d6a4f;"><i class="fas fa-info-circle"></i> ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้</div></div>`;
   changeStep(4);
 }
 
@@ -189,16 +188,11 @@ async function finalSubmit() {
   const btn=document.getElementById('btn-final'); btn.disabled=true;
   let submitted=false; // ← flag: ถ้า true แล้ว finally จะไม่ re-enable ปุ่ม
   try {
-    let fileUrl='';
-    if(attachedFile){
-      btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังอัปโหลดไฟล์...';
-      const formData=new FormData(); formData.append('file',attachedFile);
-      const token=loadToken();
-      const uploadRes=await fetch('/api/upload',{method:'POST',headers:token?{Authorization:'Bearer '+token}:{},body:formData});
-      const uploadData=await uploadRes.json();
-      if(!uploadRes.ok||!uploadData.url){await showAlert('❌','อัปโหลดไฟล์ล้มเหลว',uploadData.error||'กรุณาลองใหม่');return;}
-      fileUrl=uploadData.url;
-    }
+    // ใช้ link ที่ user กรอกโดยตรง แทนการ upload
+    const _linkInput = document.getElementById('v-file-link');
+    let fileUrl = (_linkInput && _linkInput.value.trim().startsWith('http'))
+      ? _linkInput.value.trim()
+      : '';
     btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังส่ง...';
     const res=await api.post('/api/submit',{customerType:vocData.cType,isAnon:document.getElementById('isAnon').checked,name:document.getElementById('v-name').value,studentId:document.getElementById('v-sid').value,categories:[vocData.category],priority:vocData.priority,subject:document.getElementById('v-subject').value,detail:document.getElementById('v-detail').value,userNote:document.getElementById('v-note')?.value.trim()||'',fileUrl,username:currentUser?currentUser.username:'guest',turnstileToken:_turnstileToken||'bypass-no-widget'});
     if(res.success){
@@ -241,7 +235,8 @@ async function loadNewsStrip() {
       _newsCache=res.news; container.classList.remove('hidden');
       const tagClass={ทั่วไป:'news-tag-default',ด่วน:'news-tag-urgent',ข้อมูล:'news-tag-info',กิจกรรม:'news-tag-event'};
       let itemsHtml='';
-      res.news.forEach((n,idx)=>{const tc=tagClass[n.tag]||'news-tag-default';const short=n.content.length>120?n.content.substring(0,120)+'...':n.content;const imgHtml=n.imageUrl?`<div style="height:120px;overflow:hidden;border-radius:8px;margin-bottom:10px;"><img src="${n.imageUrl}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.style.display='none'"></div>`:'';itemsHtml+=`<div class="news-strip-item" onclick="showNewsDetail(${idx})">${imgHtml}<div class="news-strip-item-meta"><span class="news-tag-pill ${tc}">${n.tag||'ทั่วไป'}</span><span class="news-date" style="font-size:.73rem;color:#bbb;"><i class="fas fa-clock"></i> ${n.date||''}</span></div><div class="news-strip-item-title">${n.title}</div><div class="news-strip-item-content">${short}</div></div>`;});
+      res.news.forEach((n,idx)=>{const tc=tagClass[n.tag]||'news-tag-default';const short=n.content.length>120?n.content.substring(0,120)+'...':n.content;const imgHtml=n.imageUrl?`<div style="height:120px;overflow:hidden;border-radius:8px;margin-bottom:10px;"><img src="${n.imageUrl}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.style.display='none'"></div>`:'';const viewImgBtn=n.imageUrl?`<button class="news-view-img-btn" onclick="event.stopPropagation();showNewsImage('${n.imageUrl.replace(/'/g,'&#39;')}','${(n.title||'').replace(/'/g,'&#39;')}')" title="ดูรูปภาพ"><i class="fas fa-image"></i> ดูรูป</button>`:'';
+      itemsHtml+=`<div class="news-strip-item" onclick="showNewsDetail(${idx})">${imgHtml}<div class="news-strip-item-meta"><span class="news-tag-pill ${tc}">${n.tag||'ทั่วไป'}</span><span class="news-date" style="font-size:.73rem;color:#bbb;"><i class="fas fa-clock"></i> ${n.date||''}</span>${viewImgBtn}</div><div class="news-strip-item-title">${n.title}</div><div class="news-strip-item-content">${short}</div></div>`;});
       let dotsHtml=''; if(res.news.length>1)res.news.forEach((_,i)=>{dotsHtml+=`<button class="news-strip-dot${i===0?' active':''}" data-idx="${i}" onclick="newsScrollTo(${i})"></button>`;});
       container.innerHTML=`<div class="news-section-wrap"><div class="news-section-header"><i class="fas fa-newspaper"></i> ข่าวสารและประกาศ<span style="margin-left:auto;font-size:.78rem;color:#aaa;font-weight:400;">${res.news.length} รายการ</span></div><div class="news-strip-scroll-wrap" id="news-scroll-wrap"><div class="news-strip-inner" id="news-strip-inner">${itemsHtml}</div></div>${dotsHtml?`<div class="news-strip-dots">${dotsHtml}</div>`:''}</div>`;
     }else container.classList.add('hidden');
@@ -249,6 +244,23 @@ async function loadNewsStrip() {
 }
 window.newsScrollTo=function(idx){const wrap=document.getElementById('news-scroll-wrap');const items=document.querySelectorAll('.news-strip-item');if(!wrap||!items[idx])return;wrap.scrollTo({left:idx*(items[0].offsetWidth+14),behavior:'smooth'});};
 window.showNewsDetail=function(idx){const n=_newsCache[idx];if(!n)return;const existing=document.getElementById('news-detail-overlay');if(existing)document.body.removeChild(existing);const overlay=document.createElement('div');overlay.className='voc-overlay';overlay.id='news-detail-overlay';const imgBlock=n.imageUrl?`<div style="text-align:center;margin-bottom:18px;"><img src="${n.imageUrl}" alt="" style="max-width:100%;max-height:280px;border-radius:10px;object-fit:cover;" onerror="this.style.display='none'"></div>`:'';const contentHtml=(n.content||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');overlay.innerHTML=`<div class="voc-modal-box" style="max-width:680px;max-height:85vh;overflow-y:auto;"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;"><div><span class="news-tag">${n.tag||'ทั่วไป'}</span><div style="font-size:.8rem;color:#aaa;margin-top:6px;"><i class="fas fa-clock"></i> ${n.date||''}</div></div><button onclick="document.body.removeChild(document.getElementById('news-detail-overlay'))" style="background:none;border:none;font-size:1.3rem;color:#aaa;cursor:pointer;">✕</button></div>${imgBlock}<h3 style="font-size:1.15rem;color:var(--dgreen);margin-bottom:14px;">${n.title}</h3><div style="font-size:.93rem;color:#444;line-height:1.85;">${contentHtml}</div></div>`;overlay.addEventListener('click',e=>{if(e.target===overlay)document.body.removeChild(overlay);});document.body.appendChild(overlay);};
+
+window.showNewsImage=function(imgUrl,title){
+  const existing=document.getElementById('news-img-overlay');if(existing)document.body.removeChild(existing);
+  const o=document.createElement('div');o.className='voc-overlay';o.id='news-img-overlay';
+  o.innerHTML=`<div class="voc-modal-box" style="max-width:800px;padding:16px;text-align:center;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <span style="font-size:.9rem;color:#555;font-weight:600;">${title}</span>
+      <button onclick="document.body.removeChild(document.getElementById('news-img-overlay'))" style="background:none;border:none;font-size:1.3rem;color:#aaa;cursor:pointer;">✕</button>
+    </div>
+    <img src="${imgUrl}" alt="${title}" style="max-width:100%;max-height:75vh;border-radius:10px;object-fit:contain;" onerror="this.parentElement.innerHTML+='<p style=\'color:#d00;margin-top:12px;\'>โหลดรูปไม่ได้</p>'">
+    <div style="margin-top:12px;">
+      <a href="${imgUrl}" target="_blank" style="font-size:.82rem;color:#2d6a4f;"><i class="fas fa-external-link-alt"></i> เปิดในแท็บใหม่</a>
+    </div>
+  </div>`;
+  o.addEventListener('click',e=>{if(e.target===o)document.body.removeChild(o);});
+  document.body.appendChild(o);
+};
 
 // ════ PINNED TICKETS ════
 async function loadPinnedTickets() {
@@ -439,7 +451,8 @@ function _resetMenuToGuest() {
   if (right) right.innerHTML = `
     <a onclick="navigateTo('login')"    class="nav-menu header-auth-desktop" style="color:rgba(255,255,255,.85);font-size:.85rem;"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</a>
     <a onclick="navigateTo('register')" class="btn-nav-active nav-menu header-auth-desktop">ลงทะเบียน</a>
-    <button class="header-auth-mobile" onclick="navigateTo('login')" aria-label="เข้าสู่ระบบ"><i class="fas fa-user-circle"></i></button>`;
+    <button class="header-auth-mobile" onclick="navigateTo('login')" aria-label="เข้าสู่ระบบ" title="เข้าสู่ระบบ"><i class="fas fa-user-circle"></i></button>
+    <button class="header-auth-mobile header-auth-mobile--register" onclick="navigateTo('register')" aria-label="ลงทะเบียน" title="ลงทะเบียน"><i class="fas fa-user-plus"></i></button>`;
 }
 
 // ════ INIT ════

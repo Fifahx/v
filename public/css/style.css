@@ -1143,3 +1143,166 @@ header{position:sticky;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,.18);
   .voc-dropdown-btn{font-size:.83rem;padding:7px 12px;min-width:120px;}
   .voc-dropdown-item{font-size:.83rem;padding:9px 14px;}
 }
+
+
+/* ── ข้อ 1: ลดระยะห่างระหว่างโลโก้บนมือถือ ── */
+@media (max-width: 700px) {
+  .header-logos {
+    gap: 4px !important;
+    /* ลด gap ระหว่าง logo circles */
+  }
+
+  .logo-circle {
+    margin: 0 !important;
+    /* เอา margin ออก */
+  }
+
+  .header-brand {
+    margin-left: 4px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .header-logos {
+    gap: 2px !important;
+  }
+}
+
+/* ── ข้อ 2: mobile auth icon buttons ── */
+/* ปุ่มหลัก (login/profile) — เหมือนเดิม */
+.header-auth-mobile {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .header-auth-desktop {
+    display: none !important;
+  }
+
+  .header-auth-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, .35);
+    background: rgba(255, 255, 255, .15);
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: .2s;
+    position: relative;
+  }
+
+  .header-auth-mobile:hover {
+    background: rgba(255, 255, 255, .28);
+  }
+
+  /* ปุ่ม logout — สีแดงอ่อนๆ เพื่อแยกออกจาก profile */
+  .header-auth-mobile--logout {
+    background: rgba(220, 50, 50, .18);
+    border-color: rgba(255, 180, 180, .5);
+    font-size: .95rem;
+  }
+
+  .header-auth-mobile--logout:hover {
+    background: rgba(220, 50, 50, .32);
+  }
+
+  /* ปุ่ม register — สีเขียวอ่อน */
+  .header-auth-mobile--register {
+    background: rgba(255, 255, 255, .12);
+    border-color: rgba(255, 255, 255, .3);
+  }
+
+  /* tooltip บน title attribute */
+  .header-auth-mobile[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, .75);
+    color: #fff;
+    font-size: .7rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 999;
+    font-family: 'Sarabun', sans-serif;
+  }
+
+  /* จัด right-menu ให้มี gap พอดี */
+  .header-right-top {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+}
+
+/* ── ข้อ 4: เยื้อน profile modal ออกจาก hamburger ── */
+/* profile overlay ขยับ position ของ modal-box ให้ไม่ทับกัน */
+#profile-overlay .voc-modal-box {
+  margin-right: 48px;
+  /* เว้นพื้นที่ให้ hamburger */
+}
+
+@media (min-width: 701px) {
+
+  /* desktop: ไม่ต้องเยื้อน */
+  #profile-overlay .voc-modal-box {
+    margin-right: 0;
+  }
+}
+
+/* ── ข้อ 5: ปุ่มดูรูปข่าว ── */
+.news-view-img-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  border: 1.5px solid #2d6a4f;
+  background: #fff;
+  color: #2d6a4f;
+  font-family: 'Sarabun', sans-serif;
+  font-size: .72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .15s;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.news-view-img-btn:hover {
+  background: #e8f5e9;
+}
+
+/* ── ข้อ 6: เพิ่ม padding-bottom ให้ dropdown รายงาน ── */
+#report-type-dropdown-wrap {
+  margin-bottom: 20px;
+}
+
+/* กันไม่ให้ dropdown ชิดขอบล่าง */
+.voc-dropdown-menu {
+  margin-bottom: 4px;
+}
+
+/* report-content มี padding-top เพียงพอ */
+#report-content {
+  padding-top: 8px;
+}
+
+/* ── ข้อ 3: file-link-wrap style ── */
+.file-link-wrap {
+  margin-top: 8px;
+}
+
+.file-link-wrap .voc-input {
+  margin-top: 0;
+}
