@@ -169,9 +169,25 @@ function setupPortalView() {
 function setupGuestPortalView() {
   const w=document.getElementById('portal-login-warning'); const f=document.getElementById('portal-form-content');
   if(w)w.classList.add('hidden');
-  if(f){f.classList.remove('hidden');if(!document.getElementById('guest-mode-banner')){const b=document.createElement('div');b.id='guest-mode-banner';b.className='guest-banner';b.innerHTML=`<div class="guest-banner-inner"><i class="fas fa-user-circle" style="font-size:1.4rem;color:#2d6a4f;"></i><div class="guest-banner-text"><div class="guest-banner-title">คุณยังไม่ได้เข้าสู่ระบบ</div><div class="guest-banner-sub"><strong>จะไม่สามารถติดตามสถานะ</strong>ได้</div></div><div class="guest-banner-btns"><button class="guest-btn-login" onclick="navigateTo('login')"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</button><button class="guest-btn-cont" onclick="dismissGuestBanner()"><i class="fas fa-bullhorn"></i> แจ้งเรื่องโดยไม่ login</button></div></div>`;f.insertBefore(b,f.firstChild);}}
+  if(f){
+    f.classList.remove('hidden');
+    // ซ่อน step-progress และ step-content ทั้งหมดไว้ก่อน รอให้ user กดยืนยันจาก banner
+    document.querySelector('.step-progress')?.classList.add('hidden');
+    for(let i=1;i<=4;i++) document.getElementById('step-content-'+i)?.classList.add('hidden');
+    document.getElementById('success-area')?.classList.add('hidden');
+    if(!document.getElementById('guest-mode-banner')){
+      const b=document.createElement('div');b.id='guest-mode-banner';b.className='guest-banner';
+      b.innerHTML=`<div class="guest-banner-inner"><i class="fas fa-user-circle" style="font-size:1.4rem;color:#2d6a4f;"></i><div class="guest-banner-text"><div class="guest-banner-title">คุณยังไม่ได้เข้าสู่ระบบ</div><div class="guest-banner-sub"><strong>จะไม่สามารถติดตามสถานะ</strong>ได้</div></div><div class="guest-banner-btns"><button class="guest-btn-login" onclick="navigateTo('login')"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</button><button class="guest-btn-cont" onclick="dismissGuestBanner()"><i class="fas fa-bullhorn"></i> แจ้งเรื่องโดยไม่ login</button></div></div>`;
+      f.insertBefore(b,f.firstChild);
+    }
+  }
 }
-function dismissGuestBanner() { const b=document.getElementById('guest-mode-banner'); if(b)b.style.display='none'; document.querySelector('.step-progress')?.classList.remove('hidden'); document.getElementById('step-content-1')?.classList.remove('hidden'); }
+function dismissGuestBanner() {
+  const b=document.getElementById('guest-mode-banner');
+  if(b)b.style.display='none';
+  // เรียก changeStep(1) เพื่อ initialize step-progress + แสดง step-content-1 อย่างถูกต้อง
+  changeStep(1);
+}
 
 // ════ PROFILE ════
 async function showProfile() {
@@ -199,17 +215,16 @@ function changeStep(step) {
     const node = document.getElementById('node' + i);
     if (node) {
       node.classList.remove('active', 'done');
+      const labels = ['ระบุตัวตน','เรื่องที่แจ้ง','รายละเอียด','ยืนยัน'];
       if (i < step) {
-        // ขั้นที่ผ่านมาแล้ว → เขียวเต็ม + checkmark
+        // ขั้นที่ผ่านมาแล้ว → CSS จัดการ checkmark ด้วย .done::after { content:'✓' }
         node.classList.add('done');
-        node.innerHTML = '<i class="fas fa-check" style="font-size:.65rem;"></i><span>' + node.querySelector('span')?.textContent + '</span>';
+        node.innerHTML = '<span>' + labels[i-1] + '</span>';
       } else if (i === step) {
-        // ขั้นปัจจุบัน → ขอบเขียว
         node.classList.add('active');
-        node.innerHTML = i + '<span>' + ['ระบุตัวตน','เรื่องที่แจ้ง','รายละเอียด','ยืนยัน'][i-1] + '</span>';
+        node.innerHTML = i + '<span>' + labels[i-1] + '</span>';
       } else {
-        // ขั้นถัดไป → เทา
-        node.innerHTML = i + '<span>' + ['ระบุตัวตน','เรื่องที่แจ้ง','รายละเอียด','ยืนยัน'][i-1] + '</span>';
+        node.innerHTML = i + '<span>' + labels[i-1] + '</span>';
       }
     }
   }
@@ -244,7 +259,14 @@ function changeStep(step) {
   }
 }
 function setOption(el,key,val) { el.parentElement.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); vocData[key]=val; }
-function toggleAnon() { document.getElementById('identity-fields').style.opacity=document.getElementById('isAnon').checked?'0.3':'1'; }
+function toggleAnon() {
+  const isAnon = document.getElementById('isAnon').checked;
+  const fields = document.getElementById('identity-fields');
+  if (!fields) return;
+  fields.style.opacity = isAnon ? '0.35' : '1';
+  fields.style.pointerEvents = isAnon ? 'none' : '';
+  fields.querySelectorAll('input').forEach(el => { el.disabled = isAnon; if (isAnon) el.value = ''; });
+}
 function handleFileSelect(inputEl) {
   // Legacy: ไม่ใช้แล้ว — ใช้ link input แทน
 }
