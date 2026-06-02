@@ -4069,15 +4069,16 @@ header {
 }
 
 /* ════ GUEST PORTAL BANNER ════ */
+/* ── Guest Banner (อยู่บนสุดของฟอร์ม เหนือ step-progress) ── */
 .guest-banner {
-  margin-bottom: 24px;
-  animation: slideDown .4s ease;
+  margin-bottom: 20px;
+  animation: slideDown .35s ease;
 }
 
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
 
   to {
@@ -4090,11 +4091,24 @@ header {
   background: linear-gradient(135deg, #f0faf4, #e8f5e9);
   border: 1.5px solid #a8d5b5;
   border-radius: var(--radius);
-  padding: 20px 24px;
+  padding: 16px 20px;
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 16px;
-  align-items: flex-start;
-  box-shadow: 0 4px 20px rgba(45, 106, 79, .12);
+  box-shadow: 0 2px 12px rgba(45, 106, 79, .10);
+}
+
+.guest-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.guest-banner-icon {
+  font-size: 1.6rem;
+  color: #2d6a4f;
+  flex-shrink: 0;
 }
 
 .guest-banner-text {
@@ -4104,37 +4118,57 @@ header {
 .guest-banner-title {
   font-weight: 800;
   color: #1b4332;
-  font-size: 1.05rem;
-  margin-bottom: 6px;
+  font-size: .98rem;
+  margin-bottom: 3px;
 }
 
 .guest-banner-sub {
-  font-size: .88rem;
+  font-size: .83rem;
   color: #2d6a4f;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .guest-banner-btns {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
-  min-width: 160px;
+  flex-shrink: 0;
 }
 
 .guest-btn-login {
   background: var(--dgreen);
   color: #fff;
   border: none;
-  padding: 9px 16px;
+  padding: 9px 18px;
   border-radius: 8px;
   font-family: 'Sarabun', sans-serif;
   font-weight: 700;
   font-size: .88rem;
+  cursor: pointer;
   transition: .2s;
+  white-space: nowrap;
 }
 
 .guest-btn-login:hover {
   background: #1b4332;
+}
+
+.guest-btn-cont {
+  background: #fff;
+  color: #555;
+  border: 1.5px solid #ccc;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: 'Sarabun', sans-serif;
+  font-size: .83rem;
+  cursor: pointer;
+  transition: .2s;
+  white-space: nowrap;
+}
+
+.guest-btn-cont:hover {
+  border-color: #2d6a4f;
+  color: #2d6a4f;
 }
 
 .guest-btn-reg {
@@ -4153,31 +4187,21 @@ header {
   background: #f0faf4;
 }
 
-.guest-btn-cont {
-  background: transparent;
-  color: #888;
-  border: 1.5px solid #ddd;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-family: 'Sarabun', sans-serif;
-  font-size: .83rem;
-  transition: .2s;
-}
-
-.guest-btn-cont:hover {
-  border-color: #aaa;
-  color: #555;
-}
-
 @media(max-width:600px) {
   .guest-banner-inner {
     flex-direction: column;
+    align-items: flex-start;
   }
 
   .guest-banner-btns {
-    flex-direction: row;
-    flex-wrap: wrap;
-    min-width: auto;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .guest-btn-login,
+  .guest-btn-cont {
+    width: 100%;
+    text-align: center;
   }
 }
 

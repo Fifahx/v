@@ -167,26 +167,48 @@ function setupPortalView() {
   else{w.classList.remove('hidden');f.classList.add('hidden');}
 }
 function setupGuestPortalView() {
-  const w=document.getElementById('portal-login-warning'); const f=document.getElementById('portal-form-content');
-  if(w)w.classList.add('hidden');
-  if(f){
-    f.classList.remove('hidden');
-    // ซ่อน step-progress และ step-content ทั้งหมดไว้ก่อน รอให้ user กดยืนยันจาก banner
-    document.querySelector('.step-progress')?.classList.add('hidden');
-    for(let i=1;i<=4;i++) document.getElementById('step-content-'+i)?.classList.add('hidden');
-    document.getElementById('success-area')?.classList.add('hidden');
-    if(!document.getElementById('guest-mode-banner')){
-      const b=document.createElement('div');b.id='guest-mode-banner';b.className='guest-banner';
-      b.innerHTML=`<div class="guest-banner-inner"><i class="fas fa-user-circle" style="font-size:1.4rem;color:#2d6a4f;"></i><div class="guest-banner-text"><div class="guest-banner-title">คุณยังไม่ได้เข้าสู่ระบบ</div><div class="guest-banner-sub"><strong>จะไม่สามารถติดตามสถานะ</strong>ได้</div></div><div class="guest-banner-btns"><button class="guest-btn-login" onclick="navigateTo('login')"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</button><button class="guest-btn-cont" onclick="dismissGuestBanner()"><i class="fas fa-bullhorn"></i> แจ้งเรื่องโดยไม่ login</button></div></div>`;
-      f.insertBefore(b,f.firstChild);
-    }
-  }
+  const w = document.getElementById('portal-login-warning');
+  const f = document.getElementById('portal-form-content');
+  if (w) w.classList.add('hidden');
+  if (!f) return;
+
+  f.classList.remove('hidden');
+
+  // ลบ banner เก่าออกก่อน (ป้องกัน duplicate)
+  const old = document.getElementById('guest-mode-banner');
+  if (old) old.remove();
+
+  // สร้าง banner ใหม่ — วางไว้บนสุดของฟอร์ม เหนือ step-progress
+  const b = document.createElement('div');
+  b.id = 'guest-mode-banner';
+  b.className = 'guest-banner';
+  b.innerHTML = `
+    <div class="guest-banner-inner">
+      <div class="guest-banner-left">
+        <i class="fas fa-user-circle guest-banner-icon"></i>
+        <div class="guest-banner-text">
+          <div class="guest-banner-title">คุณยังไม่ได้เข้าสู่ระบบ</div>
+          <div class="guest-banner-sub">จะ<strong>ไม่สามารถติดตามสถานะ</strong>ได้หลังส่งเรื่อง</div>
+        </div>
+      </div>
+      <div class="guest-banner-btns">
+        <button class="guest-btn-login" onclick="navigateTo('login')">
+          <i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ
+        </button>
+        <button class="guest-btn-cont" onclick="dismissGuestBanner()">
+          <i class="fas fa-bullhorn"></i> แจ้งเรื่องโดยไม่ login
+        </button>
+      </div>
+    </div>`;
+  // แทรกก่อน step-progress (ด้านบนสุดของ portal-form-content)
+  f.insertBefore(b, f.firstChild);
+
+  // แสดง step-progress และ step-content-1 ทันที (ไม่ต้องรอกด banner)
+  changeStep(1);
 }
 function dismissGuestBanner() {
-  const b=document.getElementById('guest-mode-banner');
-  if(b)b.style.display='none';
-  // เรียก changeStep(1) เพื่อ initialize step-progress + แสดง step-content-1 อย่างถูกต้อง
-  changeStep(1);
+  const b = document.getElementById('guest-mode-banner');
+  if (b) b.remove(); // ลบออกเลย ไม่ใช่แค่ซ่อน
 }
 
 // ════ PROFILE ════
