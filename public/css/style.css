@@ -2918,11 +2918,12 @@ header {
   gap: 10px;
 }
 
-.logo-circle {
+.logo-circle ,
+.logo-circle a {
   width: 46px;
   height: 46px;
   min-width: 46px;
-  background: rgba(255, 255, 255, .15);
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 50%;
   display: flex;
   align-items: center;
