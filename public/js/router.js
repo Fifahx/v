@@ -84,7 +84,16 @@ export function _doNavigate(pageId) {
 
   // เรียก page-specific callback
   const cb = _appCallbacks;
-  if (pageId === 'portal')          { if (cb.setupPortalView) cb.setupPortalView(); if (cb.changeStep) cb.changeStep(1); }
+  if (pageId === 'portal') {
+    if (_doNavigate._guestMode) {
+      _doNavigate._guestMode = false;
+      if (cb.setupGuestPortalView) cb.setupGuestPortalView();
+      // ไม่เรียก changeStep(1) — dismissGuestBanner จะเรียกเองเมื่อ user กดยืนยัน
+    } else {
+      if (cb.setupPortalView) cb.setupPortalView();
+      if (cb.changeStep) cb.changeStep(1);
+    }
+  }
   if (pageId === 'admin-dashboard') { if (cb.loadDashboard)   cb.loadDashboard(); }
   if (pageId === 'admin-report')    { if (cb.loadReport)      cb.loadReport(); }
   if (pageId === 'admin-tickets')   { if (cb.loadAdminTickets) cb.loadAdminTickets('pending'); }
@@ -124,7 +133,7 @@ export function navigateTo(pageId) {
     if (_appCallbacks.showComplaintTypeModal) {
       _appCallbacks.showComplaintTypeModal(function (choice) {
         if (choice === 'oneway') {
-          if (_appCallbacks.setupGuestPortalView) _appCallbacks.setupGuestPortalView();
+          _doNavigate._guestMode = true;
           _doNavigate('portal');
         } else {
           _doNavigate('login');
