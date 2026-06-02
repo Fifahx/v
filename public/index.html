@@ -8,7 +8,25 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <!-- Cloudflare Turnstile — Anti-spam widget -->
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad" async defer></script>
+  <script>
+    // เรียก global callback เมื่อ Turnstile API โหลดเสร็จ
+    function onTurnstileLoad() {
+      window._turnstileApiReady = true;
+      // ถ้า step 4 เปิดอยู่แล้ว ให้ render ทันที
+      const widget = document.getElementById('cf-turnstile-widget');
+      if (widget && !widget.querySelector('iframe')) {
+        window.turnstile.render('#cf-turnstile-widget', {
+          sitekey: widget.dataset.sitekey,
+          callback: window.onTurnstileSuccess,
+          'expired-callback': window.onTurnstileExpire,
+          'error-callback': window.onTurnstileError,
+          theme: 'light',
+          language: 'th',
+        });
+      }
+    }
+  </script>
 </head>
 <body>
 
@@ -200,9 +218,9 @@
 
   <!-- PAGE: REGISTER -->
   <div id="page-register" class="hidden" style="padding-top:50px;">
-    <div class="auth-container register-container">
+    <div class="auth-container" style="max-width:620px;">
       <div class="auth-header">ลงทะเบียน</div>
-      <div class="register-grid register-grid--half">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="form-group">
           <label>ชื่อ <span style="color:#d00000;">*</span></label>
           <input type="text" id="reg-firstname" placeholder="ชื่อจริง" autocomplete="given-name">
@@ -216,7 +234,7 @@
         <label>อีเมล <span style="color:#d00000;">*</span></label>
         <input type="email" id="reg-email" placeholder="example@email.com" autocomplete="email">
       </div>
-      <div class="register-grid register-grid--half">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="form-group">
           <label>ID Line</label>
           <input type="text" id="reg-line" placeholder="Line ID (ไม่บังคับ)">
@@ -231,7 +249,7 @@
         <label>ชื่อผู้ใช้ <span style="color:#d00000;">*</span></label>
         <input type="text" id="reg-username" placeholder="a-z, 0-9, _ อย่างน้อย 4 ตัว" autocomplete="username">
       </div>
-      <div class="register-grid register-grid--half">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="form-group">
           <label>รหัสผ่าน <span style="color:#d00000;">*</span></label>
           <input type="password" id="reg-pass" placeholder="อย่างน้อย 8 ตัว" autocomplete="new-password">
@@ -281,7 +299,7 @@
             <div class="opt-btn" onclick="setOption(this,'cType','อื่นๆ')">อื่นๆ</div>          
           </div>
         </div>
-        <div class="voc-panel" id="identity-panel">
+        <div class="voc-panel">
           <span class="voc-title">แสดงตัวตน</span>
           <label><input type="checkbox" id="isAnon" onchange="toggleAnon()"> แจ้งแบบนิรนาม</label>
           <div id="identity-fields" class="identity-grid" style="margin-top:14px;">
@@ -289,7 +307,7 @@
             <div><label class="voc-field-label">รหัสนักศึกษา/หน่วยงาน</label><input type="text" id="v-sid" class="voc-input" style="margin-top:6px;"></div>
           </div>
         </div>
-        <button class="btn-submit" id="btn-step-1-next" onclick="changeStep(2)" disabled>ถัดไป - ระบุเรื่องที่แจ้ง →</button>
+        <button class="btn-submit" onclick="changeStep(2)">ถัดไป - ระบุเรื่องที่แจ้ง →</button>
       </div>
 
       <!-- Step 2 -->
@@ -314,7 +332,7 @@
         </div>
         <div style="display:flex;">
           <button class="btn-back" onclick="changeStep(1)">← ย้อนกลับ</button>
-          <button class="btn-submit" id="btn-step-2-next" onclick="changeStep(3)" disabled>ถัดไป - กรอกรายละเอียด →</button>
+          <button class="btn-submit" onclick="changeStep(3)">ถัดไป - กรอกรายละเอียด →</button>
         </div>
       </div>
 
@@ -340,7 +358,7 @@
         </div>
         <div style="display:flex;">
           <button class="btn-back" onclick="changeStep(2)">← ย้อนกลับ</button>
-          <button class="btn-submit" id="btn-step-3-next" onclick="prepareReview()" disabled>ถัดไป - ตรวจสอบข้อมูล →</button>
+          <button class="btn-submit" onclick="prepareReview()">ถัดไป - ตรวจสอบข้อมูล →</button>
         </div>
       </div>
 
@@ -413,7 +431,9 @@
         <i class="fas fa-search"></i>
       </button>
     </div>
-    <div id="faq-content"></div>
+    <div id="faq-content">
+      <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>
+    </div>
   </div>
 
   <!-- PAGE: ADMIN DASHBOARD -->
@@ -555,6 +575,6 @@
   <div class="footer-bottom">© 2026 VOC System | คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</div>
 </footer>
 
-<script type="module" src="/js/app.js?v=20260601-identity-flow"></script>
+<script type="module" src="/js/app.js"></script>
 </body>
 </html>

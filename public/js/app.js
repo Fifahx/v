@@ -30,57 +30,17 @@ let _newsCache      = [];
 let _saNewsCache    = [];
 let _turnstileToken = '';
 let _turnstileReady = false;
-let _turnstileWatchTimer = null;
-let _guestPortalMode = false;
 
 const SUBMIT_COOLDOWN_MS = 5 * 60 * 1000;
 function isClientRateLimited() { try { return Date.now()-Number(localStorage.getItem('voc_last_submit')||0)<SUBMIT_COOLDOWN_MS; } catch(e){return false;} }
 function markClientSubmit()    { try { localStorage.setItem('voc_last_submit',String(Date.now())); } catch(e){} }
 function clientCooldownRemaining() { try { const rem=Math.ceil((SUBMIT_COOLDOWN_MS-(Date.now()-Number(localStorage.getItem('voc_last_submit')||0)))/60000); return rem>0?rem:0; } catch(e){return 0;} }
 
-function skeletonHtml(type='list', count=3) {
-  const lines = Array.from({ length: count }, () => '<div class="skeleton-card"><div class="skeleton-line skeleton-line--title"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--short"></div></div>').join('');
-  if (type === 'stats') return '<div class="skeleton-grid skeleton-grid--stats">' + lines + '</div>';
-  if (type === 'news') return '<div class="skeleton-grid skeleton-grid--news">' + lines + '</div>';
-  return '<div class="skeleton-list">' + lines + '</div>';
-}
-
 // ════ TURNSTILE ════
-function getTurnstileDomToken() {
-  const selectors = [
-    '#cf-turnstile-widget [name="cf-turnstile-response"]',
-    '[name="cf-turnstile-response"]',
-    'input[name="cf-turnstile-response"]',
-    'textarea[name="cf-turnstile-response"]',
-  ];
-  for (const selector of selectors) {
-    const el = document.querySelector(selector);
-    if (el?.value && el.value.length > 10) return el.value;
-  }
-  return '';
-}
-function applyTurnstileVerified(token) {
-  if (!token || token.length <= 10) return false;
-  _turnstileToken=token;
-  _turnstileReady=true;
-  const btn=document.getElementById('btn-final');
-  const st=document.getElementById('turnstile-status');
-  if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่องร้องเรียน';}
-  if(st){st.className='turnstile-status-msg turnstile-ok';st.innerHTML='<i class="fas fa-check-circle"></i> ยืนยันตัวตนสำเร็จ';}
-  return true;
-}
-function startTurnstileWatcher() {
-  if (_turnstileWatchTimer) clearInterval(_turnstileWatchTimer);
-  _turnstileWatchTimer=setInterval(()=>{
-    if (_turnstileReady) { clearInterval(_turnstileWatchTimer); _turnstileWatchTimer=null; return; }
-    const token=getTurnstileDomToken();
-    if (applyTurnstileVerified(token)) { clearInterval(_turnstileWatchTimer); _turnstileWatchTimer=null; }
-  }, 400);
-}
-function onTurnstileSuccess(token) { applyTurnstileVerified(token || getTurnstileDomToken()); }
-function onTurnstileExpire()  { _turnstileToken=''; _turnstileReady=false; const btn=document.getElementById('btn-final'); if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-shield-alt"></i> กรุณายืนยันอีกครั้ง';} startTurnstileWatcher(); }
+function onTurnstileSuccess(token) { _turnstileToken=token; _turnstileReady=true; const btn=document.getElementById('btn-final'); const st=document.getElementById('turnstile-status'); if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> ยืนยันการส่งเรื่องร้องเรียน';} if(st){st.className='turnstile-status-msg turnstile-ok';st.innerHTML='<i class="fas fa-check-circle"></i> ยืนยันตัวตนสำเร็จ';} }
+function onTurnstileExpire()  { _turnstileToken=''; _turnstileReady=false; const btn=document.getElementById('btn-final'); if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-shield-alt"></i> กรุณายืนยันอีกครั้ง';} }
 function onTurnstileError()   { _turnstileToken=''; _turnstileReady=false; const st=document.getElementById('turnstile-status'); if(st){st.className='turnstile-status-msg turnstile-err';st.innerHTML='<i class="fas fa-times-circle"></i> ไม่สามารถโหลด CAPTCHA ได้';} }
-function resetTurnstile() { _turnstileToken=''; _turnstileReady=false; if(_turnstileWatchTimer){clearInterval(_turnstileWatchTimer);_turnstileWatchTimer=null;} const btn=document.getElementById('btn-final'); if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-shield-alt"></i> ยืนยันการส่งเรื่อง (รอการยืนยัน)';} try{if(window.turnstile)window.turnstile.reset('#cf-turnstile-widget');}catch(e){} }
+function resetTurnstile() { _turnstileToken=''; _turnstileReady=false; const btn=document.getElementById('btn-final'); if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-shield-alt"></i> ยืนยันการส่งเรื่อง (รอการยืนยัน)';} try{if(window.turnstile)window.turnstile.reset('#cf-turnstile-widget');}catch(e){} }
 
 // ════ DROPDOWN ════
 function toggleDropdown(id) { const menu=document.getElementById(id); if(!menu)return; const isOpen=menu.classList.contains('open'); document.querySelectorAll('.voc-dropdown-menu.open').forEach(m=>m.classList.remove('open')); document.querySelectorAll('.voc-dropdown-arrow.rotated').forEach(a=>a.classList.remove('rotated')); if(!isOpen){menu.classList.add('open');const wrap=menu.closest('.voc-dropdown-wrap');if(wrap){const arrow=wrap.querySelector('.voc-dropdown-arrow');if(arrow)arrow.classList.add('rotated');}} }
@@ -147,24 +107,24 @@ function updateMenuForSuperAdmin() {
 function _initAdminPageContent(role) {
   // dash-content
   const dc = document.getElementById('dash-content');
-  if (dc && !dc.innerHTML.trim()) dc.innerHTML = skeletonHtml('stats', 4);
+  if (dc && !dc.innerHTML.trim()) dc.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
 
   // admin-ticket-list
   const tl = document.getElementById('admin-ticket-list');
-  if (tl && !tl.innerHTML.trim()) tl.innerHTML = skeletonHtml('list', 3);
+  if (tl && !tl.innerHTML.trim()) tl.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
 
   // review-content
   const rc = document.getElementById('review-content');
-  if (rc && !rc.innerHTML.trim()) rc.innerHTML = skeletonHtml('list', 3);
+  if (rc && !rc.innerHTML.trim()) rc.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
 
   // report-content
   const rpc = document.getElementById('report-content');
-  if (rpc && !rpc.innerHTML.trim()) rpc.innerHTML = skeletonHtml('list', 3);
+  if (rpc && !rpc.innerHTML.trim()) rpc.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
 
   // superadmin-content — เฉพาะ superadmin เท่านั้น
   if (role === 'superadmin') {
     const sc = document.getElementById('superadmin-content');
-    if (sc && !sc.innerHTML.trim()) sc.innerHTML = skeletonHtml('list', 3);
+    if (sc && !sc.innerHTML.trim()) sc.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
   }
 }
 
@@ -202,23 +162,14 @@ function showComplaintTypeModal(callback) {
 function setupPortalView() {
   const oldBanner=document.getElementById('guest-mode-banner'); if(oldBanner)oldBanner.remove();
   const w=document.getElementById('portal-login-warning'); const f=document.getElementById('portal-form-content');
-  if(_guestPortalMode&&!currentUser){setupGuestPortalView();return;}
-  _guestPortalMode=false;
-  if(currentUser&&currentUser.role==='user'){
-    w.classList.add('hidden');
-    f.classList.remove('hidden');
-    setIdentityPanelMode('user');
-    updatePortalStepValidation();
-  }
+  if(currentUser&&currentUser.role==='user'){w.classList.add('hidden');f.classList.remove('hidden');const nf=document.getElementById('v-name');if(nf&&currentUser.firstname)nf.value=(currentUser.firstname||'')+' '+(currentUser.lastname||'');}
   else if(currentUser&&(currentUser.role==='admin'||currentUser.role==='superadmin')){w.classList.remove('hidden');w.innerHTML='<i class="fas fa-info-circle"></i><span>ผู้ดูแลระบบไม่สามารถแจ้งเรื่องได้</span>';f.classList.add('hidden');}
   else{w.classList.remove('hidden');f.classList.add('hidden');}
 }
 function setupGuestPortalView() {
-  _guestPortalMode=true;
   const w=document.getElementById('portal-login-warning'); const f=document.getElementById('portal-form-content');
   if(w)w.classList.add('hidden');
   if(f){f.classList.remove('hidden');if(!document.getElementById('guest-mode-banner')){const b=document.createElement('div');b.id='guest-mode-banner';b.className='guest-banner';b.innerHTML=`<div class="guest-banner-inner"><i class="fas fa-user-circle" style="font-size:1.4rem;color:#2d6a4f;"></i><div class="guest-banner-text"><div class="guest-banner-title">คุณยังไม่ได้เข้าสู่ระบบ</div><div class="guest-banner-sub"><strong>จะไม่สามารถติดตามสถานะ</strong>ได้</div></div><div class="guest-banner-btns"><button class="guest-btn-login" onclick="navigateTo('login')"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</button><button class="guest-btn-cont" onclick="dismissGuestBanner()"><i class="fas fa-bullhorn"></i> แจ้งเรื่องโดยไม่ login</button></div></div>`;f.insertBefore(b,f.firstChild);}}
-  updatePortalStepValidation();
 }
 function dismissGuestBanner() { const b=document.getElementById('guest-mode-banner'); if(b)b.style.display='none'; document.querySelector('.step-progress')?.classList.remove('hidden'); document.getElementById('step-content-1')?.classList.remove('hidden'); }
 
@@ -240,87 +191,67 @@ async function saveProfile(username) {
 }
 
 // ════ VOC FORM ════
-function setIdentityPanelMode(mode) {
-  const panel=document.getElementById('identity-panel');
-  const anon=document.getElementById('isAnon');
-  const nf=document.getElementById('v-name');
-  const sf=document.getElementById('v-sid');
-  if (mode === 'user') {
-    if(panel)panel.classList.add('hidden');
-    if(anon)anon.checked=false;
-    if(nf)nf.value=((currentUser?.firstname||'')+' '+(currentUser?.lastname||'')).trim();
-    if(sf)sf.value=currentUser?.studentId||currentUser?.username||'';
-    return;
-  }
-  if(panel)panel.classList.remove('hidden');
-  if(nf && !nf.value && currentUser?.firstname) nf.value=((currentUser.firstname||'')+' '+(currentUser.lastname||'')).trim();
-  toggleAnon();
-}
-function getSubmitIdentity() {
-  const loggedInUser = currentUser && currentUser.role === 'user';
-  const isAnon = loggedInUser ? false : !!document.getElementById('isAnon')?.checked;
-  const accountName = ((currentUser?.firstname||'')+' '+(currentUser?.lastname||'')).trim();
-  return {
-    isAnon,
-    name: isAnon ? 'ไม่ระบุตัวตน' : (loggedInUser ? accountName : (document.getElementById('v-name')?.value||'-')),
-    studentId: isAnon ? '-' : (loggedInUser ? (currentUser?.studentId||currentUser?.username||'') : (document.getElementById('v-sid')?.value||'-')),
-  };
-}
-function isStepValid(step) {
-  if (step === 1) {
-    if (currentUser && currentUser.role === 'user') return !!vocData.cType;
-    if (document.getElementById('isAnon')?.checked) return !!vocData.cType;
-    return !!vocData.cType && !!document.getElementById('v-name')?.value.trim();
-  }
-  if (step === 2) return !!vocData.category && !!vocData.priority;
-  if (step === 3) return !!document.getElementById('v-subject')?.value.trim() && !!document.getElementById('v-detail')?.value.trim();
-  return true;
-}
-function updatePortalStepValidation() {
-  const buttons = [
-    ['btn-step-1-next', 1],
-    ['btn-step-2-next', 2],
-    ['btn-step-3-next', 3],
-  ];
-  buttons.forEach(([id, step]) => {
-    const btn = document.getElementById(id);
-    if (btn) btn.disabled = !isStepValid(step);
-  });
-}
 function changeStep(step) {
-  if (step > currentStep && !isStepValid(currentStep)) { updatePortalStepValidation(); return; }
-  currentStep=step;
-  for(let i=1;i<=4;i++){
-    const content=document.getElementById('step-content-'+i);
-    const node=document.getElementById('node'+i);
-    content?.classList.add('hidden');
-    node?.classList.remove('active','done');
-    if(node && i<step) node.classList.add('done');
-    if(node && i===step) node.classList.add('active');
+  currentStep = step;
+  // ซ่อนทุก step content
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('step-content-' + i)?.classList.add('hidden');
+    const node = document.getElementById('node' + i);
+    if (node) {
+      node.classList.remove('active', 'done');
+      if (i < step) {
+        // ขั้นที่ผ่านมาแล้ว → เขียวเต็ม + checkmark
+        node.classList.add('done');
+        node.innerHTML = '<i class="fas fa-check" style="font-size:.65rem;"></i><span>' + node.querySelector('span')?.textContent + '</span>';
+      } else if (i === step) {
+        // ขั้นปัจจุบัน → ขอบเขียว
+        node.classList.add('active');
+        node.innerHTML = i + '<span>' + ['ระบุตัวตน','เรื่องที่แจ้ง','รายละเอียด','ยืนยัน'][i-1] + '</span>';
+      } else {
+        // ขั้นถัดไป → เทา
+        node.innerHTML = i + '<span>' + ['ระบุตัวตน','เรื่องที่แจ้ง','รายละเอียด','ยืนยัน'][i-1] + '</span>';
+      }
+    }
   }
   document.getElementById('success-area')?.classList.add('hidden');
-  document.getElementById('step-content-'+step)?.classList.remove('hidden');
-  document.querySelector('.step-progress')?.setAttribute('data-current-step', String(step));
-  updatePortalStepValidation();
-  if(step===4)startTurnstileWatcher();
-  if(step!==4)resetTurnstile();
+  document.getElementById('step-content-' + step)?.classList.remove('hidden');
+  // อัปเดต data-step เพื่อให้ connector line CSS ทำงาน
+  document.querySelector('.step-progress')?.setAttribute('data-step', step);
+  if (step !== 4) {
+    resetTurnstile();
+  } else {
+    // step 4 — render Turnstile widget ถ้ายังไม่ได้ render
+    const _tryRenderTurnstile = () => {
+      const widget = document.getElementById('cf-turnstile-widget');
+      if (!widget) return;
+      const alreadyHasIframe = widget.querySelector('iframe');
+      if (alreadyHasIframe) return; // render แล้ว ไม่ต้องทำอีก
+      if (window.turnstile) {
+        window.turnstile.render('#cf-turnstile-widget', {
+          sitekey: widget.dataset.sitekey,
+          callback: window.onTurnstileSuccess,
+          'expired-callback': window.onTurnstileExpire,
+          'error-callback': window.onTurnstileError,
+          theme: 'light',
+          language: 'th',
+        });
+      }
+    };
+    // ลอง render ทันที แล้วก็ลองอีกครั้งเผื่อ API ยังโหลดไม่เสร็จ
+    setTimeout(_tryRenderTurnstile, 50);
+    setTimeout(_tryRenderTurnstile, 500);
+    setTimeout(_tryRenderTurnstile, 1500);
+  }
 }
-function setOption(el,key,val) { el.parentElement.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); vocData[key]=val; updatePortalStepValidation(); }
-function toggleAnon() {
-  const isAnon=!!document.getElementById('isAnon')?.checked;
-  const fields=document.getElementById('identity-fields');
-  if(fields)fields.style.opacity=isAnon?'0.3':'1';
-  ['v-name','v-sid'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=isAnon;});
-  updatePortalStepValidation();
-}
+function setOption(el,key,val) { el.parentElement.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); vocData[key]=val; }
+function toggleAnon() { document.getElementById('identity-fields').style.opacity=document.getElementById('isAnon').checked?'0.3':'1'; }
 function handleFileSelect(inputEl) {
   // Legacy: ไม่ใช้แล้ว — ใช้ link input แทน
 }
 function prepareReview() {
-  if (!isStepValid(3)) { updatePortalStepValidation(); return; }
   const subject=document.getElementById('v-subject')?.value.trim(); const detail=document.getElementById('v-detail')?.value.trim(); const note=document.getElementById('v-note')?.value.trim()||'';
   if(!subject){showAlert('⚠️','กรุณากรอกหัวข้อ','');return;} if(!detail){showAlert('⚠️','กรุณากรอกรายละเอียด','');return;}
-  const identity=getSubmitIdentity(); const name=identity.name; const sid=identity.studentId;
+  const isAnon=document.getElementById('isAnon')?.checked; const name=isAnon?'ไม่ระบุตัวตน':(document.getElementById('v-name')?.value||'-'); const sid=isAnon?'-':(document.getElementById('v-sid')?.value||'-');
   const pMap={high:{label:'🔴 เร่งด่วน',sub:'ภายใน 24 ชม.',cls:'high'},medium:{label:'🟡 ปานกลาง',sub:'ภายใน 3 วัน',cls:'medium'},low:{label:'🟢 ทั่วไป',sub:'ภายใน 7 วัน',cls:'low'}};
   const pInfo=pMap[vocData.priority]||pMap.medium; const detailHtml=detail.replace(/\n/g,'<br>');
   const _rl=document.getElementById('v-file-link')?.value.trim()||'';
@@ -334,7 +265,8 @@ async function finalSubmit() {
   // ถ้า onTurnstileSuccess ถูกเรียกแล้วแต่ _turnstileReady ยัง false (race condition)
   // ให้ fallback อ่าน token จาก widget DOM โดยตรง
   if (!_turnstileReady || !_turnstileToken) {
-    const _domToken = getTurnstileDomToken();
+    const _widgetEl = document.querySelector('#cf-turnstile-widget [name="cf-turnstile-response"]');
+    const _domToken = _widgetEl ? _widgetEl.value : '';
     if (_domToken && _domToken.length > 10) {
       _turnstileToken = _domToken;
       _turnstileReady = true;
@@ -355,8 +287,7 @@ async function finalSubmit() {
       ? _linkInput.value.trim()
       : '';
     btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังส่ง...';
-    const identity=getSubmitIdentity();
-    const res=await api.post('/api/submit',{customerType:vocData.cType,isAnon:identity.isAnon,name:identity.name,studentId:identity.studentId,categories:[vocData.category],priority:vocData.priority,subject:document.getElementById('v-subject').value,detail:document.getElementById('v-detail').value,userNote:document.getElementById('v-note')?.value.trim()||'',fileUrl,username:currentUser?currentUser.username:'guest',turnstileToken:_turnstileToken||'bypass-no-widget'});
+    const res=await api.post('/api/submit',{customerType:vocData.cType,isAnon:document.getElementById('isAnon').checked,name:document.getElementById('v-name').value,studentId:document.getElementById('v-sid').value,categories:[vocData.category],priority:vocData.priority,subject:document.getElementById('v-subject').value,detail:document.getElementById('v-detail').value,userNote:document.getElementById('v-note')?.value.trim()||'',fileUrl,username:currentUser?currentUser.username:'guest',turnstileToken:_turnstileToken||'bypass-no-widget'});
     if(res.success){
       submitted=true; // ← mark ว่าส่งสำเร็จแล้ว finally จะไม่แตะปุ่ม
       markClientSubmit(); resetTurnstile(); attachedFile=null;
@@ -391,8 +322,6 @@ function buildProgressBar(status) {
 // ════ NEWS ════
 async function loadNewsStrip() {
   const container=document.getElementById('news-strip-section'); if(!container)return;
-  container.classList.remove('hidden');
-  container.innerHTML=skeletonHtml('news',3);
   try {
     const res=await api.get('/api/news');
     if(res.success&&res.news&&res.news.length>0){
@@ -403,7 +332,7 @@ async function loadNewsStrip() {
       itemsHtml+=`<div class="news-strip-item" onclick="showNewsDetail(${idx})">${imgHtml}<div class="news-strip-item-meta"><span class="news-tag-pill ${tc}">${n.tag||'ทั่วไป'}</span><span class="news-date" style="font-size:.73rem;color:#bbb;"><i class="fas fa-clock"></i> ${n.date||''}</span>${viewImgBtn}</div><div class="news-strip-item-title">${n.title}</div><div class="news-strip-item-content">${short}</div></div>`;});
       let dotsHtml=''; if(res.news.length>1)res.news.forEach((_,i)=>{dotsHtml+=`<button class="news-strip-dot${i===0?' active':''}" data-idx="${i}" onclick="newsScrollTo(${i})"></button>`;});
       container.innerHTML=`<div class="news-section-wrap"><div class="news-section-header"><i class="fas fa-newspaper"></i> ข่าวสารและประกาศ<span style="margin-left:auto;font-size:.78rem;color:#aaa;font-weight:400;">${res.news.length} รายการ</span></div><div class="news-strip-scroll-wrap" id="news-scroll-wrap"><div class="news-strip-inner" id="news-strip-inner">${itemsHtml}</div></div>${dotsHtml?`<div class="news-strip-dots">${dotsHtml}</div>`:''}</div>`;
-    }else { container.innerHTML=''; container.classList.add('hidden'); }
+    }else container.classList.add('hidden');
   }catch(e){container.classList.add('hidden');}
 }
 window.newsScrollTo=function(idx){const wrap=document.getElementById('news-scroll-wrap');const items=document.querySelectorAll('.news-strip-item');if(!wrap||!items[idx])return;wrap.scrollTo({left:idx*(items[0].offsetWidth+14),behavior:'smooth'});};
@@ -429,8 +358,6 @@ window.showNewsImage=function(imgUrl,title){
 // ════ PINNED TICKETS ════
 async function loadPinnedTickets() {
   const container=document.getElementById('pinned-tickets-section'); if(!container)return;
-  container.classList.remove('hidden');
-  container.innerHTML=skeletonHtml('list',2);
   try {
     const res=await api.get('/api/tickets?action=pinned');
     if(res.success&&res.tickets&&res.tickets.length>0){
@@ -449,14 +376,14 @@ async function loadPinnedTickets() {
         html+=`<div class="pinned-card"><div class="pinned-card-header"><div><div class="pinned-card-title">${t['หัวข้อ']||'-'}</div><div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;">${t['ประเภทเรื่อง']?`<span class="chip blue" style="font-size:.73rem;"><i class="fas fa-tag"></i>${t['ประเภทเรื่อง']}</span>`:''}${priority?`<span class="chip ${pChip[priority]||'gray'}" style="font-size:.73rem;">${pLabel[priority]||priority}</span>`:''}</div></div><span class="status ${sc[t['สถานะ']]||'status-pending'}">${t['สถานะ']||'-'}</span></div>${detailText?`<div class="pinned-detail-box"><div class="pinned-detail-label"><i class="fas fa-align-left"></i> รายละเอียด</div><div class="pinned-detail-text" id="pin-detail-${t['Ticket ID']}">${detailShort.replace(/\n/g,'<br>')}</div>${detailText.length>200?`<button class="btn-expand" onclick="expandPinDetail('${t['Ticket ID']}',this)">ดูเพิ่มเติม ▼</button>`:''}</div>`:''}<div class="pinned-card-body">${buildProgressBar(t['สถานะ'])}</div><div class="pinned-card-footer"><span><i class="fas fa-calendar-alt"></i>${t['วันที่แจ้ง']||''}</span><span><i class="fas fa-clock"></i>กำหนด: ${t['กำหนดตอบกลับ']||'-'}</span><span><i class="fas fa-user-tie"></i>${t['ผู้รับผิดชอบ']||'รอมอบหมาย'}</span></div>${commentText?`<div class="pinned-comment-box"><div class="pinned-comment-meta"><i class="fas fa-comment-dots"></i> ความคิดเห็นล่าสุด${commentMeta?` · ${commentMeta}`:''}</div><div class="pinned-comment-text">${commentText}</div></div>`:''}</div>`;
       });
       container.innerHTML=html;
-    }else { container.innerHTML=''; container.classList.add('hidden'); }
+    }else container.classList.add('hidden');
   }catch(e){container.classList.add('hidden');}
 }
 
 // ════ TRACKING ════
 async function loadMyTickets() {
   const resDiv=document.getElementById('track-result');
-  resDiv.innerHTML=skeletonHtml('list',2);
+  resDiv.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
   try { const res=await api.get(`/api/tickets?action=byUsername&username=${encodeURIComponent(currentUser.username)}`); if(res.success&&res.tickets&&res.tickets.length>0)await renderTicketCards(res.tickets,true); else resDiv.innerHTML=`<div style="text-align:center;padding:40px;color:#aaa;"><i class="fas fa-inbox" style="font-size:2.5rem;color:#ddd;display:block;margin-bottom:12px;"></i><p style="margin-bottom:16px;">คุณยังไม่มีประวัติการร้องเรียน</p><button onclick="navigateTo('portal')" style="padding:10px 24px;background:var(--dgreen);color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:700;"><i class="fas fa-bullhorn"></i> แจ้งเรื่องใหม่</button></div>`; }
   catch(e){resDiv.innerHTML=`<p style="color:red;">${e.message}</p>`;}
 }
@@ -465,7 +392,7 @@ async function doTrack() {
   if(!val){await showAlert('⚠️','กรุณากรอก Ticket ID','ตัวอย่าง: VOC-2568-XXXXXXXX');return;}
   if(!val.toUpperCase().startsWith('VOC-')){await showAlert('⚠️','รูปแบบไม่ถูกต้อง','กรุณากรอก Ticket ID ที่ขึ้นต้นด้วย VOC-');return;}
   const resDiv=document.getElementById('track-result');
-  resDiv.innerHTML=skeletonHtml('list',1);
+  resDiv.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังค้นหา...</p></div>';
   try { const res=await api.get(`/api/tickets?action=byId&id=${encodeURIComponent(val.toUpperCase())}`); if(res.success){const isOwner=currentUser&&currentUser.role==='user'&&String(res.ticket['Username']||'').toLowerCase()===String(currentUser.username||'').toLowerCase();await renderTicketCards([res.ticket],isOwner);}else resDiv.innerHTML=`<p style="color:#d00000;text-align:center;padding:30px;"><i class="fas fa-search"></i> ไม่พบ Ticket ID นี้</p>`; }
   catch(e){resDiv.innerHTML=`<p style="color:red;">${e.message}</p>`;}
 }
@@ -497,25 +424,25 @@ function selectStar(tid,score){ratingSelection=score;const row=document.getEleme
 async function submitRating(ticketId){if(!ratingSelection){await showAlert('⚠️','กรุณาเลือกคะแนน','');return;}const comment=document.getElementById('rc-'+ticketId)?.value.trim();try{const res=await api.post('/api/ratings',{ticketId,username:currentUser?.username||'',score:ratingSelection,comment});if(res.success){const box=document.getElementById('rbox-'+ticketId);if(box)box.innerHTML=`<div style="text-align:center;padding:16px;color:#2d6a4f;font-weight:700;">✅ ขอบคุณสำหรับ ${'⭐'.repeat(ratingSelection)} คะแนน</div>`;ratingSelection=0;}else await showAlert('ℹ️','แจ้งเตือน',res.message);}catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}}
 
 // ════ FAQ ════
-async function loadFaq(){const container=document.getElementById('faq-content');if(!container)return;container.innerHTML=skeletonHtml('list',4);try{const res=await api.get('/api/faq');if(res.success)renderFaq(res.faqs||[]);else container.innerHTML='<p style="color:red;">โหลด FAQ ไม่สำเร็จ</p>';}catch(e){container.innerHTML=`<p style="color:red;">${e.message}</p>`;}}
+async function loadFaq(){const container=document.getElementById('faq-content');if(!container)return;container.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';try{const res=await api.get('/api/faq');if(res.success)renderFaq(res.faqs||[]);else container.innerHTML='<p style="color:red;">โหลด FAQ ไม่สำเร็จ</p>';}catch(e){container.innerHTML=`<p style="color:red;">${e.message}</p>`;}}
 function renderFaq(faqs,query=''){const container=document.getElementById('faq-content');const filtered=query?faqs.filter(f=>f.question.toLowerCase().includes(query.toLowerCase())||f.answer.toLowerCase().includes(query.toLowerCase())):faqs;if(!filtered.length){container.innerHTML='<p style="text-align:center;color:#aaa;padding:30px;">ไม่พบคำถามที่ค้นหา</p>';return;}const groups={};filtered.forEach(f=>{const cat=f.category||'ทั่วไป';if(!groups[cat])groups[cat]=[];groups[cat].push(f);});let html='<div class="faq-list">';Object.entries(groups).forEach(([cat,items])=>{html+=`<div class="faq-category-label"><i class="fas fa-folder-open"></i> ${cat}</div>`;items.forEach(f=>{html+=`<div class="faq-item" id="faq-${f.faqId}"><div class="faq-question" onclick="toggleFaq('${f.faqId}')"><span>${f.question}</span><i class="fas fa-chevron-down"></i></div><div class="faq-answer">${f.answer}</div></div>`;});});html+='</div>';container.innerHTML=html;}
 function toggleFaq(id){const item=document.getElementById('faq-'+id);if(item)item.classList.toggle('open');}
-function searchFaq(){const q=document.getElementById('faq-search')?.value.trim()||'';const container=document.getElementById('faq-content');container.innerHTML=skeletonHtml('list',3);api.get('/api/faq').then(res=>{if(res.success)renderFaq(res.faqs||[],q);});}
+function searchFaq(){const q=document.getElementById('faq-search')?.value.trim()||'';const container=document.getElementById('faq-content');container.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';api.get('/api/faq').then(res=>{if(res.success)renderFaq(res.faqs||[],q);});}
 
 // ════ REPORT ════
-function printReport(){const content=document.getElementById('report-content');if(!content||content.querySelector('.loading-spinner,.skeleton-card')){showAlert('⚠️','รายงานยังไม่โหลด','');return;}const rptNames={service:'สรุปการให้บริการ',users:'ผู้ใช้บริการ',duration:'เวลาให้บริการ',monthly:'สรุปรายเดือน'};const now=new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'});const printWin=window.open('','_blank','width=900,height=700');printWin.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>VOC รายงาน</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Sarabun',sans-serif;background:#fff;color:#222;padding:32px 40px;}.print-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2d6a4f;padding-bottom:16px;margin-bottom:24px;}.print-header h1{font-size:1.4rem;color:#2d6a4f;font-weight:800;}@media print{body{padding:16px 20px;}}</style></head><body><div class="print-header"><div><h1>🎙️ VOC System — ${rptNames[currentReportType]||'รายงาน'}</h1><p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร · มหาวิทยาลัยราชภัฏยะลา</p></div><div style="text-align:right;font-size:.8rem;color:#888;"><div>วันที่พิมพ์: ${now}</div><div>ผู้พิมพ์: ${currentUser?.fullname||currentUser?.username||'admin'}</div></div></div>${content.innerHTML}<script>setTimeout(function(){window.print();},600);<\/script></body></html>`);printWin.document.close();}
+function printReport(){const content=document.getElementById('report-content');if(!content||content.querySelector('.loading-spinner')){showAlert('⚠️','รายงานยังไม่โหลด','');return;}const rptNames={service:'สรุปการให้บริการ',users:'ผู้ใช้บริการ',duration:'เวลาให้บริการ',monthly:'สรุปรายเดือน'};const now=new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'});const printWin=window.open('','_blank','width=900,height=700');printWin.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>VOC รายงาน</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Sarabun',sans-serif;background:#fff;color:#222;padding:32px 40px;}.print-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2d6a4f;padding-bottom:16px;margin-bottom:24px;}.print-header h1{font-size:1.4rem;color:#2d6a4f;font-weight:800;}@media print{body{padding:16px 20px;}}</style></head><body><div class="print-header"><div><h1>🎙️ VOC System — ${rptNames[currentReportType]||'รายงาน'}</h1><p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร · มหาวิทยาลัยราชภัฏยะลา</p></div><div style="text-align:right;font-size:.8rem;color:#888;"><div>วันที่พิมพ์: ${now}</div><div>ผู้พิมพ์: ${currentUser?.fullname||currentUser?.username||'admin'}</div></div></div>${content.innerHTML}<script>setTimeout(function(){window.print();},600);<\/script></body></html>`);printWin.document.close();}
 
 async function loadReport(type){
   window._currentReportType = type || currentReportType;
   currentReportType=type||'service';
   const _rc=document.getElementById('report-content');
-  if(_rc)_rc.innerHTML=skeletonHtml('list',3);
+  if(_rc)_rc.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
   const _rptNames={service:'สรุปการให้บริการ',users:'ผู้ใช้บริการ',duration:'เวลาให้บริการ',monthly:'รายเดือน'};
   const _rptIcons={service:'fas fa-clipboard-list',users:'fas fa-users',duration:'fas fa-stopwatch',monthly:'fas fa-calendar-alt'};
   const _lbl=document.getElementById('report-type-label'); const _ico=document.getElementById('report-type-icon');
   if(_lbl)_lbl.textContent=_rptNames[currentReportType]||'รายงาน'; if(_ico)_ico.className=_rptIcons[currentReportType]||'fas fa-clipboard-list';
   const box=document.getElementById('report-content'); if(!box)return;
-  box.innerHTML=skeletonHtml('list',3);
+  box.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลดรายงาน...</p></div>';
   try{const res=await api.get('/api/report?type='+currentReportType);if(!res.success){box.innerHTML='<p style="color:red;padding:20px;">โหลดไม่สำเร็จ</p>';return;}if(currentReportType==='service')renderReportService(res.report,box);if(currentReportType==='users')renderReportUsers(res.report,box);if(currentReportType==='duration')renderReportDuration(res.report,box);if(currentReportType==='monthly')renderReportMonthly(res.report,box);}
   catch(e){box.innerHTML=`<p style="color:red;padding:20px;">${e.message}</p>`;}
 }
@@ -525,17 +452,17 @@ function renderReportUsers(r,box){const rows=(r.users||[]).map((u,i)=>`<tr><td s
 function renderReportDuration(r,box){const rows=(r.items||[]).slice(0,20).map(d=>`<tr><td style="font-size:.8rem;color:#2d6a4f;font-weight:700;">${d.ticketId}</td><td style="font-size:.82rem;">${d.subject}</td><td>${d.priority}</td><td style="text-align:right;font-weight:700;">${d.hours} ชม.</td></tr>`).join('');const avgLabel=h=>h!==null?h+' ชม.':'-';box.innerHTML=`<div class="rpt-kpi-grid"><div class="rpt-kpi"><div class="rpt-kpi-num">${r.total}</div><div class="rpt-kpi-label">🎯 เรื่องที่เสร็จแล้ว</div></div><div class="rpt-kpi blue"><div class="rpt-kpi-num" style="color:#3a86ff;">${avgLabel(r.avgHours)}</div><div class="rpt-kpi-label">⏱️ เวลาเฉลี่ยรวม</div></div></div><div class="rpt-card" style="overflow-x:auto;"><div class="rpt-card-title"><i class="fas fa-list"></i> รายการล่าสุด</div><table class="rpt-table"><tr><th>Ticket</th><th>หัวข้อ</th><th>ความเร่งด่วน</th><th>เวลา</th></tr>${rows||'<tr><td colspan="4" style="color:#bbb;">ยังไม่มีข้อมูล</td></tr>'}</table></div>`;}
 function renderReportMonthly(r,box){const months=r.months||[];const maxTotal=Math.max(...months.map(m=>m.total),1);const bars=months.map(m=>{const pct=Math.round(m.total/maxTotal*100);return`<div class="rpt-month-row"><div class="rpt-month-label">${m.month}</div><div style="flex:1;"><div class="rpt-bar-track"><div class="rpt-bar-fill" style="width:${pct}%"></div></div></div><div class="rpt-month-count">${m.total}</div></div>`;}).join('');box.innerHTML=`<div class="rpt-card"><div class="rpt-card-title"><i class="fas fa-chart-bar"></i> จำนวน Ticket รายเดือน</div>${bars||'<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div>`;}
 
-async function showUserReport(username){const po=document.getElementById('profile-overlay');if(po)document.body.removeChild(po);navigateTo('user-report');const box=document.getElementById('user-report-content');box.innerHTML=skeletonHtml('list',3);try{const res=await api.get('/api/report?type=userSummary&username='+encodeURIComponent(username));if(!res.success){box.innerHTML='<p style="color:red;padding:20px;">โหลดไม่สำเร็จ</p>';return;}renderUserReport(res.report,box);}catch(e){box.innerHTML=`<p style="color:red;padding:20px;">${e.message}</p>`;}}
+async function showUserReport(username){const po=document.getElementById('profile-overlay');if(po)document.body.removeChild(po);navigateTo('user-report');const box=document.getElementById('user-report-content');box.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';try{const res=await api.get('/api/report?type=userSummary&username='+encodeURIComponent(username));if(!res.success){box.innerHTML='<p style="color:red;padding:20px;">โหลดไม่สำเร็จ</p>';return;}renderUserReport(res.report,box);}catch(e){box.innerHTML=`<p style="color:red;padding:20px;">${e.message}</p>`;}}
 function closeUserReport(){if(currentUser&&(currentUser.role==='admin'||currentUser.role==='superadmin'))navigateTo('admin-report');else navigateTo('tracking');}
 function renderUserReport(r,box){const scClass={'รอดำเนินการ':'status-pending','กำลังดำเนินการ':'status-inprogress','เสร็จสิ้น':'status-done','ปฏิเสธ':'status-rejected'};const catEntries=Object.entries(r.byCategory||{}).sort((a,b)=>b[1]-a[1]);const maxCat=Math.max(...catEntries.map(e=>e[1]),1);const catBars=catEntries.map(([k,v])=>`<div class="rpt-bar-row"><span class="rpt-bar-label">${k}</span><div class="rpt-bar-track"><div class="rpt-bar-fill" style="width:${Math.round(v/maxCat*100)}%"></div></div><span class="rpt-bar-count">${v}</span></div>`).join('');const ticketRows=(r.recentTickets||[]).map(t=>`<tr><td style="font-size:.78rem;color:#2d6a4f;font-weight:700;">${t.ticketId}</td><td style="font-size:.83rem;">${t.subject}</td><td><span class="status ${scClass[t.status]||'status-pending'}" style="font-size:.72rem;">${t.status}</span></td><td style="font-size:.78rem;color:#888;">${t.date}</td></tr>`).join('');box.innerHTML=`<div class="rpt-kpi-grid"><div class="rpt-kpi"><div class="rpt-kpi-num">${r.total}</div><div class="rpt-kpi-label">📋 รวมทั้งหมด</div></div><div class="rpt-kpi green"><div class="rpt-kpi-num" style="color:#2d6a4f;">${r.done}</div><div class="rpt-kpi-label">✅ เสร็จสิ้น</div></div><div class="rpt-kpi orange"><div class="rpt-kpi-num" style="color:#f77f00;">${r.pending}</div><div class="rpt-kpi-label">⏳ รอดำเนินการ</div></div><div class="rpt-kpi red"><div class="rpt-kpi-num" style="color:#d00000;">${r.rejected}</div><div class="rpt-kpi-label">❌ ปฏิเสธ</div></div></div><div class="rpt-success-bar-wrap"><div style="display:flex;justify-content:space-between;font-size:.84rem;color:#888;margin-bottom:6px;"><span>อัตราความสำเร็จ</span><span style="font-weight:700;color:#2d6a4f;font-size:1.1rem;">${r.successRate}%</span></div><div class="rpt-bar-track big"><div class="rpt-bar-fill" style="width:${r.successRate}%"></div></div></div><div class="rpt-card"><div class="rpt-card-title"><i class="fas fa-tags"></i> ประเภทเรื่องที่แจ้ง</div>${catBars||'<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div><div class="rpt-card" style="overflow-x:auto;"><div class="rpt-card-title"><i class="fas fa-history"></i> ประวัติคำร้องล่าสุด</div><table class="rpt-table"><tr><th>Ticket ID</th><th>หัวข้อ</th><th>สถานะ</th><th>วันที่</th></tr>${ticketRows||'<tr><td colspan="4" style="color:#bbb;">ยังไม่มีข้อมูล</td></tr>'}</table></div>`;}
 
 // ════ ADMIN DASHBOARD ════
-async function loadDashboard(){document.getElementById('dash-content').innerHTML=skeletonHtml('stats',4);try{const [dr,sr]=await Promise.all([api.get('/api/dashboard'),api.get('/api/ratings?action=summary')]);if(dr.success)renderDashboard(dr.stats,sr.summary||{avg:0,total:0});else document.getElementById('dash-content').innerHTML='<p style="color:red;">โหลดไม่สำเร็จ</p>';}catch(e){document.getElementById('dash-content').innerHTML=`<p style="color:red;">${e.message}</p>`;}}
+async function loadDashboard(){document.getElementById('dash-content').innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';try{const [dr,sr]=await Promise.all([api.get('/api/dashboard'),api.get('/api/ratings?action=summary')]);if(dr.success)renderDashboard(dr.stats,sr.summary||{avg:0,total:0});else document.getElementById('dash-content').innerHTML='<p style="color:red;">โหลดไม่สำเร็จ</p>';}catch(e){document.getElementById('dash-content').innerHTML=`<p style="color:red;">${e.message}</p>`;}}
 function renderDashboard(s,rs){const mxC=Math.max(...Object.values(s.byCategory),1);const mxU=Math.max(...Object.values(s.byCustomer),1);let catB='',cusB='',urgH='';Object.entries(s.byCategory).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{catB+=`<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/mxC*100)}%"></div></div><span class="bar-count">${v}</span></div>`;});Object.entries(s.byCustomer).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{cusB+=`<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill orange" style="width:${Math.round(v/mxU*100)}%"></div></div><span class="bar-count">${v}</span></div>`;});if(s.urgentTickets&&s.urgentTickets.length>0)urgH=`<div class="urgent-banner"><h4><i class="fas fa-exclamation-triangle"></i> ⚠️ ${s.urgentTickets.length} เรื่องเร่งด่วนยังไม่เสร็จ</h4>${s.urgentTickets.map(t=>`<div class="urgent-item"><span class="priority-badge p-high">🔴 เร่งด่วน</span><strong>${t.ticketId}</strong><span style="flex:1;">${t.subject}</span></div>`).join('')}</div>`;document.getElementById('dash-content').innerHTML=`${urgH}<div class="dash-grid"><div class="stat-card"><div class="stat-num">${s.total}</div><div class="stat-label">📋 ทั้งหมด</div></div><div class="stat-card orange"><div class="stat-num" style="color:#f77f00;">${s.pending}</div><div class="stat-label">⏳ รอดำเนินการ</div></div><div class="stat-card blue"><div class="stat-num" style="color:#3a86ff;">${s.inprogress}</div><div class="stat-label">🔄 กำลังดำเนินการ</div></div><div class="stat-card"><div class="stat-num" style="color:#2d6a4f;">${s.done}</div><div class="stat-label">✅ เสร็จสิ้น</div></div></div><div class="dash-charts"><div class="chart-card"><h4><i class="fas fa-tags"></i> ประเภทเรื่อง</h4>${catB||'<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div><div class="chart-card" style="text-align:center;"><h4><i class="fas fa-star"></i> คะแนนพึงพอใจ</h4><div style="font-size:3.2rem;font-weight:800;color:var(--dgreen);line-height:1;">${rs.avg||'-'}</div><div style="font-size:.83rem;color:#888;">${rs.total||0} รีวิว</div><button onclick="navigateTo('admin-reviews')" style="margin-top:12px;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">ดูรีวิว</button></div><div class="chart-card"><h4><i class="fas fa-users"></i> ประเภทผู้แจ้ง</h4>${cusB||'<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div></div>`;}
 
 // ════ ADMIN TICKETS ════
 function setFilter(id){document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));const e=document.getElementById('filter-'+id);if(e)e.classList.add('active');}
-async function loadAdminTickets(filter){document.getElementById('admin-ticket-list').innerHTML=skeletonHtml('list',3);try{const tr=await api.get(`/api/tickets?action=all&filter=${encodeURIComponent(filter)}`);if(tr.success)renderAdminTickets(tr.tickets);else document.getElementById('admin-ticket-list').innerHTML='<p style="color:red;">โหลดไม่สำเร็จ</p>';}catch(e){document.getElementById('admin-ticket-list').innerHTML=`<p style="color:red;">${e.message}</p>`;}}
+async function loadAdminTickets(filter){document.getElementById('admin-ticket-list').innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';try{const tr=await api.get(`/api/tickets?action=all&filter=${encodeURIComponent(filter)}`);if(tr.success)renderAdminTickets(tr.tickets);else document.getElementById('admin-ticket-list').innerHTML='<p style="color:red;">โหลดไม่สำเร็จ</p>';}catch(e){document.getElementById('admin-ticket-list').innerHTML=`<p style="color:red;">${e.message}</p>`;}}
 
 function renderAdminTickets(tickets){
   const container=document.getElementById('admin-ticket-list');
@@ -590,35 +517,7 @@ async function submitUpdate(tid){
     const res=await api.post('/api/tickets',{action:'update',ticketId:tid,newStatus:ns,assignee:as});
     if(res.success){
       const card=document.getElementById('card-'+tid);
-      if(card){
-        // ── อัปเดต badge สถานะใน card header ──
-        const badge=card.querySelector('.admin-card-top .status');
-        // ใช้ค่าเดียวกับ renderAdminTickets
-        const scTag={
-          'รอดำเนินการ':'status-pending','กำลังดำเนินการ':'status-inprogress',
-          'รอตรวจสอบ':'status-pending','เสร็จสิ้น':'status-success','ปฏิเสธ':'status-reject'
-        };
-        const scColor={
-          'รอดำเนินการ':'pending','กำลังดำเนินการ':'inprogress',
-          'รอตรวจสอบ':'inprogress','เสร็จสิ้น':'done','ปฏิเสธ':'rejected'
-        };
-        if(badge){
-          // ลบ class เก่าทั้งหมดที่เป็น status-*
-          badge.className=badge.className.replace(/\bstatus-\S+/g,'').trim();
-          badge.classList.add('status', scTag[ns]||'status-pending');
-          badge.textContent=ns;
-        }
-        // อัปเดต class สีของ card ด้วย
-        ['pending','inprogress','review','done','rejected'].forEach(c=>card.classList.remove(c));
-        card.classList.add(scColor[ns]||'pending');
-        // อัปเดต assignee ที่แสดงใน footer
-        const footerAssignee=card.querySelector('.ticket-card-footer span:last-child');
-        if(footerAssignee&&as) footerAssignee.innerHTML=`<i class="fas fa-user-tie"></i>${as}`;
-        // กะพริบเขียวยืนยัน
-        card.style.transition='background .4s';
-        card.style.background='#d4edda';
-        setTimeout(()=>{card.style.background='';},1500);
-      }
+      if(card){card.style.transition='background .4s';card.style.background='#d4edda';setTimeout(()=>{card.style.background='';},1500);}
     } else {
       // ถ้า 401 → token หมดอายุ ให้แจ้งเตือนชัดเจน
       const msg = (res.message||'').includes('กรุณาเข้าสู่ระบบ') || (res.message||'').includes('token')
@@ -632,7 +531,7 @@ async function submitUpdate(tid){
 async function deleteTicket(tid){if(!await showConfirm('🗑️','ลบ Ticket',`ต้องการลบ <strong>${tid}</strong>?<br><small style="color:#d00000;">ไม่สามารถเรียกคืนได้</small>`,'danger'))return;try{const res=await api.post('/api/tickets',{action:'deleteTicket',ticketId:tid});if(res.success){const card=document.getElementById('card-'+tid);if(card){card.style.transition='opacity .4s';card.style.opacity='0';setTimeout(()=>card.remove(),400);}await showAlert('✅','ลบสำเร็จ',`Ticket ${tid} ถูกลบแล้ว`);}else await showAlert('❌','ลบไม่สำเร็จ',res.message||'');}catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}}
 
 // ════ ADMIN REVIEWS ════
-async function loadReviews(){const container=document.getElementById('review-content');if(!container)return;container.innerHTML=skeletonHtml('list',3);try{const [ar,sr]=await Promise.all([api.get('/api/ratings?action=all'),api.get('/api/ratings?action=summary')]);renderReviews(ar.ratings||[],sr.summary||{avg:0,total:0,dist:{}});}catch(e){container.innerHTML=`<p style="color:red;">${e.message}</p>`;}}
+async function loadReviews(){const container=document.getElementById('review-content');if(!container)return;container.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';try{const [ar,sr]=await Promise.all([api.get('/api/ratings?action=all'),api.get('/api/ratings?action=summary')]);renderReviews(ar.ratings||[],sr.summary||{avg:0,total:0,dist:{}});}catch(e){container.innerHTML=`<p style="color:red;">${e.message}</p>`;}}
 function renderReviews(ratings,summary){const container=document.getElementById('review-content');const avg=summary.avg||0,total=summary.total||0;let html=`<div class="rating-summary"><div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;"><div style="text-align:center;"><div class="rating-avg">${avg}</div><div style="font-size:1.4rem;margin:6px 0;">${'⭐'.repeat(Math.round(avg))}${'☆'.repeat(5-Math.round(avg))}</div><div style="font-size:.82rem;color:#888;">${total} รีวิว</div></div></div></div>`;if(!ratings.length){container.innerHTML=html+'<div class="no-tickets"><i class="fas fa-star" style="font-size:2.5rem;color:#ddd;"></i><p style="margin-top:12px;">ยังไม่มีรีวิว</p></div>';return;}ratings.forEach(r=>{const stars='⭐'.repeat(r.score)+'☆'.repeat(5-r.score);html+=`<div style="background:#fff;border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow);margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;"><div><span style="font-weight:700;color:var(--dgreen);font-family:monospace;">${r.ticketId}</span><span style="font-size:1.1rem;margin-left:8px;">${stars}</span></div><span style="font-size:.78rem;color:#aaa;">${r.date||''}</span></div><div style="font-size:.83rem;color:#aaa;"><i class="fas fa-user"></i> ${r.username||'ไม่ระบุ'}</div>${r.comment?`<div style="background:#f8f8f8;border-radius:8px;padding:10px 12px;font-size:.87rem;color:#444;margin-top:8px;">${r.comment}</div>`:''}</div>`;});container.innerHTML=html;}
 
 // ════ SUPERADMIN ════
@@ -753,7 +652,6 @@ window.onload = function () {
 
   const regFields=['reg-firstname','reg-lastname','reg-email','reg-phone','reg-username','reg-pass','reg-pass2'];
   regFields.forEach((id,idx)=>{const el=document.getElementById(id);if(!el)return;el.addEventListener('input', clearFieldErrors);if(idx<regFields.length-1)el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const nx=document.getElementById(regFields[idx+1]);if(nx)nx.focus();}});});
-  ['v-name','v-sid','v-subject','v-detail'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('input',updatePortalStepValidation);});
   const pw=document.getElementById('reg-pass'); if(pw)pw.addEventListener('input',updateStrengthBar);
   const lastReg=document.getElementById('reg-pass2'); if(lastReg)lastReg.addEventListener('keydown',e=>{if(e.key==='Enter')doRegister();});
   const ti=document.getElementById('track-input'); if(ti)ti.addEventListener('keydown',e=>{if(e.key==='Enter')doTrack();});
