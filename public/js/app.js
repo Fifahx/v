@@ -174,41 +174,27 @@ function setupGuestPortalView() {
 
   f.classList.remove('hidden');
 
-  // ลบ banner เก่าออกก่อน (ป้องกัน duplicate)
-  const old = document.getElementById('guest-mode-banner');
-  if (old) old.remove();
+  // ลบ badge เก่าออกก่อน (ป้องกัน duplicate)
+  const oldBadge = document.getElementById('guest-mode-banner');
+  if (oldBadge) oldBadge.remove();
 
-  // สร้าง banner ใหม่ — วางไว้บนสุดของฟอร์ม เหนือ step-progress
+  // วาง badge แจ้งเตือนเล็กๆ บนสุดของฟอร์ม — กด X ปิดได้
   const b = document.createElement('div');
   b.id = 'guest-mode-banner';
-  b.className = 'guest-banner';
+  b.className = 'guest-notify-badge';
   b.innerHTML = `
-    <div class="guest-banner-inner">
-      <div class="guest-banner-left">
-        <i class="fas fa-user-circle guest-banner-icon"></i>
-        <div class="guest-banner-text">
-          <div class="guest-banner-title">คุณยังไม่ได้เข้าสู่ระบบ</div>
-          <div class="guest-banner-sub">จะ<strong>ไม่สามารถติดตามสถานะ</strong>ได้หลังส่งเรื่อง</div>
-        </div>
-      </div>
-      <div class="guest-banner-btns">
-        <button class="guest-btn-login" onclick="navigateTo('login')">
-          <i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ
-        </button>
-        <button class="guest-btn-cont" onclick="dismissGuestBanner()">
-          <i class="fas fa-bullhorn"></i> แจ้งเรื่องโดยไม่ login
-        </button>
-      </div>
-    </div>`;
-  // แทรกก่อน step-progress (ด้านบนสุดของ portal-form-content)
+    <i class="fas fa-user-circle"></i>
+    <span>คุณยังไม่ได้เข้าสู่ระบบ — จะ<strong>ไม่สามารถติดตามสถานะ</strong>ได้หลังส่งเรื่อง</span>
+    <button class="guest-notify-close" onclick="dismissGuestBanner()" title="ปิด">
+      <i class="fas fa-times"></i>
+    </button>`;
   f.insertBefore(b, f.firstChild);
 
-  // แสดง step-progress และ step-content-1 ทันที (ไม่ต้องรอกด banner)
   changeStep(1);
 }
 function dismissGuestBanner() {
   const b = document.getElementById('guest-mode-banner');
-  if (b) b.remove(); // ลบออกเลย ไม่ใช่แค่ซ่อน
+  if (b) b.remove();
 }
 
 // ════ PROFILE ════

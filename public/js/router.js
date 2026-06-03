@@ -129,10 +129,21 @@ export function navigateTo(pageId) {
       _doNavigate(pageId);
       return;
     }
-    // ยังไม่ login: ไปหน้าฟอร์มเลย โดยแสดง banner ให้เลือกด้านบนฟอร์ม (ไม่ต้องผ่าน modal)
-    _doNavigate._guestMode = true;
-    _doNavigate('portal');
-    return;
+    // ยังไม่ login: แสดง modal ให้เลือกประเภทก่อน (เหมือนเดิม)
+    if (_appCallbacks.showComplaintTypeModal) {
+      _appCallbacks.showComplaintTypeModal(function (choice) {
+        if (choice === 'oneway') {
+          // เลือกแจ้งทางเดียว → set flag ให้ setupGuestPortalView วาง badge บนฟอร์ม
+          _doNavigate._guestMode = true;
+          _doNavigate('portal');
+        } else {
+          _doNavigate('login');
+          showAlert('ℹ️', 'กรุณาเข้าสู่ระบบ', 'เข้าสู่ระบบหรือลงทะเบียนก่อนนะคะ');
+          sessionStorage.setItem('voc_after_login', 'portal');
+        }
+      });
+      return;
+    }
   }
 
   _doNavigate(pageId);
