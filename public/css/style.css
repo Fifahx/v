@@ -4891,3 +4891,65 @@ html {
 .file-link-wrap .voc-input {
   margin-top: 0;
 }
+/* ══════════════════════════════════════════════════════════
+   LOGO MOBILE FIX — consolidated (override ทุก rule เดิม)
+   ───────────────────────────────────────────────────────────
+   ใช้ header .logo-circle เพื่อ specificity สูงกว่า rule เดิม
+   และไม่ต้องพึ่ง !important
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 480px: จอมือถือทั่วไป (iPhone SE, Galaxy A) ── */
+@media (max-width: 480px) {
+  header .header-top-inner {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  header .header-logos {
+    gap: 5px;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  header .logo-circle,
+  header .logo-circle a {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    border-width: 1.5px;
+  }
+
+  header .logo-circle img {
+    width: 78%;
+    height: 78%;
+  }
+
+  header .header-brand {
+    margin-left: 3px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  header .header-brand-title {
+    font-size: 1.05rem !important;
+    letter-spacing: 0;
+  }
+
+  header .header-brand-sub {
+    display: none; /* ซ่อน subtitle — ประหยัดพื้นที่ */
+  }
+}
+
+/* ── 380px: จอเล็กมาก (iPhone SE 1st gen, Galaxy mini) ── */
+@media (max-width: 380px) {
+  header .logo-circle,
+  header .logo-circle a {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+  }
+
+  header .header-brand-title {
+    font-size: 0.9rem !important;
+  }
+}
