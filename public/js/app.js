@@ -103,29 +103,38 @@ function updateMenuForSuperAdmin() {
 }
 
 // ==== NAVIGATION คู่มือ Scroll - start ════
-// ฟังก์ชันเพื่อ scroll ไปยังส่วน manual
+// ฟังก์ชันเพื่อ scroll ไปยังส่วน manual — navigate ไป home ถ้าอยู่หน้าอื่น
 function scrollToManual() {
   const targetId = 'manual-grid-ID';
   const targetElement = document.getElementById(targetId);
-
-  // กรณีที่ 1: หา ID ได้ ให้ scroll ตรง
-  if (targetElement) {
+  const homePage = document.getElementById('page-home');
+  
+  // กรณีที่ 1: Element พบและ page-home visible
+  if (targetElement && homePage && !homePage.classList.contains('hidden')) {
     targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } 
-  // กรณีที่ 2: หาไม่เจอ ให้ลองอีกครั้งด้วย polling
+  // กรณีที่ 2: อยู่หน้าอื่น ต้อง navigate ไป home ก่อน
   else {
+    // Navigate ไปที่ home
+    if (typeof navigateTo === 'function') {
+      navigateTo('home');
+    }
+    
+    // Polling หา element หลังจาก navigate
     const checkExist = setInterval(() => {
       const dynamicTarget = document.getElementById(targetId);
-      if (dynamicTarget) {
+      const dHomePage = document.getElementById('page-home');
+      // ตรวจสอบว่า element พบและ page-home visible
+      if (dynamicTarget && dHomePage && !dHomePage.classList.contains('hidden')) {
         clearInterval(checkExist);
-        // หน่วงเวลาเล็กน้อยเพื่อให้ระบบ render เสร็จสิ้น
+        // หน่วงเวลาให้ layout render เสร็จสิ้น
         setTimeout(() => {
           dynamicTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 150);
       }
     }, 50);
 
-    // timeout ที่ 5 วินาที
+    // Timeout ที่ 5 วินาที
     setTimeout(() => {
       clearInterval(checkExist);
     }, 5000);

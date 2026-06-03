@@ -4295,7 +4295,7 @@ html {
 }
 
 /* ── Guest Notify Badge (badge เล็กๆ บนฟอร์ม หลังเลือก oneway) ── */
-.guest-notify-badge {
+.guest-notify-badge { 
   align-items: center;
   gap: 10px;
   background: #fff8e1;
