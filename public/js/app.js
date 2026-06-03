@@ -101,6 +101,44 @@ function updateMenuForSuperAdmin() {
   document.getElementById('right-menu').innerHTML=`<span class="user-badge superadmin-badge header-auth-desktop"><i class="fas fa-crown" style="color:#f0a500;"></i>${currentUser.fullname||'SuperAdmin'}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ (SuperAdmin)"><i class="fas fa-crown" style="color:#f0a500;"></i></button><button class="header-auth-mobile header-auth-mobile--logout" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>`;
 }
 
+// ==== NAVIGATION คู่มือ Setup - start ════
+function handleManualScroll(event) {
+  event.preventDefault();
+  
+  const targetId = 'manual-grid-ID';
+  const targetElement = document.getElementById(targetId);
+
+  // กรณีที่ 1: ตรวจสอบพบว่า ID นั้นอยู่ในหน้าปัจจุบันอยู่แล้ว
+  if (targetElement) {
+    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } 
+  // กรณีที่ 2: ไม่อยู่ในหน้านี้ (อยู่คนละหน้า)
+  else {
+    // สั่งรันฟังก์ชันเปลี่ยนหน้าของระบบเดิมที่มีอยู่แล้ว
+    if (typeof navigateTo === 'function') {
+      navigateTo('manual');
+    }
+
+    // สร้างกลไกตรวจสอบการโหลดหน้าใหม่เสร็จสิ้น (Polling) เพื่อรอเลื่อนหน้าจอ
+    const checkExist = setInterval(() => {
+      const dynamicTarget = document.getElementById(targetId);
+      if (dynamicTarget) {
+        clearInterval(checkExist);
+        // หน่วงเวลาเล็กน้อยเพื่อให้ระบบเซ็ตสไตล์ Active หรือจัด Layout เสร็จสิ้น
+        setTimeout(() => {
+          dynamicTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+      }
+    }, 50);
+
+    // กำหนดเวลาสิ้้นสุดการค้นหา (Timeout) ที่ 5 วินาที เพื่อไม่ให้สคริปต์ทำงานค้างหากหาไม่เจอ
+    setTimeout(() => {
+      clearInterval(checkExist);
+    }, 5000);
+  }
+}
+// ==== NAVIGATION btn คู่มือ Setup - end ════
+
 // ════ ROLE-BASED DOM INJECTION ════
 // inject skeleton HTML เข้า admin pages เฉพาะเมื่อ login เป็น admin/superadmin
 // เมื่อ logout → ลบ innerHTML ทิ้งเพื่อป้องกัน user เห็น
@@ -183,11 +221,23 @@ function setupGuestPortalView() {
   b.id = 'guest-mode-banner';
   b.className = 'guest-notify-badge';
   b.innerHTML = `
-    <i class="fas fa-user-circle"></i>
-    <span>คุณยังไม่ได้เข้าสู่ระบบ — จะ<strong>ไม่สามารถติดตามสถานะ</strong>ได้หลังส่งเรื่อง</span>
-    <button class="guest-notify-close" onclick="dismissGuestBanner()" title="ปิด">
-      <i class="fas fa-times"></i>
-    </button>`;
+    <div class="guest-banner-inner">
+      <div class="guest-banner-left">
+        <i class="fas fa-user-circle guest-banner-icon"></i>
+        <div class="guest-banner-text">
+          <div class="guest-banner-title">คุณยังไม่ได้เข้าสู่ระบบ</div>
+          <div class="guest-banner-sub">จะ<strong>ไม่สามารถติดตามสถานะ</strong>ได้หลังส่งเรื่อง</div>
+        </div>
+      </div>
+      <div class="guest-banner-btns">
+        <button class="guest-btn-login" onclick="navigateTo('login')">
+          <i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ
+        </button>
+        <button class="guest-btn-cont" onclick="dismissGuestBanner()">
+          <i class="fas fa-bullhorn"></i> แจ้งเรื่องโดยไม่ login
+        </button>
+      </div>
+    </div>`;
   f.insertBefore(b, f.firstChild);
 
   changeStep(1);

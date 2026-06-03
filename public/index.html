@@ -71,7 +71,7 @@
         <a onclick="navigateTo('home')" id="nav-home" class="active">หน้าหลัก</a>
         <a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a>
         <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
-        <a href="#manual-section-new">คู่มือ</a>
+        <a href="#manual-grid-ID" onclick="handleManualScroll(event)">คู่มือ</a>
         <a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>
       </div>
       <!-- Hamburger (mobile only) — ฝั่งขวา -->
@@ -175,7 +175,7 @@
         <h3><i class="fas fa-book-open"></i> คู่มือการใช้งาน</h3>
         <div class="manual-header-line"></div>
       </div>
-      <div class="manual-grid-new">
+      <div class="manual-grid-new" id="manual-grid-ID">
         <div class="manual-card">
           <div class="manual-icon-wrap"><i class="fas fa-play-circle"></i></div>
           <div class="manual-card-title">วิดีโอแนะนำ</div>

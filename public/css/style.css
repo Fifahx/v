@@ -3001,11 +3001,12 @@ header {
   gap: 10px;
 }
 
-.logo-circle {
+.logo-circle,
+.logo-circle a {
   width: 46px;
   height: 46px;
   min-width: 46px;
-  background: rgba(255, 255, 255, .15);
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -3323,20 +3324,32 @@ header {
   width: 100%;
 }
 
-.action-card {
-  background: #fff;
+.action-card-ticket {
+  background: linear-gradient(135deg, #3a86ff, #00b4d8);
+}
+
+.action-card-track {
+  background: linear-gradient(135deg, #ff6b6b, #f77f00);
+}
+
+.action-card-ticket,
+.action-card-track {
   border-radius: 14px;
   box-shadow: var(--shadow);
-  padding: 20px;
-  display: flex;
+  padding: 5px 0 15px 0;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   transition: .3s;
   border: 1.5px solid #edf0ee;
   cursor: pointer;
 }
 
-.action-card:hover {
+.action-card-ticket:hover,
+.action-card-track:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 36px rgba(0, 0, 0, .1);
   border-color: #b7dfcb;
@@ -3350,21 +3363,28 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 2rem;
   color: #fff;
   flex-shrink: 0;
 }
 
-.action-icon-wrap.blue {
-  background: linear-gradient(135deg, #3a86ff, #00b4d8);
-}
-
+.action-icon-wrap.blue,
 .action-icon-wrap.orange {
-  background: linear-gradient(135deg, #ff6b6b, #f77f00);
+  color: #ffffffe8;
 }
 
-.action-icon-wrap.green {
-  background: linear-gradient(135deg, #40916c, #2d6a4f);
+.action-card-ticket:hover .action-icon-wrap.blue,
+.action-card-track:hover .action-icon-wrap.orange,
+.action-card-ticket:hover .action-title,
+.action-card-track:hover .action-title {
+  color: #ffffff;
+  text-shadow: 0 0 30px rgb(255 255 255 / 40%);
+}
+
+.action-card-ticket:hover .action-desc,
+.action-card-track:hover .action-desc {
+  color: #f8ff00;
+  text-shadow: 0 0 30px rgb(255 255 255 / 40%);
 }
 
 .action-text {
@@ -3374,23 +3394,17 @@ header {
 .action-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #222;
+  color: #ffffff;
   margin-bottom: 3px;
 }
 
 .action-desc {
   font-size: .78rem;
-  color: #aaa;
+  color: #d2f957;
 }
 
-.action-arrow {
-  color: #ccc;
-  font-size: .85rem;
-  flex-shrink: 0;
-  transition: .2s;
-}
-
-.action-card:hover .action-arrow {
+.action-card-tiket:hover .action-arrow,
+.action-card-track:hover .action-arrow {
   color: var(--dgreen);
   transform: translateX(3px);
 }
@@ -3801,6 +3815,10 @@ header {
   .nav-menu a:hover {
     background: rgba(255, 255, 255, .1);
   }
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 @media(max-width:480px) {
