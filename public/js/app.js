@@ -14,6 +14,7 @@ import { navigateTo, _doNavigate, registerRouterCallbacks, closeMobileNav, toggl
 // Turnstile widget render ตอน DOMContentLoaded แล้วเรียก window.onTurnstileSuccess
 // ถ้ารอ window.onload จะไม่มี callback → ปุ่มไม่ enable ตลอดกาล
 window.navigateTo      = (...a) => navigateTo(...a);
+window.scrollToManual  = (...a) => scrollToManual(...a);
 window.toggleMobileNav = (...a) => toggleMobileNav(...a);
 window.closeMobileNav  = (...a) => closeMobileNav(...a);
 window.onTurnstileSuccess = (token) => onTurnstileSuccess(token);
@@ -101,43 +102,36 @@ function updateMenuForSuperAdmin() {
   document.getElementById('right-menu').innerHTML=`<span class="user-badge superadmin-badge header-auth-desktop"><i class="fas fa-crown" style="color:#f0a500;"></i>${currentUser.fullname||'SuperAdmin'}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ (SuperAdmin)"><i class="fas fa-crown" style="color:#f0a500;"></i></button><button class="header-auth-mobile header-auth-mobile--logout" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>`;
 }
 
-// ==== NAVIGATION คู่มือ Setup - start ════
-function handleManualScroll(event) {
-  event.preventDefault();
-  
+// ==== NAVIGATION คู่มือ Scroll - start ════
+// ฟังก์ชันเพื่อ scroll ไปยังส่วน manual
+function scrollToManual() {
   const targetId = 'manual-grid-ID';
   const targetElement = document.getElementById(targetId);
 
-  // กรณีที่ 1: ตรวจสอบพบว่า ID นั้นอยู่ในหน้าปัจจุบันอยู่แล้ว
+  // กรณีที่ 1: หา ID ได้ ให้ scroll ตรง
   if (targetElement) {
     targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } 
-  // กรณีที่ 2: ไม่อยู่ในหน้านี้ (อยู่คนละหน้า)
+  // กรณีที่ 2: หาไม่เจอ ให้ลองอีกครั้งด้วย polling
   else {
-    // สั่งรันฟังก์ชันเปลี่ยนหน้าของระบบเดิมที่มีอยู่แล้ว
-    if (typeof navigateTo === 'function') {
-      navigateTo('manual');
-    }
-
-    // สร้างกลไกตรวจสอบการโหลดหน้าใหม่เสร็จสิ้น (Polling) เพื่อรอเลื่อนหน้าจอ
     const checkExist = setInterval(() => {
       const dynamicTarget = document.getElementById(targetId);
       if (dynamicTarget) {
         clearInterval(checkExist);
-        // หน่วงเวลาเล็กน้อยเพื่อให้ระบบเซ็ตสไตล์ Active หรือจัด Layout เสร็จสิ้น
+        // หน่วงเวลาเล็กน้อยเพื่อให้ระบบ render เสร็จสิ้น
         setTimeout(() => {
           dynamicTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 150);
       }
     }, 50);
 
-    // กำหนดเวลาสิ้้นสุดการค้นหา (Timeout) ที่ 5 วินาที เพื่อไม่ให้สคริปต์ทำงานค้างหากหาไม่เจอ
+    // timeout ที่ 5 วินาที
     setTimeout(() => {
       clearInterval(checkExist);
     }, 5000);
   }
 }
-// ==== NAVIGATION btn คู่มือ Setup - end ════
+// ==== NAVIGATION btn คู่มือ Scroll - end ════
 
 // ════ ROLE-BASED DOM INJECTION ════
 // inject skeleton HTML เข้า admin pages เฉพาะเมื่อ login เป็น admin/superadmin

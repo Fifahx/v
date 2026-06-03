@@ -10,7 +10,7 @@ import { loadToken, clearSession } from './session.js';
 import { showAlert } from './ui.js';
 
 export const ALL_PAGES = [
-  'home', 'login', 'register', 'portal', 'tracking',
+  'home', 'login', 'register', 'portal', 'tracking', 'manual',
   'faq', 'admin-dashboard', 'admin-tickets',
   'admin-reviews', 'admin-report', 'user-report', 'superadmin',
 ];

@@ -4296,13 +4296,11 @@ html {
 
 /* ── Guest Notify Badge (badge เล็กๆ บนฟอร์ม หลังเลือก oneway) ── */
 .guest-notify-badge {
-  display: flex;
   align-items: center;
   gap: 10px;
   background: #fff8e1;
-  border: 1px solid #ffe082;
-  border-radius: 10px;
-  padding: 10px 14px;
+  border-radius: 17px;
+  padding: 5px 5px;
   margin-bottom: 18px;
   font-size: .87rem;
   color: #7c5a00;
@@ -4311,7 +4309,7 @@ html {
 
 .guest-notify-badge i:first-child {
   font-size: 1.1rem;
-  color: #f0a500;
+  color: #dddddd;
   flex-shrink: 0;
 }
 
