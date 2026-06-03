@@ -88,7 +88,7 @@ async function doLogout() {
 
 // ════ MENU ════
 function updateMenuForUser() {
-  document.getElementById('main-nav').innerHTML=`<a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a><a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a><a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a><a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>`;
+  document.getElementById('main-nav').innerHTML=`<a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a><a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a><a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a><a onclick="scrollToManual()" id="nav-manual">คู่มือ</a><a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>`;
   document.getElementById('right-menu').innerHTML=`<span class="user-badge header-auth-desktop" onclick="showProfile()" title="โปรไฟล์"><i class="fas fa-user-circle"></i>${currentUser.firstname} ${currentUser.lastname}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="showProfile()" aria-label="โปรไฟล์" title="โปรไฟล์"><i class="fas fa-user-circle"></i></button><button class="header-auth-mobile header-auth-mobile--logout" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>`;
 }
 function updateMenuForAdmin() {
@@ -203,7 +203,17 @@ function showComplaintTypeModal(callback) {
 function setupPortalView() {
   const oldBanner=document.getElementById('guest-mode-banner'); if(oldBanner)oldBanner.remove();
   const w=document.getElementById('portal-login-warning'); const f=document.getElementById('portal-form-content');
-  if(currentUser&&currentUser.role==='user'){w.classList.add('hidden');f.classList.remove('hidden');const nf=document.getElementById('v-name');if(nf&&currentUser.firstname)nf.value=(currentUser.firstname||'')+' '+(currentUser.lastname||'');}
+  if(currentUser&&currentUser.role==='user'){
+    w.classList.add('hidden'); f.classList.remove('hidden');
+    // กรอกชื่อให้อัตโนมัติจากข้อมูล login
+    const nf=document.getElementById('v-name'); if(nf&&currentUser.firstname) nf.value=(currentUser.firstname||'')+' '+(currentUser.lastname||'');
+    // ซ่อน panel "แสดงตัวตน" เพราะระบบรู้ตัวตนแล้วจาก session — แสดงเฉพาะ guest เท่านั้น
+    const idPanel=document.getElementById('identity-panel-step1'); if(idPanel) idPanel.classList.add('hidden');
+    // reset isAnon ให้ false เสมอเมื่อ login
+    const anonCb=document.getElementById('isAnon'); if(anonCb) anonCb.checked=false;
+    const idFields=document.getElementById('identity-fields');
+    if(idFields){idFields.style.opacity='';idFields.style.pointerEvents='';idFields.querySelectorAll('input').forEach(el=>{el.disabled=false;});}
+  }
   else if(currentUser&&(currentUser.role==='admin'||currentUser.role==='superadmin')){w.classList.remove('hidden');w.innerHTML='<i class="fas fa-info-circle"></i><span>ผู้ดูแลระบบไม่สามารถแจ้งเรื่องได้</span>';f.classList.add('hidden');}
   else{w.classList.remove('hidden');f.classList.add('hidden');}
 }
@@ -242,6 +252,9 @@ function setupGuestPortalView() {
       </div>
     </div>`;
   f.insertBefore(b, f.firstChild);
+
+  // แสดง panel "แสดงตัวตน" กลับมาสำหรับ guest (อาจถูกซ่อนจาก setupPortalView)
+  const idPanel=document.getElementById('identity-panel-step1'); if(idPanel) idPanel.classList.remove('hidden');
 
   changeStep(1);
 }
