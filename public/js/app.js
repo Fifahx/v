@@ -54,19 +54,19 @@ function hideAdminLoginModal() { document.getElementById('admin-modal').classLis
 
 async function doLogin() {
   const u=document.getElementById('login-user').value.trim(), p=document.getElementById('login-pass').value;
-  if(!u||!p){await showAlert('⚠️','กรุณากรอกข้อมูล','กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');return;}
+  if(!u||!p){await showAlert('กรุณากรอกข้อมูล','กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');return;}
   const btn=document.getElementById('btn-login'); btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังเข้าสู่ระบบ...';
   try { const res=await api.post('/api/auth',{action:'loginUser',username:u,password:p}); if(res.success){currentUser=res;saveSession(res);updateMenuForUser();const after=sessionStorage.getItem('voc_after_login');if(after){sessionStorage.removeItem('voc_after_login');navigateTo(after);}else navigateTo('home');} else await showAlert('❌','เข้าสู่ระบบไม่สำเร็จ',res.message); }
-  catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+  catch(e){await showAlert('เกิดข้อผิดพลาด',e.message);}
   finally{btn.disabled=false;btn.innerHTML='ยืนยัน';}
 }
 
 async function doAdminLogin() {
   const u=document.getElementById('admin-user').value.trim(), p=document.getElementById('admin-pass').value;
-  if(!u||!p){await showAlert('⚠️','กรุณากรอกข้อมูล','');return;}
+  if(!u||!p){await showAlert('กรุณากรอกข้อมูล','');return;}
   const btn=document.getElementById('btn-admin-login'); btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังตรวจสอบ...';
   try { const res=await api.post('/api/auth',{action:'loginAdmin',username:u,password:p}); if(res.success){currentUser=res;saveSession(res);hideAdminLoginModal();if(res.role==='superadmin'){updateMenuForSuperAdmin();navigateTo('superadmin');}else{updateMenuForAdmin();navigateTo('admin-dashboard');}} else await showAlert('❌','เข้าสู่ระบบไม่สำเร็จ',res.message); }
-  catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+  catch(e){await showAlert('เกิดข้อผิดพลาด',e.message);}
   finally{btn.disabled=false;btn.innerHTML='เข้าสู่ระบบ';}
 }
 
@@ -74,12 +74,12 @@ async function doRegister() {
   if(!validateRegister())return;
   const btn=document.getElementById('btn-register'); btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> กำลังลงทะเบียน...';
   try { const res=await api.post('/api/auth',{action:'register',firstname:document.getElementById('reg-firstname').value.trim(),lastname:document.getElementById('reg-lastname').value.trim(),email:document.getElementById('reg-email').value.trim(),lineId:document.getElementById('reg-line').value.trim(),phone:document.getElementById('reg-phone').value.trim(),username:document.getElementById('reg-username').value.trim(),password:document.getElementById('reg-pass').value}); if(res.success){await showAlert('✅','ลงทะเบียนสำเร็จ','กรุณาเข้าสู่ระบบเพื่อใช้งาน');navigateTo('login');}else await showAlert('❌','ไม่สำเร็จ',res.message); }
-  catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
+  catch(e){await showAlert('เกิดข้อผิดพลาด',e.message);}
   finally{btn.disabled=false;btn.innerHTML='ยืนยันการลงทะเบียน';}
 }
 
 async function doLogout() {
-  if(!await showConfirm('🚪','ออกจากระบบ','ต้องการออกจากระบบใช่หรือไม่?'))return;
+  if(!await showConfirm('ออกจากระบบ','ต้องการออกจากระบบใช่หรือไม่?'))return;
   currentUser=null; clearSession();
   _clearAdminPageContent(); // ล้าง admin content ออกจาก DOM เมื่อ logout
   _resetMenuToGuest();
@@ -346,18 +346,18 @@ function handleFileSelect(inputEl) {
 }
 function prepareReview() {
   const subject=document.getElementById('v-subject')?.value.trim(); const detail=document.getElementById('v-detail')?.value.trim(); const note=document.getElementById('v-note')?.value.trim()||'';
-  if(!subject){showAlert('⚠️','กรุณากรอกหัวข้อ','');return;} if(!detail){showAlert('⚠️','กรุณากรอกรายละเอียด','');return;}
+  if(!subject){showAlert('กรุณากรอกหัวข้อ','');return;} if(!detail){showAlert('กรุณากรอกรายละเอียด','');return;}
   const isAnon=document.getElementById('isAnon')?.checked; const name=isAnon?'ไม่ระบุตัวตน':(document.getElementById('v-name')?.value||'-'); const sid=isAnon?'-':(document.getElementById('v-sid')?.value||'-');
   const pMap={high:{label:'🔴 เร่งด่วน',sub:'ภายใน 24 ชม.',cls:'high'},medium:{label:'🟡 ปานกลาง',sub:'ภายใน 3 วัน',cls:'medium'},low:{label:'🟢 ทั่วไป',sub:'ภายใน 7 วัน',cls:'low'}};
   const pInfo=pMap[vocData.priority]||pMap.medium; const detailHtml=detail.replace(/\n/g,'<br>');
   const _rl=document.getElementById('v-file-link')?.value.trim()||'';
-  const _fileLinkHtml=_rl&&_rl.startsWith('http')?`<div class="review-section"><div class="review-section-title">📎 ลิงก์ไฟล์แนบ</div><div style="padding:10px 14px;background:#f5f5f5;border-radius:8px;"><a href="${_rl}" target="_blank" style="color:#2d6a4f;word-break:break-all;font-size:.87rem;"><i class="fas fa-external-link-alt"></i> ${_rl}</a></div></div>`:'';
-  document.getElementById('review-area').innerHTML=`<div class="review-card"><div class="review-card-header"><h3>📋 ตรวจสอบข้อมูลก่อนส่ง</h3></div><div class="review-section"><div class="review-section-title">👤 ข้อมูลผู้แจ้ง</div><div class="review-row"><span class="ri">🏷️</span><span class="rl">ประเภท</span><span class="rv">${vocData.cType}</span></div><div class="review-row"><span class="ri">🪪</span><span class="rl">ชื่อ-นามสกุล</span><span class="rv">${name}</span></div><div class="review-row"><span class="ri">🎓</span><span class="rl">รหัส/หน่วยงาน</span><span class="rv">${sid}</span></div></div><div class="review-section"><div class="review-section-title">📂 รายละเอียดเรื่อง</div><div class="review-row"><span class="ri">📌</span><span class="rl">ประเภทเรื่อง</span><span class="rv">${vocData.category}</span></div><div class="review-row"><span class="ri">⚡</span><span class="rl">ความเร่งด่วน</span><span class="rv"><span class="priority-pill ${pInfo.cls}">${pInfo.label}</span><small style="color:#999;margin-left:6px;">${pInfo.sub}</small></span></div><div class="review-row"><span class="ri">📝</span><span class="rl">หัวข้อ</span><span class="rv" style="font-weight:700;">${subject}</span></div></div><div class="review-section"><div class="review-section-title">📄 รายละเอียด</div><div style="background:#f8faf9;border-radius:10px;padding:14px;font-size:.9rem;color:#444;line-height:1.75;border-left:3px solid var(--dgreen);">${detailHtml}</div></div>${note?`<div class="review-section"><div class="review-section-title">📝 หมายเหตุ</div><div style="background:#fffbf0;border-radius:10px;padding:12px 14px;font-size:.88rem;color:#555;border-left:3px solid #f77f00;">${note}</div></div>`:''}${_fileLinkHtml}<div style="background:#e8f5e9;border-radius:10px;padding:12px 16px;margin:16px 24px;font-size:.82rem;color:#2d6a4f;"><i class="fas fa-info-circle"></i> ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้</div></div>`;
+  const _fileLinkHtml=_rl&&_rl.startsWith('http')?`<div class="review-section"><div class="review-section-title">・ลิงก์ไฟล์แนบ</div><div style="padding:10px 14px;background:#f5f5f5;border-radius:8px;"><a href="${_rl}" target="_blank" style="color:#2d6a4f;word-break:break-all;font-size:.87rem;"><i class="fas fa-external-link-alt"></i> ${_rl}</a></div></div>`:'';
+  document.getElementById('review-area').innerHTML=`<div class="review-card"><div class="review-card-header"><h3>ตรวจสอบข้อมูลก่อนส่ง</h3></div><div class="review-section"><div class="review-section-title">👤 ข้อมูลผู้แจ้ง</div><div class="review-row"><span class="ri">・</span><span class="rl">ประเภท</span><span class="rv">${vocData.cType}</span></div><div class="review-row"><span class="ri">・</span><span class="rl">ชื่อ-นามสกุล</span><span class="rv">${name}</span></div><div class="review-row"><span class="ri">・</span><span class="rl">รหัส/หน่วยงาน</span><span class="rv">${sid}</span></div></div><div class="review-section"><div class="review-section-title">📂 รายละเอียดเรื่อง</div><div class="review-row"><span class="ri">・</span><span class="rl">ประเภทเรื่อง</span><span class="rv">${vocData.category}</span></div><div class="review-row"><span class="ri">・</span><span class="rl">ความเร่งด่วน</span><span class="rv"><span class="priority-pill ${pInfo.cls}">${pInfo.label}</span><small style="color:#999;margin-left:6px;">${pInfo.sub}</small></span></div><div class="review-row"><span class="ri">・</span><span class="rl">หัวข้อ</span><span class="rv" style="font-weight:700;">${subject}</span></div></div><div class="review-section"><div class="review-section-title">・ รายละเอียด</div><div style="background:#f8faf9;border-radius:10px;padding:14px;font-size:.9rem;color:#444;line-height:1.75;border-left:3px solid var(--dgreen);">${detailHtml}</div></div>${note?`<div class="review-section"><div class="review-section-title">・ หมายเหตุ</div><div style="background:#fffbf0;border-radius:10px;padding:12px 14px;font-size:.88rem;color:#555;border-left:3px solid #f77f00;">${note}</div></div>`:''}${_fileLinkHtml}<div style="background:#e8f5e9;border-radius:10px;padding:12px 16px;margin:16px 24px;font-size:.82rem;color:#2d6a4f;"><i class="fas fa-info-circle"></i> ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้</div></div>`;
   changeStep(4);
 }
 
 async function finalSubmit() {
-  if(!currentUser&&isClientRateLimited()){await showAlert('⏱️','กรุณารอสักครู่',`กรุณารออีก ${clientCooldownRemaining()} นาที`);return;}
+  if(!currentUser&&isClientRateLimited()){await showAlert('กรุณารอสักครู่',`กรุณารออีก ${clientCooldownRemaining()} นาที`);return;}
   // ถ้า onTurnstileSuccess ถูกเรียกแล้วแต่ _turnstileReady ยัง false (race condition)
   // ให้ fallback อ่าน token จาก widget DOM โดยตรง
   if (!_turnstileReady || !_turnstileToken) {
@@ -370,10 +370,10 @@ async function finalSubmit() {
   }
   const _hasTurnstileWidget = !!document.getElementById('cf-turnstile-widget');
   if (_hasTurnstileWidget && (!_turnstileReady || !_turnstileToken)) {
-    await showAlert('🛡️','กรุณายืนยันตัวตน','กรุณายืนยัน CAPTCHA ก่อนส่งเรื่อง');
+    await showAlert('กรุณายืนยันตัวตน','กรุณายืนยัน CAPTCHA ก่อนส่งเรื่อง');
     return;
   }
-  if(!await showConfirm('📋','ยืนยันการส่งเรื่อง','ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้'))return;
+  if(!await showConfirm('ยืนยันการส่งเรื่อง','ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้'))return;
   const btn=document.getElementById('btn-final'); btn.disabled=true;
   let submitted=false; // ← flag: ถ้า true แล้ว finally จะไม่ re-enable ปุ่ม
   try {
@@ -485,8 +485,8 @@ async function loadMyTickets() {
 }
 async function doTrack() {
   const val=document.getElementById('track-input').value.trim();
-  if(!val){await showAlert('⚠️','กรุณากรอก Ticket ID','ตัวอย่าง: VOC-2568-XXXXXXXX');return;}
-  if(!val.toUpperCase().startsWith('VOC-')){await showAlert('⚠️','รูปแบบไม่ถูกต้อง','กรุณากรอก Ticket ID ที่ขึ้นต้นด้วย VOC-');return;}
+  if(!val){await showAlert('กรุณากรอก Ticket ID','ตัวอย่าง: VOC-2568-XXXXXXXX');return;}
+  if(!val.toUpperCase().startsWith('VOC-')){await showAlert('รูปแบบไม่ถูกต้อง','กรุณากรอก Ticket ID ที่ขึ้นต้นด้วย VOC-');return;}
   const resDiv=document.getElementById('track-result');
   resDiv.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังค้นหา...</p></div>';
   try { const res=await api.get(`/api/tickets?action=byId&id=${encodeURIComponent(val.toUpperCase())}`); if(res.success){const isOwner=currentUser&&currentUser.role==='user'&&String(res.ticket['Username']||'').toLowerCase()===String(currentUser.username||'').toLowerCase();await renderTicketCards([res.ticket],isOwner);}else resDiv.innerHTML=`<p style="color:#d00000;text-align:center;padding:30px;"><i class="fas fa-search"></i> ไม่พบ Ticket ID นี้</p>`; }
@@ -515,9 +515,9 @@ async function renderTicketCards(tickets,showRating=false){
 }
 
 // ════ RATING ════
-function buildRatingBox(ticketId){return`<div class="rating-box" id="rbox-${ticketId}"><h4>⭐ ให้คะแนนการบริการ</h4><div class="star-row" id="stars-${ticketId}">${[1,2,3,4,5].map(i=>`<button class="star-btn dim" onclick="selectStar('${ticketId}',${i})">⭐</button>`).join('')}</div><textarea class="rating-comment" id="rc-${ticketId}" rows="2" placeholder="ความคิดเห็น (ไม่บังคับ)"></textarea><button class="btn-rate" onclick="submitRating('${ticketId}')"><i class="fas fa-paper-plane"></i> ส่งคะแนน</button></div>`;}
+function buildRatingBox(ticketId){return`<div class="rating-box" id="rbox-${ticketId}"><h4>ให้คะแนนการบริการ</h4><div class="star-row" id="stars-${ticketId}">${[1,2,3,4,5].map(i=>`<button class="star-btn dim" onclick="selectStar('${ticketId}',${i})">⭐</button>`).join('')}</div><textarea class="rating-comment" id="rc-${ticketId}" rows="2" placeholder="ความคิดเห็น (ไม่บังคับ)"></textarea><button class="btn-rate" onclick="submitRating('${ticketId}')"><i class="fas fa-paper-plane"></i> ส่งคะแนน</button></div>`;}
 function selectStar(tid,score){ratingSelection=score;const row=document.getElementById('stars-'+tid);if(!row)return;row.querySelectorAll('.star-btn').forEach((b,i)=>{b.classList.toggle('lit',i<score);b.classList.toggle('dim',i>=score);b.style.transform=i<score?'scale(1.1)':'scale(1)';});}
-async function submitRating(ticketId){if(!ratingSelection){await showAlert('⚠️','กรุณาเลือกคะแนน','');return;}const comment=document.getElementById('rc-'+ticketId)?.value.trim();try{const res=await api.post('/api/ratings',{ticketId,username:currentUser?.username||'',score:ratingSelection,comment});if(res.success){const box=document.getElementById('rbox-'+ticketId);if(box)box.innerHTML=`<div style="text-align:center;padding:16px;color:#2d6a4f;font-weight:700;">✅ ขอบคุณสำหรับ ${'⭐'.repeat(ratingSelection)} คะแนน</div>`;ratingSelection=0;}else await showAlert('ℹ️','แจ้งเตือน',res.message);}catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}}
+async function submitRating(ticketId){if(!ratingSelection){await showAlert('กรุณาเลือกคะแนน','');return;}const comment=document.getElementById('rc-'+ticketId)?.value.trim();try{const res=await api.post('/api/ratings',{ticketId,username:currentUser?.username||'',score:ratingSelection,comment});if(res.success){const box=document.getElementById('rbox-'+ticketId);if(box)box.innerHTML=`<div style="text-align:center;padding:16px;color:#2d6a4f;font-weight:700;">✅ ขอบคุณสำหรับ ${'⭐'.repeat(ratingSelection)} คะแนน</div>`;ratingSelection=0;}else await showAlert('แจ้งเตือน',res.message);}catch(e){await showAlert('เกิดข้อผิดพลาด',e.message);}}
 
 // ════ FAQ ════
 async function loadFaq(){const container=document.getElementById('faq-content');if(!container)return;container.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';try{const res=await api.get('/api/faq');if(res.success)renderFaq(res.faqs||[]);else container.innerHTML='<p style="color:red;">โหลด FAQ ไม่สำเร็จ</p>';}catch(e){container.innerHTML=`<p style="color:red;">${e.message}</p>`;}}
@@ -526,7 +526,7 @@ function toggleFaq(id){const item=document.getElementById('faq-'+id);if(item)ite
 function searchFaq(){const q=document.getElementById('faq-search')?.value.trim()||'';const container=document.getElementById('faq-content');container.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';api.get('/api/faq').then(res=>{if(res.success)renderFaq(res.faqs||[],q);});}
 
 // ════ REPORT ════
-function printReport(){const content=document.getElementById('report-content');if(!content||content.querySelector('.loading-spinner')){showAlert('⚠️','รายงานยังไม่โหลด','');return;}const rptNames={service:'สรุปการให้บริการ',users:'ผู้ใช้บริการ',duration:'เวลาให้บริการ',monthly:'สรุปรายเดือน'};const now=new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'});const printWin=window.open('','_blank','width=900,height=700');printWin.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>VOC รายงาน</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Sarabun',sans-serif;background:#fff;color:#222;padding:32px 40px;}.print-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2d6a4f;padding-bottom:16px;margin-bottom:24px;}.print-header h1{font-size:1.4rem;color:#2d6a4f;font-weight:800;}@media print{body{padding:16px 20px;}}</style></head><body><div class="print-header"><div><h1>🎙️ VOC System — ${rptNames[currentReportType]||'รายงาน'}</h1><p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร · มหาวิทยาลัยราชภัฏยะลา</p></div><div style="text-align:right;font-size:.8rem;color:#888;"><div>วันที่พิมพ์: ${now}</div><div>ผู้พิมพ์: ${currentUser?.fullname||currentUser?.username||'admin'}</div></div></div>${content.innerHTML}<script>setTimeout(function(){window.print();},600);<\/script></body></html>`);printWin.document.close();}
+function printReport(){const content=document.getElementById('report-content');if(!content||content.querySelector('.loading-spinner')){showAlert('⚠️','รายงานยังไม่โหลด','');return;}const rptNames={service:'สรุปการให้บริการ',users:'ผู้ใช้บริการ',duration:'เวลาให้บริการ',monthly:'สรุปรายเดือน'};const now=new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'});const printWin=window.open('','_blank','width=900,height=700');printWin.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>VOC รายงาน</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Sarabun',sans-serif;background:#fff;color:#222;padding:32px 40px;}.print-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2d6a4f;padding-bottom:16px;margin-bottom:24px;}.print-header h1{font-size:1.4rem;color:#2d6a4f;font-weight:800;}@media print{body{padding:16px 20px;}}</style></head><body><div class="print-header"><div><h1>VOC System — ${rptNames[currentReportType]||'รายงาน'}</h1><p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร · มหาวิทยาลัยราชภัฏยะลา</p></div><div style="text-align:right;font-size:.8rem;color:#888;"><div>วันที่พิมพ์: ${now}</div><div>ผู้พิมพ์: ${currentUser?.fullname||currentUser?.username||'admin'}</div></div></div>${content.innerHTML}<script>setTimeout(function(){window.print();},600);<\/script></body></html>`);printWin.document.close();}
 
 async function loadReport(type){
   window._currentReportType = type || currentReportType;
@@ -595,18 +595,18 @@ function renderAdminTickets(tickets){
 function filterByCategory(cat,btn){document.querySelectorAll('#admin-cat-dd .voc-dropdown-item').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');const label=document.getElementById('admin-cat-label');if(label)label.textContent=btn?btn.textContent.trim():'ทั้งหมด';document.getElementById('admin-cat-dd')?.classList.remove('open');const cards=document.querySelectorAll('.admin-ticket-card[data-category]');let shown=0;cards.forEach(card=>{const match=cat==='all'||card.dataset.category===cat;card.style.display=match?'':'none';if(match)shown++;});const countEl=document.getElementById('admin-ticket-count');if(countEl)countEl.textContent=`แสดง ${shown} รายการ${cat!=='all'?` (กรอง: ${cat})`:''}`;}
 function expandAdminDetail(tid,enc){const el=document.getElementById('adm-detail-'+tid);if(!el)return;el.innerHTML=decodeURIComponent(enc);}
 
-async function addComment(ticketId){const commentEl=document.getElementById('new-comment-'+ticketId);const comment=commentEl?.value.trim();if(!comment){await showAlert('⚠️','กรุณาพิมพ์ความคิดเห็น','');return;}try{const res=await api.post('/api/tickets',{action:'addComment',ticketId,comment,author:currentUser?.fullname||currentUser?.username||'ผู้ดูแล'});if(res.success){if(commentEl)commentEl.value='';await showAlert('✅','บันทึกความคิดเห็นสำเร็จ','');loadAdminTickets(document.querySelector('.filter-btn.active')?.id?.replace('filter-','')||'pending');}else await showAlert('❌','ไม่สำเร็จ',res.message||'');}catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}}
-async function togglePin(tid,ns){if(!await showConfirm('📌',ns?'ปักหมุด':'ยกเลิกปักหมุด',''))return;try{const res=await api.post('/api/tickets',{action:'togglePin',ticketId:tid,pinned:ns});if(res.success){const btn=document.getElementById(`pin-btn-${tid}`);if(btn){btn.style.border=`1px solid ${ns?'#2d6a4f':'#ddd'}`;btn.style.background=ns?'#e8f5e9':'#fff';btn.style.color=ns?'#2d6a4f':'#aaa';btn.innerHTML=`<i class="fas fa-thumbtack"></i>${ns?'แสดงอยู่':'ปักหมุด'}`;btn.setAttribute('onclick',`togglePin('${tid}',${!ns})`);}}  }catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}}
+async function addComment(ticketId){const commentEl=document.getElementById('new-comment-'+ticketId);const comment=commentEl?.value.trim();if(!comment){await showAlert('กรุณาพิมพ์ความคิดเห็น','');return;}try{const res=await api.post('/api/tickets',{action:'addComment',ticketId,comment,author:currentUser?.fullname||currentUser?.username||'ผู้ดูแล'});if(res.success){if(commentEl)commentEl.value='';await showAlert('บันทึกความคิดเห็นสำเร็จ','');loadAdminTickets(document.querySelector('.filter-btn.active')?.id?.replace('filter-','')||'pending');}else await showAlert('ไม่สำเร็จ',res.message||'');}catch(e){await showAlert('เกิดข้อผิดพลาด',e.message);}}
+async function togglePin(tid,ns){if(!await showConfirm('📌',ns?'ปักหมุด':'ยกเลิกปักหมุด',''))return;try{const res=await api.post('/api/tickets',{action:'togglePin',ticketId:tid,pinned:ns});if(res.success){const btn=document.getElementById(`pin-btn-${tid}`);if(btn){btn.style.border=`1px solid ${ns?'#2d6a4f':'#ddd'}`;btn.style.background=ns?'#e8f5e9':'#fff';btn.style.color=ns?'#2d6a4f':'#aaa';btn.innerHTML=`<i class="fas fa-thumbtack"></i>${ns?'แสดงอยู่':'ปักหมุด'}`;btn.setAttribute('onclick',`togglePin('${tid}',${!ns})`);}}  }catch(e){await showAlert('เกิดข้อผิดพลาด',e.message);}}
 async function submitUpdate(tid){
   // ตรวจสอบ token ก่อน — ถ้าไม่มีให้แจ้งเตือนทันที
   const _tok = loadToken();
   if (!_tok) {
-    await showAlert('⚠️','กรุณาเข้าสู่ระบบใหม่','Session หมดอายุ กรุณา Login ใหม่อีกครั้ง');
+    await showAlert('กรุณาเข้าสู่ระบบใหม่','Session หมดอายุ กรุณา Login ใหม่อีกครั้ง');
     return;
   }
   const ns=document.getElementById('status-'+tid).value;
   const as=document.getElementById('assignee-'+tid).value;
-  if(!await showConfirm('💾','ยืนยันการบันทึก',`Ticket: <strong>${tid}</strong><br>สถานะ: <strong>${ns}</strong>`))return;
+  if(!await showConfirm('ยืนยันการบันทึก',`Ticket: <strong>${tid}</strong><br>สถานะ: <strong>${ns}</strong>`))return;
   const btn=document.querySelector(`#card-${tid} .btn-update`);
   if(btn){btn.innerHTML='<i class="fas fa-spinner fa-spin"></i>';btn.disabled=true;}
   try {
@@ -619,12 +619,12 @@ async function submitUpdate(tid){
       const msg = (res.message||'').includes('กรุณาเข้าสู่ระบบ') || (res.message||'').includes('token')
         ? 'Session หมดอายุ กรุณา Login ใหม่'
         : res.message||'บันทึกไม่สำเร็จ';
-      await showAlert('❌','บันทึกไม่สำเร็จ', msg);
+      await showAlert('บันทึกไม่สำเร็จ', msg);
     }
   } catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}
   finally{if(btn){btn.innerHTML='<i class="fas fa-save"></i> บันทึก';btn.disabled=false;}}
 }
-async function deleteTicket(tid){if(!await showConfirm('🗑️','ลบ Ticket',`ต้องการลบ <strong>${tid}</strong>?<br><small style="color:#d00000;">ไม่สามารถเรียกคืนได้</small>`,'danger'))return;try{const res=await api.post('/api/tickets',{action:'deleteTicket',ticketId:tid});if(res.success){const card=document.getElementById('card-'+tid);if(card){card.style.transition='opacity .4s';card.style.opacity='0';setTimeout(()=>card.remove(),400);}await showAlert('✅','ลบสำเร็จ',`Ticket ${tid} ถูกลบแล้ว`);}else await showAlert('❌','ลบไม่สำเร็จ',res.message||'');}catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}}
+async function deleteTicket(tid){if(!await showConfirm('ลบ Ticket',`ต้องการลบ <strong>${tid}</strong>?<br><small style="color:#d00000;">ไม่สามารถเรียกคืนได้</small>`,'danger'))return;try{const res=await api.post('/api/tickets',{action:'deleteTicket',ticketId:tid});if(res.success){const card=document.getElementById('card-'+tid);if(card){card.style.transition='opacity .4s';card.style.opacity='0';setTimeout(()=>card.remove(),400);}await showAlert('✅','ลบสำเร็จ',`Ticket ${tid} ถูกลบแล้ว`);}else await showAlert('❌','ลบไม่สำเร็จ',res.message||'');}catch(e){await showAlert('❌','เกิดข้อผิดพลาด',e.message);}}
 
 // ════ ADMIN REVIEWS ════
 async function loadReviews(){const container=document.getElementById('review-content');if(!container)return;container.innerHTML='<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';try{const [ar,sr]=await Promise.all([api.get('/api/ratings?action=all'),api.get('/api/ratings?action=summary')]);renderReviews(ar.ratings||[],sr.summary||{avg:0,total:0,dist:{}});}catch(e){container.innerHTML=`<p style="color:red;">${e.message}</p>`;}}

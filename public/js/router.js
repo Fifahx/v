@@ -65,7 +65,7 @@ export function _doNavigate(pageId) {
       clearSession();
       if (_appCallbacks.onSessionExpired) _appCallbacks.onSessionExpired();
       pageId = 'login';
-      showAlert('⚠️', 'เซสชันหมดอายุ', 'กรุณาเข้าสู่ระบบใหม่อีกครั้ง');
+      showAlert('เซสชันหมดอายุ', 'กรุณาเข้าสู่ระบบใหม่อีกครั้ง');
     }
   }
 
@@ -138,7 +138,7 @@ export function navigateTo(pageId) {
           _doNavigate('portal');
         } else {
           _doNavigate('login');
-          showAlert('ℹ️', 'กรุณาเข้าสู่ระบบ', 'เข้าสู่ระบบหรือลงทะเบียนก่อนนะคะ');
+          showAlert('ℹ️', 'กรุณาเข้าสู่ระบบหรือลงทะเบียน');
           sessionStorage.setItem('voc_after_login', 'portal');
         }
       });
