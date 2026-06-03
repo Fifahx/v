@@ -666,7 +666,7 @@ function _resetMenuToGuest() {
     <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
     <a onclick="navigateTo('faq')"      id="nav-faq">คำถามที่พบบ่อย</a>`;
   if (right) right.innerHTML = `
-    <a onclick="navigateTo('login')"    class="nav-menu header-auth-desktop" style="color:rgba(255,255,255,.85);font-size:.85rem;"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</a>
+    <a onclick="navigateTo('login')"    class="nav-menu header-auth-desktop" style="color:rgba(255,255,255,.85);font-size:.85rem;"> เข้าสู่ระบบ</a>
     <a onclick="navigateTo('register')" class="btn-nav-active nav-menu header-auth-desktop">ลงทะเบียน</a>
     <button class="header-auth-mobile" onclick="navigateTo('login')" aria-label="เข้าสู่ระบบ" title="เข้าสู่ระบบ"><i class="fas fa-user-circle"></i></button>
     <button class="header-auth-mobile header-auth-mobile--register" onclick="navigateTo('register')" aria-label="ลงทะเบียน" title="ลงทะเบียน"><i class="fas fa-user-plus"></i></button>`;
