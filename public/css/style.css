@@ -4080,6 +4080,19 @@ html {
   box-shadow: 0 4px 20px rgba(45, 106, 79, .12);
 }
 
+/* ซ้าย: icon + text */
+.guest-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.guest-banner-icon {
+  font-size: 1.6rem;
+  color: #2d6a4f;
+  flex-shrink: 0;
+}
+
 .guest-banner-text {
   flex: 1;
 }
@@ -4118,6 +4131,24 @@ html {
 
 .guest-btn-login:hover {
   background: #1b4332;
+}
+
+.guest-btn-cont {
+  background: #fff;
+  color: #555;
+  border: 1.5px solid #ccc;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: 'Sarabun', sans-serif;
+  font-size: .83rem;
+  cursor: pointer;
+  transition: .2s;
+  white-space: nowrap;
+}
+
+.guest-btn-cont:hover {
+  border-color: #2d6a4f;
+  color: #2d6a4f;
 }
 
 .guest-btn-reg {
