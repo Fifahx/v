@@ -4051,6 +4051,86 @@ html {
   }
 }
 
+/* ════ MOBILE HEADER — compact logo + title + auth icon ════ */
+/* Desktop: icon hidden, text buttons shown */
+.header-auth-mobile {
+  display: none;
+}
+
+.header-auth-desktop {
+  display: inline-flex !important;
+}
+
+/* Mobile ≤700px: hide text buttons, show icon only */
+@media(max-width:700px) {
+  .header-auth-desktop {
+    display: none !important;
+  }
+
+  .header-auth-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, .15);
+    border: 1.5px solid rgba(255, 255, 255, .35);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    color: #fff;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: .2s;
+    flex-shrink: 0;
+  }
+
+  .header-auth-mobile:hover {
+    background: rgba(255, 255, 255, .28);
+  }
+
+  .header-auth-mobile--logged {
+    background: rgba(255, 255, 255, .2);
+    border-color: rgba(255, 255, 255, .5);
+  }
+
+  /* ลดขนาด logo สำหรับมือถือ */
+  .logo-circle {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+  }
+
+  /* ลดขนาดชื่อระบบสำหรับมือถือ */
+  .header-brand-title {
+    font-size: 1.15rem !important;
+  }
+
+  /* nav bar hamburger row: icon button + hamburger side by side */
+  .nav-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hamburger-btn {
+    position: absolute;
+    right: 0;
+  }
+}
+
+@media(max-width:400px) {
+  .header-brand-title {
+    font-size: 1rem !important;
+  }
+
+  .logo-circle {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+  }
+}
+
 /* ════ GUEST PORTAL BANNER ════ */
 .guest-banner {
   margin-bottom: 24px;
@@ -4112,7 +4192,7 @@ html {
 
 .guest-banner-btns {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
   min-width: 160px;
 }
@@ -4165,17 +4245,6 @@ html {
 
 .guest-btn-reg:hover {
   background: #f0faf4;
-}
-
-.guest-btn-cont {
-  background: transparent;
-  color: #888;
-  border: 1.5px solid #ddd;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-family: 'Sarabun', sans-serif;
-  font-size: .83rem;
-  transition: .2s;
 }
 
 .guest-btn-cont:hover {
