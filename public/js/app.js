@@ -81,22 +81,36 @@ async function doRegister() {
 async function doLogout() {
   if(!await showConfirm('ออกจากระบบ','ต้องการออกจากระบบใช่หรือไม่?'))return;
   currentUser=null; clearSession();
+  _updateAdminFab(false); // แสดง FAB กลับมาหลัง logout
   _clearAdminPageContent(); // ล้าง admin content ออกจาก DOM เมื่อ logout
   _resetMenuToGuest();
   navigateTo('home');
 }
 
+// ── Admin FAB visibility ──────────────────────────────────────────────────
+// ซ่อนปุ่ม floating เมื่อ login เป็น admin/superadmin แล้ว (ไม่จำเป็นต้องแสดง)
+// แสดงกลับมาเมื่อ logout
+function _updateAdminFab(hide) {
+  const fab = document.getElementById('admin-fab');
+  if (!fab) return;
+  if (hide) fab.classList.add('hidden-fab');
+  else fab.classList.remove('hidden-fab');
+}
+
 // ════ MENU ════
 function updateMenuForUser() {
+  _updateAdminFab(true); // user login แล้ว — ซ่อน FAB ด้วย (ไม่ต้องการ admin login)
   document.getElementById('main-nav').innerHTML=`<a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a><a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a><a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a><a onclick="scrollToManual()" id="nav-manual">คู่มือ</a><a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>`;
   document.getElementById('right-menu').innerHTML=`<span class="user-badge header-auth-desktop" onclick="showProfile()" title="โปรไฟล์"><i class="fas fa-user-circle"></i>${currentUser.firstname} ${currentUser.lastname}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="showProfile()" aria-label="โปรไฟล์" title="โปรไฟล์"><i class="fas fa-user-circle"></i></button><button class="header-auth-mobile header-auth-mobile--logout" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>`;
 }
 function updateMenuForAdmin() {
+  _updateAdminFab(true); // ซ่อน FAB — admin login แล้ว ไม่ต้องแสดงอีก
   _initAdminPageContent('admin');
   document.getElementById('main-nav').innerHTML=`<a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a><a onclick="navigateTo('admin-dashboard')" id="nav-admin-dashboard">สถิติ</a><a onclick="navigateTo('admin-tickets')" id="nav-admin-tickets">จัดการเรื่อง</a><a onclick="navigateTo('admin-reviews')" id="nav-admin-reviews">รีวิว</a><a onclick="navigateTo('admin-report')" id="nav-admin-report">รายงาน</a><a onclick="navigateTo('faq')" id="nav-faq">FAQ</a>`;
   document.getElementById('right-menu').innerHTML=`<span class="user-badge header-auth-desktop"><i class="fas fa-shield-alt"></i>${currentUser.fullname||'Admin'}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ (Admin)"><i class="fas fa-shield-alt"></i></button><button class="header-auth-mobile header-auth-mobile--logout" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>`;
 }
 function updateMenuForSuperAdmin() {
+  _updateAdminFab(true); // ซ่อน FAB — superadmin login แล้ว
   _initAdminPageContent('superadmin');
   document.getElementById('main-nav').innerHTML=`<a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a><a onclick="navigateTo('admin-dashboard')" id="nav-admin-dashboard">สถิติ</a><a onclick="navigateTo('admin-tickets')" id="nav-admin-tickets">จัดการเรื่อง</a><a onclick="navigateTo('admin-reviews')" id="nav-admin-reviews">รีวิว</a><a onclick="navigateTo('admin-report')" id="nav-admin-report">รายงาน</a><a onclick="navigateTo('superadmin')" id="nav-superadmin">⚙️ ระบบ</a>`;
   document.getElementById('right-menu').innerHTML=`<span class="user-badge superadmin-badge header-auth-desktop"><i class="fas fa-crown" style="color:#f0a500;"></i>${currentUser.fullname||'SuperAdmin'}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ (SuperAdmin)"><i class="fas fa-crown" style="color:#f0a500;"></i></button><button class="header-auth-mobile header-auth-mobile--logout" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>`;

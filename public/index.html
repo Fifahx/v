@@ -214,9 +214,7 @@
       <p style="margin-top:16px;font-size:.82rem;text-align:center;">ยังไม่มีบัญชี
         <a onclick="navigateTo('register')" style="color:var(--primary);cursor:pointer;font-weight:700;"><i>ลงทะเบียน</i></a>
       </p>
-      <!-- <a class="admin-login-link" onclick="showAdminLoginModal()">
-        <i class="fas fa-shield-alt"></i> เข้าสู่ระบบในฐานะผู้ดูแลระบบ
-      </a> -->
+      <!-- admin login ย้ายไปที่ปุ่ม floating มุมล่างขวาแล้ว -->
     </div>
   </div>
 
@@ -554,6 +552,17 @@
     <button class="btn-auth" id="btn-admin-login" onclick="doAdminLogin()">เข้าสู่ระบบ</button>
   </div>
 </div>
+
+<!-- ADMIN FLOATING BUTTON — มองเห็นเฉพาะ guest / user ที่ยังไม่ได้ login เป็น admin -->
+<button
+  id="admin-fab"
+  class="admin-fab"
+  onclick="showAdminLoginModal()"
+  title="เข้าสู่ระบบผู้ดูแลระบบ"
+  aria-label="เข้าสู่ระบบผู้ดูแลระบบ"
+>
+  <i class="fas fa-shield-alt"></i>
+</button>
 
 <!-- FOOTER -->
 <footer>

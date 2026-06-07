@@ -109,9 +109,24 @@ export function _doNavigate(pageId) {
     if (cb.loadPinnedTickets) cb.loadPinnedTickets();
     if (cb.loadNewsStrip)     cb.loadNewsStrip();
   }
-  // scroll ขึ้นบนสุดหลัง DOM render เสร็จ (requestAnimationFrame ให้ browser paint ก่อน)
+  // ── Scroll past hero ────────────────────────────────────────────────────
+  // หน้า home → scroll ขึ้นบนสุด (hero ควรเห็น)
+  // หน้าอื่นทุกหน้า → scroll ไปที่ .container (ด้านล่างต่อจาก hero)
+  //   เพื่อให้ผู้ใช้รู้ว่าหน้าเปลี่ยนแล้ว ไม่ต้องเห็น hero ซ้ำทุกครั้ง
   requestAnimationFrame(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (pageId === 'home') {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    } else {
+      const container = document.querySelector('.container');
+      if (container) {
+        // คำนวณ offset จาก top ของ document และ scroll ลงมา
+        // ลบ 8px เพื่อให้มี breathing room เล็กน้อยเหนือเนื้อหา
+        const offset = container.getBoundingClientRect().top + window.scrollY - 8;
+        window.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+    }
   });
 }
 
