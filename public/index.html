@@ -139,6 +139,8 @@
   </div>
 </div><!-- /hero-section -->
 
+<!-- แยกส่วนด้านบนกับด้านล่างตรงนี้ -->
+
 <!-- ══ MAIN ══ -->
 <div class="container">
 
@@ -210,11 +212,11 @@
       </div>
       <button class="btn-auth" id="btn-login" onclick="doLogin()">ยืนยัน</button>
       <p style="margin-top:16px;font-size:.82rem;text-align:center;">ยังไม่มีบัญชี
-        <a onclick="navigateTo('register')" style="color:var(--dgreen);cursor:pointer;font-weight:700;">ลงทะเบียน</a>
+        <a onclick="navigateTo('register')" style="color:var(--primary);cursor:pointer;font-weight:700;"><i>ลงทะเบียน</i></a>
       </p>
-      <a class="admin-login-link" onclick="showAdminLoginModal()">
+      <!-- <a class="admin-login-link" onclick="showAdminLoginModal()">
         <i class="fas fa-shield-alt"></i> เข้าสู่ระบบในฐานะผู้ดูแลระบบ
-      </a>
+      </a> -->
     </div>
   </div>
 
@@ -298,7 +300,7 @@
             <div class="opt-btn" onclick="setOption(this,'cType','ผู้ปกครอง')"> ผู้ปกครอง</div>
             <div class="opt-btn" onclick="setOption(this,'cType','ศิษย์เก่า')"> ศิษย์เก่า</div>
             <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้บัณฑิต/หน่วยงาน')"> ผู้ใช้บัณฑิต/หน่วยงาน</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','อื่นๆ')">อื่นๆ</div>          
+            <div class="opt-btn" onclick="setOption(this,'cType','อื่นๆ')">อื่น ๆ</div>          
           </div>
         </div>
         <div class="voc-panel" id="identity-panel-step1">
