@@ -2302,6 +2302,7 @@ label {
   margin-bottom: 20px;
   color: var(--dgreen);
   font-size: 1.15rem;
+  text-align: center;
 }
 
 .modal-close {
@@ -4404,6 +4405,9 @@ html {
   transition: all .22s ease;
   position: relative;
   background: #fafafa;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
 }
 
 .complaint-type-card:hover {
@@ -4422,6 +4426,8 @@ html {
 .ctype-icon {
   font-size: 2rem;
   margin-bottom: 8px;
+  border-radius: 50%;
+  background: #2d6a4fc7;
 }
 
 .ctype-title {

@@ -198,7 +198,21 @@ function _clearAdminPageContent() {
 // ════ COMPLAINT TYPE MODAL ════
 function showComplaintTypeModal(callback) {
   const o=document.createElement('div'); o.className='voc-overlay'; o.id='complaint-type-overlay';
-  o.innerHTML=`<div class="voc-modal-box complaint-type-modal" style="max-width:520px;"><div style="text-align:center;margin-bottom:6px;"><span style="font-size:2.2rem;"></span></div><div class="voc-modal-title">เลือกประเภทการร้องเรียน</div><div class="complaint-type-cards"><div class="complaint-type-card" id="ctype-oneway"><div class="ctype-icon">📩</div><div class="ctype-title">ร้องเรียนทางเดียว</div></div><div class="complaint-type-card" id="ctype-track"><div class="ctype-icon">🔍</div><div class="ctype-title">ร้องเรียนแบบติดตามผล</div></div></div><div id="ctype-confirm-area" style="display:none;margin-top:18px;"><div class="ctype-confirm-msg" id="ctype-confirm-msg"></div><div class="voc-modal-btns" style="margin-top:12px;"><button class="voc-btn-cancel" onclick="resetComplaintTypeSelection()">เปลี่ยนใจ</button><button class="voc-btn-ok" id="ctype-confirm-btn">ยืนยัน</button></div></div><div style="margin-top:14px;text-align:center;"><button class="voc-btn-cancel" onclick="document.body.removeChild(document.getElementById('complaint-type-overlay'))" style="font-size:.82rem;padding:7px 18px;">ยกเลิก</button></div></div>`;
+  o.innerHTML =`<div class="voc-modal-box complaint-type-modal" style="max-width:520px;"><div style="text-align:center;margin-bottom:6px;"><span style="font-size:2.2rem;"></span></div><div class="voc-modal-title">เลือกประเภทการร้องเรียน</div><div class="complaint-type-cards"><div class="complaint-type-card" id="ctype-oneway">
+  <div class="ctype-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" fill="var(--primary)" class="bi bi-file-earmark-text" viewBox="0 0 16 16">
+      <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
+      <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
+    </svg>
+  </div>
+  <div class="ctype-title">ร้องเรียนทางเดียว</div></div><div class="complaint-type-card" id="ctype-track">
+  <div class="ctype-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" fill="var(--primary)" class="bi bi-clipboard-check" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0"></path>
+      <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z"></path>
+      <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z"></path>
+    </svg>
+  </div><div class="ctype-title">ร้องเรียนแบบติดตามผล</div></div></div><div id="ctype-confirm-area" style="display:none;margin-top:18px;"><div class="ctype-confirm-msg" id="ctype-confirm-msg"></div><div class="voc-modal-btns" style="margin-top:12px;"><button class="voc-btn-cancel" onclick="resetComplaintTypeSelection()">เปลี่ยนใจ</button><button class="voc-btn-ok" id="ctype-confirm-btn">ยืนยัน</button></div></div><div style="margin-top:14px;text-align:center;"><button class="voc-btn-cancel" onclick="document.body.removeChild(document.getElementById('complaint-type-overlay'))" style="font-size:.82rem;padding:7px 18px;">ยกเลิก</button></div></div>`;
   document.body.appendChild(o);
   function selectType(type) {
     document.getElementById('ctype-oneway').classList.toggle('selected',type==='oneway');
