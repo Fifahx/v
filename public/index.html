@@ -330,12 +330,16 @@
       <p class="home-section-sub" data-i18n="loc_sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา ตั้งอยู่ในใจกลางเมืองยะลา</p>
       <div class="location-wrap">
         <div class="location-map-box">
-          <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3983.168!2d101.2820!3d6.5491!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31b5b3b1b2a2a2a3%3A0x3a1a1a1a1a1a1a1a!2z4Liq4Li44LiUICDguKrguLjguJTguYDguILguJnguKog4LiX4Lix4LiU4LiB4LiZ4Lix4Lii4LiB4Liz4Lil4Lix4LiH4LiB4LiZ4Lix4Lii4LiH4LiI4Liy4LiB!5e0!3m2!1sth!2sth!4v1700000000000!5m2!1sth!2sth"
-            width="100%" height="340" style="border:0;border-radius:12px;" allowfullscreen=""
-            loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-            title="แผนที่คณะวิทยาศาสตร์ฯ มรย.">
-          </iframe>
+          <!-- Static map image — ไม่มีปัญหา CSP / AdBlocker -->
+          <a href="https://maps.google.com/?q=มหาวิทยาลัยราชภัฏยะลา+ยะลา" target="_blank" rel="noopener" aria-label="เปิดแผนที่ใน Google Maps">
+            <img
+              src="https://maps.googleapis.com/maps/api/staticmap?center=มหาวิทยาลัยราชภัฏยะลา,ยะลา&zoom=15&size=640x340&scale=2&markers=color:green%7Cมหาวิทยาลัยราชภัฏยะลา,ยะลา&language=th"
+              alt="แผนที่มหาวิทยาลัยราชภัฏยะลา"
+              width="100%" height="340"
+              style="width:100%;height:340px;object-fit:cover;border-radius:12px;display:block;"
+              onerror="this.parentElement.innerHTML=window._mapFallbackHTML()"
+            >
+          </a>
         </div>
         <div class="location-info-box">
           <div class="loc-info-item">
@@ -766,6 +770,23 @@
   <div class="footer-bottom">© 2026 VOC System | คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</div>
 </footer>
 
+<script>
+// Fallback สำหรับ location map เมื่อ Static Maps โหลดไม่ได้
+window._mapFallbackHTML = function() {
+  return `<a href="https://maps.google.com/?q=มหาวิทยาลัยราชภัฏยะลา+ยะลา" target="_blank" rel="noopener"
+    style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:340px;
+           background:linear-gradient(135deg,#e8f5ed,#c8e6d4);border-radius:12px;text-decoration:none;gap:14px;">
+    <i class="fas fa-map-marker-alt" style="font-size:3rem;color:#2d6a4f;"></i>
+    <div style="text-align:center;">
+      <div style="font-size:1rem;font-weight:700;color:#1b4332;">มหาวิทยาลัยราชภัฏยะลา</div>
+      <div style="font-size:.85rem;color:#2d6a4f;margin-top:4px;">133 ถ.เทศบาล 3 ต.สะเตง อ.เมือง จ.ยะลา</div>
+      <div style="margin-top:12px;background:#2d6a4f;color:#fff;padding:8px 20px;border-radius:8px;font-size:.88rem;font-weight:700;">
+        <i class="fas fa-external-link-alt"></i> เปิดใน Google Maps
+      </div>
+    </div>
+  </a>`;
+};
+</script>
 <script type="module" src="/js/app.js"></script>
 </body>
 </html>
