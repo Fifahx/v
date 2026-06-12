@@ -80,8 +80,6 @@
       </button>
     </div>
   </div>
-</header>
-
 <!-- ══ ACCESSIBILITY TOOLBAR ══ -->
 <div id="accessibility-bar" class="accessibility-bar">
   <div class="a11y-inner">
@@ -99,6 +97,8 @@
     </div>
   </div>
 </div>
+</header>
+
 
 <!-- ══ HERO ══ -->
 <div class="hero-section">
@@ -188,33 +188,6 @@
     <!-- Pinned tickets -->
     <div id="pinned-tickets-section" class="hidden"></div>
 
-    <!-- คู่มือการใช้งาน -->
-    <div class="manual-section-new">
-      <div class="manual-header">
-        <div class="manual-header-line"></div>
-        <h3><i class="fas fa-book-open"></i> คู่มือการใช้งาน</h3>
-        <div class="manual-header-line"></div>
-      </div>
-      <div class="manual-grid-new" id="manual-grid-ID">
-        <div class="manual-card">
-          <div class="manual-icon-wrap"><i class="fas fa-play-circle"></i></div>
-          <div class="manual-card-title">วิดีโอแนะนำ</div>
-          <div class="manual-card-desc">ดูวิดีโอขั้นตอนการใช้งานระบบ</div>
-        </div>
-        <div class="manual-card">
-          <div class="manual-icon-wrap"><i class="fas fa-images"></i></div>
-          <div class="manual-card-title">Infographic</div>
-          <div class="manual-card-desc">ภาพสรุปขั้นตอนแบบง่าย</div>
-        </div>
-        <div class="manual-card">
-          <div class="manual-icon-wrap"><i class="fas fa-file-pdf"></i></div>
-          <div class="manual-card-title">เอกสาร PDF</div>
-          <div class="manual-card-desc">คู่มือฉบับเต็มสำหรับพิมพ์</div>
-        </div>
-      </div>
-    </div>
-
-
     <!-- ══ SECTION: ฟีเจอร์เด่นของเว็บไซต์ ══ -->
     <section class="home-section features-section" id="section-features">
       <div class="home-section-header">
@@ -257,68 +230,7 @@
       </div>
     </section>
 
-    <!-- ══ SECTION: ส่งคำขอช่วยเหลือ / แจ้งปัญหาเว็บไซต์ ══ -->
-    <section class="home-section contact-section" id="section-contact">
-      <div class="home-section-header">
-        <div class="home-section-line"></div>
-        <h2 class="home-section-title" data-i18n="contact_title"><i class="fas fa-headset"></i> ส่งคำขอช่วยเหลือ</h2>
-        <div class="home-section-line"></div>
-      </div>
-      <p class="home-section-sub" data-i18n="contact_sub">มีปัญหาในการใช้งานเว็บไซต์ หรืออยากส่งข้อเสนอแนะ? กรอกแบบฟอร์มด้านล่างได้เลย</p>
-      <div class="contact-wrap">
-        <form class="contact-form" id="contact-form" onsubmit="submitContactForm(event)">
-          <div class="contact-row">
-            <div class="contact-field">
-              <label data-i18n="contact_name">ชื่อ-นามสกุล</label>
-              <input type="text" id="cf-name" placeholder="กรอกชื่อของคุณ (ไม่บังคับ)" data-i18n-placeholder="contact_name_ph">
-            </div>
-            <div class="contact-field">
-              <label data-i18n="contact_email">อีเมล</label>
-              <input type="email" id="cf-email" placeholder="example@email.com">
-            </div>
-          </div>
-          <div class="contact-field">
-            <label data-i18n="contact_type">ประเภท</label>
-            <select id="cf-type">
-              <option value="bug" data-i18n="ctype_bug">🐛 แจ้งบั๊ก / ปัญหาการใช้งาน</option>
-              <option value="suggest" data-i18n="ctype_suggest">💡 ข้อเสนอแนะ</option>
-              <option value="question" data-i18n="ctype_question">❓ สอบถามข้อมูล</option>
-              <option value="other" data-i18n="ctype_other">📌 อื่นๆ</option>
-            </select>
-          </div>
-          <div class="contact-field">
-            <label data-i18n="contact_msg">ข้อความ <span style="color:#e53e3e">*</span></label>
-            <textarea id="cf-message" rows="4" placeholder="อธิบายปัญหาหรือข้อเสนอแนะของคุณ..." required data-i18n-placeholder="contact_msg_ph"></textarea>
-          </div>
-          <button type="submit" class="contact-submit-btn" id="cf-submit-btn">
-            <i class="fas fa-paper-plane"></i> <span data-i18n="contact_send">ส่งข้อความ</span>
-          </button>
-        </form>
-        <div class="contact-info-side">
-          <div class="contact-info-card">
-            <i class="fas fa-phone-alt"></i>
-            <div>
-              <div class="cinfo-label" data-i18n="cinfo_phone">โทรศัพท์</div>
-              <div class="cinfo-val">073-299-628</div>
-            </div>
-          </div>
-          <div class="contact-info-card">
-            <i class="fas fa-envelope"></i>
-            <div>
-              <div class="cinfo-label" data-i18n="cinfo_email">อีเมล</div>
-              <div class="cinfo-val">science@yru.ac.th</div>
-            </div>
-          </div>
-          <div class="contact-info-card">
-            <i class="fas fa-clock"></i>
-            <div>
-              <div class="cinfo-label" data-i18n="cinfo_hours">เวลาทำการ</div>
-              <div class="cinfo-val" data-i18n="cinfo_hours_val">จันทร์–ศุกร์ 08:30–16:30 น.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+
 
     <!-- ══ SECTION: ที่ตั้งคณะ ══ -->
     <section class="home-section location-section" id="section-location">
@@ -376,6 +288,31 @@
         </div>
       </div>
     </section>
+    <!-- คู่มือการใช้งาน -->
+    <div class="manual-section-new">
+      <div class="manual-header">
+        <div class="manual-header-line"></div>
+        <h3><i class="fas fa-book-open"></i> คู่มือการใช้งาน</h3>
+        <div class="manual-header-line"></div>
+      </div>
+      <div class="manual-grid-new" id="manual-grid-ID">
+        <div class="manual-card">
+          <div class="manual-icon-wrap"><i class="fas fa-play-circle"></i></div>
+          <div class="manual-card-title">วิดีโอแนะนำ</div>
+          <div class="manual-card-desc">ดูวิดีโอขั้นตอนการใช้งานระบบ</div>
+        </div>
+        <div class="manual-card">
+          <div class="manual-icon-wrap"><i class="fas fa-images"></i></div>
+          <div class="manual-card-title">Infographic</div>
+          <div class="manual-card-desc">ภาพสรุปขั้นตอนแบบง่าย</div>
+        </div>
+        <div class="manual-card">
+          <div class="manual-icon-wrap"><i class="fas fa-file-pdf"></i></div>
+          <div class="manual-card-title">เอกสาร PDF</div>
+          <div class="manual-card-desc">คู่มือฉบับเต็มสำหรับพิมพ์</div>
+        </div>
+      </div>
+    </div>
 
   </div>
 
@@ -754,8 +691,11 @@
       <a href="https://yru.ac.th/th/"><p>มหาวิทยาลัยราชภัฏยะลา</p></a>
     </div>
     <div class="footer-col">
-      <h3>ติดต่อ</h3>
-      <p>โทร: 073-299-628<br>Email: science@yru.ac.th</p>
+      <h3>ติดต่อเรา</h3>
+      <p class="footer-contact-item"><i class="fas fa-phone-alt"></i> <a href="tel:073299628">073-299-628</a></p>
+      <p class="footer-contact-item"><i class="fas fa-envelope"></i> <a href="mailto:science@yru.ac.th">science@yru.ac.th</a></p>
+      <p class="footer-contact-item"><i class="fas fa-clock"></i> จ.–ศ. 08:30–16:00 น.</p>
+      <p class="footer-contact-item"><i class="fas fa-map-marker-alt"></i> 133 ถ.เทศบาล 3 ต.สะเตง อ.เมือง จ.ยะลา 95000</p>
     </div>
     <div class="footer-col">
       <h3>เมนู</h3>

@@ -879,7 +879,16 @@ window.onload = function () {
   };
 
   // apply on page load
-  document.addEventListener('DOMContentLoaded', () => applyFontSize(currentIdx));
+  // ใช้ requestAnimationFrame เพราะ type="module" อาจ DOMContentLoaded ผ่านไปแล้ว
+  function _applyOnReady() {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => applyFontSize(currentIdx));
+    } else {
+      // DOM พร้อมแล้ว — apply ทันที (กรณี module script load หลัง DOMContentLoaded)
+      applyFontSize(currentIdx);
+    }
+  }
+  _applyOnReady();
 })();
 
 // ════════════════════════════════════════════════════
@@ -981,13 +990,17 @@ window.onload = function () {
   };
 
   // Apply saved language on load
-  document.addEventListener('DOMContentLoaded', () => {
+  function _langOnReady() {
     _setLangButtons(_currentLang);
     if (_currentLang === 'en') {
-      // slight delay เพื่อให้ DOM render เสร็จก่อน
-      setTimeout(() => window.switchLang('en'), 600);
+      setTimeout(() => window.switchLang('en'), 300);
     }
-  });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _langOnReady);
+  } else {
+    _langOnReady();
+  }
 })();
 
 // ════════════════════════════════════════════════════
