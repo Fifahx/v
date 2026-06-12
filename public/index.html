@@ -82,6 +82,24 @@
   </div>
 </header>
 
+<!-- ══ ACCESSIBILITY TOOLBAR ══ -->
+<div id="accessibility-bar" class="accessibility-bar">
+  <div class="a11y-inner">
+    <div class="a11y-group">
+      <span class="a11y-label"><i class="fas fa-text-height"></i> ขนาดตัวอักษร</span>
+      <button class="a11y-btn" id="font-decrease" onclick="changeFontSize(-1)" aria-label="ลดขนาดตัวอักษร" title="ลดขนาด">A<sup>-</sup></button>
+      <button class="a11y-btn a11y-reset" id="font-reset" onclick="changeFontSize(0)" aria-label="รีเซ็ตขนาดตัวอักษร" title="ค่าเริ่มต้น">A</button>
+      <button class="a11y-btn" id="font-increase" onclick="changeFontSize(1)" aria-label="เพิ่มขนาดตัวอักษร" title="เพิ่มขนาด">A<sup>+</sup></button>
+    </div>
+    <div class="a11y-divider"></div>
+    <div class="a11y-group">
+      <span class="a11y-label"><i class="fas fa-globe"></i> ภาษา</span>
+      <button class="a11y-btn lang-btn" id="btn-lang-th" onclick="switchLang('th')" aria-label="ภาษาไทย">🇹🇭 ไทย</button>
+      <button class="a11y-btn lang-btn" id="btn-lang-en" onclick="switchLang('en')" aria-label="English">🇬🇧 EN</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ HERO ══ -->
 <div class="hero-section">
   <div class="hero-overlay"></div>
@@ -195,6 +213,165 @@
         </div>
       </div>
     </div>
+
+
+    <!-- ══ SECTION: ฟีเจอร์เด่นของเว็บไซต์ ══ -->
+    <section class="home-section features-section" id="section-features">
+      <div class="home-section-header">
+        <div class="home-section-line"></div>
+        <h2 class="home-section-title" data-i18n="feat_title"><i class="fas fa-star"></i> เว็บไซต์ของเรา</h2>
+        <div class="home-section-line"></div>
+      </div>
+      <p class="home-section-sub" data-i18n="feat_sub">ระบบรับฟังเสียงลูกค้า (VOC) ออกแบบมาเพื่อให้นักศึกษาและบุคลากรสามารถสื่อสารกับคณะได้อย่างสะดวก โปร่งใส และรวดเร็ว</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#2d6a4f,#52b788)"><i class="fas fa-bullhorn"></i></div>
+          <h3 data-i18n="feat1_title">แจ้งเรื่องออนไลน์</h3>
+          <p data-i18n="feat1_desc">ส่งคำร้อง ข้อเสนอแนะ หรือข้อร้องเรียนได้ตลอด 24 ชั่วโมง ทั้งแบบระบุตัวตนและไม่ระบุ</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#1d6fa4,#48b4e0)"><i class="fas fa-search"></i></div>
+          <h3 data-i18n="feat2_title">ติดตามสถานะแบบ Real-time</h3>
+          <p data-i18n="feat2_desc">ตรวจสอบความคืบหน้าของเรื่องได้ทันทีด้วย Ticket ID โดยไม่ต้องรอนัดหมาย</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#b5451b,#e07a5f)"><i class="fas fa-bolt"></i></div>
+          <h3 data-i18n="feat3_title">ระดับความเร่งด่วน</h3>
+          <p data-i18n="feat3_desc">จัดลำดับความสำคัญ 3 ระดับ — ทั่วไป / ปานกลาง / เร่งด่วน เพื่อให้ทีมงานตอบสนองได้ตรงจุด</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#6a2d82,#c084fc)"><i class="fas fa-paperclip"></i></div>
+          <h3 data-i18n="feat4_title">แนบไฟล์หลักฐาน</h3>
+          <p data-i18n="feat4_desc">อัปโหลดภาพหรือเอกสารประกอบคำร้องได้โดยตรง ไฟล์ถูกจัดเก็บอย่างปลอดภัยใน Google Drive</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#a16207,#facc15)"><i class="fas fa-star"></i></div>
+          <h3 data-i18n="feat5_title">ให้คะแนนความพึงพอใจ</h3>
+          <p data-i18n="feat5_desc">ประเมินคุณภาพการให้บริการหลังปิดเรื่อง เพื่อช่วยคณะพัฒนาการทำงานอย่างต่อเนื่อง</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#0e7490,#22d3ee)"><i class="fas fa-shield-alt"></i></div>
+          <h3 data-i18n="feat6_title">ปลอดภัยและโปร่งใส</h3>
+          <p data-i18n="feat6_desc">ระบบ JWT Authentication, Rate Limiting และ Cloudflare Turnstile ป้องกันการใช้งานโดยไม่ได้รับอนุญาต</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ SECTION: ส่งคำขอช่วยเหลือ / แจ้งปัญหาเว็บไซต์ ══ -->
+    <section class="home-section contact-section" id="section-contact">
+      <div class="home-section-header">
+        <div class="home-section-line"></div>
+        <h2 class="home-section-title" data-i18n="contact_title"><i class="fas fa-headset"></i> ส่งคำขอช่วยเหลือ</h2>
+        <div class="home-section-line"></div>
+      </div>
+      <p class="home-section-sub" data-i18n="contact_sub">มีปัญหาในการใช้งานเว็บไซต์ หรืออยากส่งข้อเสนอแนะ? กรอกแบบฟอร์มด้านล่างได้เลย</p>
+      <div class="contact-wrap">
+        <form class="contact-form" id="contact-form" onsubmit="submitContactForm(event)">
+          <div class="contact-row">
+            <div class="contact-field">
+              <label data-i18n="contact_name">ชื่อ-นามสกุล</label>
+              <input type="text" id="cf-name" placeholder="กรอกชื่อของคุณ (ไม่บังคับ)" data-i18n-placeholder="contact_name_ph">
+            </div>
+            <div class="contact-field">
+              <label data-i18n="contact_email">อีเมล</label>
+              <input type="email" id="cf-email" placeholder="example@email.com">
+            </div>
+          </div>
+          <div class="contact-field">
+            <label data-i18n="contact_type">ประเภท</label>
+            <select id="cf-type">
+              <option value="bug" data-i18n="ctype_bug">🐛 แจ้งบั๊ก / ปัญหาการใช้งาน</option>
+              <option value="suggest" data-i18n="ctype_suggest">💡 ข้อเสนอแนะ</option>
+              <option value="question" data-i18n="ctype_question">❓ สอบถามข้อมูล</option>
+              <option value="other" data-i18n="ctype_other">📌 อื่นๆ</option>
+            </select>
+          </div>
+          <div class="contact-field">
+            <label data-i18n="contact_msg">ข้อความ <span style="color:#e53e3e">*</span></label>
+            <textarea id="cf-message" rows="4" placeholder="อธิบายปัญหาหรือข้อเสนอแนะของคุณ..." required data-i18n-placeholder="contact_msg_ph"></textarea>
+          </div>
+          <button type="submit" class="contact-submit-btn" id="cf-submit-btn">
+            <i class="fas fa-paper-plane"></i> <span data-i18n="contact_send">ส่งข้อความ</span>
+          </button>
+        </form>
+        <div class="contact-info-side">
+          <div class="contact-info-card">
+            <i class="fas fa-phone-alt"></i>
+            <div>
+              <div class="cinfo-label" data-i18n="cinfo_phone">โทรศัพท์</div>
+              <div class="cinfo-val">073-299-628</div>
+            </div>
+          </div>
+          <div class="contact-info-card">
+            <i class="fas fa-envelope"></i>
+            <div>
+              <div class="cinfo-label" data-i18n="cinfo_email">อีเมล</div>
+              <div class="cinfo-val">science@yru.ac.th</div>
+            </div>
+          </div>
+          <div class="contact-info-card">
+            <i class="fas fa-clock"></i>
+            <div>
+              <div class="cinfo-label" data-i18n="cinfo_hours">เวลาทำการ</div>
+              <div class="cinfo-val" data-i18n="cinfo_hours_val">จันทร์–ศุกร์ 08:30–16:30 น.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ SECTION: ที่ตั้งคณะ ══ -->
+    <section class="home-section location-section" id="section-location">
+      <div class="home-section-header">
+        <div class="home-section-line"></div>
+        <h2 class="home-section-title" data-i18n="loc_title"><i class="fas fa-map-marker-alt"></i> ที่ตั้งคณะวิทยาศาสตร์ฯ</h2>
+        <div class="home-section-line"></div>
+      </div>
+      <p class="home-section-sub" data-i18n="loc_sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา ตั้งอยู่ในใจกลางเมืองยะลา</p>
+      <div class="location-wrap">
+        <div class="location-map-box">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3983.168!2d101.2820!3d6.5491!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31b5b3b1b2a2a2a3%3A0x3a1a1a1a1a1a1a1a!2z4Liq4Li44LiUICDguKrguLjguJTguYDguILguJnguKog4LiX4Lix4LiU4LiB4LiZ4Lix4Lii4LiB4Liz4Lil4Lix4LiH4LiB4LiZ4Lix4Lii4LiH4LiI4Liy4LiB!5e0!3m2!1sth!2sth!4v1700000000000!5m2!1sth!2sth"
+            width="100%" height="340" style="border:0;border-radius:12px;" allowfullscreen=""
+            loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+            title="แผนที่คณะวิทยาศาสตร์ฯ มรย.">
+          </iframe>
+        </div>
+        <div class="location-info-box">
+          <div class="loc-info-item">
+            <div class="loc-info-icon"><i class="fas fa-university"></i></div>
+            <div>
+              <div class="loc-info-label" data-i18n="loc_faculty">คณะ</div>
+              <div class="loc-info-val" data-i18n="loc_faculty_val">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร</div>
+            </div>
+          </div>
+          <div class="loc-info-item">
+            <div class="loc-info-icon"><i class="fas fa-landmark"></i></div>
+            <div>
+              <div class="loc-info-label" data-i18n="loc_univ">มหาวิทยาลัย</div>
+              <div class="loc-info-val" data-i18n="loc_univ_val">มหาวิทยาลัยราชภัฏยะลา</div>
+            </div>
+          </div>
+          <div class="loc-info-item">
+            <div class="loc-info-icon"><i class="fas fa-map-marker-alt"></i></div>
+            <div>
+              <div class="loc-info-label" data-i18n="loc_addr">ที่อยู่</div>
+              <div class="loc-info-val" data-i18n="loc_addr_val">133 ถ.เทศบาล 3 ต.สะเตง อ.เมือง จ.ยะลา 95000</div>
+            </div>
+          </div>
+          <div class="loc-info-item">
+            <div class="loc-info-icon"><i class="fas fa-phone"></i></div>
+            <div>
+              <div class="loc-info-label" data-i18n="loc_phone">โทรศัพท์</div>
+              <div class="loc-info-val">073-299-628</div>
+            </div>
+          </div>
+          <a href="https://maps.google.com/?q=มหาวิทยาลัยราชภัฏยะลา" target="_blank" class="loc-direction-btn">
+            <i class="fas fa-directions"></i> <span data-i18n="loc_directions">เปิดใน Google Maps</span>
+          </a>
+        </div>
+      </div>
+    </section>
 
   </div>
 

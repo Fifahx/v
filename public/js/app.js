@@ -452,7 +452,7 @@ async function loadNewsStrip() {
       _newsCache=res.news; container.classList.remove('hidden');
       const tagClass={ทั่วไป:'news-tag-default',ด่วน:'news-tag-urgent',ข้อมูล:'news-tag-info',กิจกรรม:'news-tag-event'};
       let itemsHtml='';
-      res.news.forEach((n,idx)=>{const tc=tagClass[n.tag]||'news-tag-default';const short=n.content.length>120?n.content.substring(0,120)+'...':n.content;const imgHtml=n.imageUrl?`<div style="height:120px;overflow:hidden;border-radius:8px;margin-bottom:10px;"><img src="${n.imageUrl}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.style.display='none'"></div>`:'';const viewImgBtn=n.imageUrl?`<button class="news-view-img-btn" onclick="event.stopPropagation();showNewsImage('${n.imageUrl.replace(/'/g,'&#39;')}','${(n.title||'').replace(/'/g,'&#39;')}')"><i class="fas fa-image"></i> ดูรูป</button>`:'';
+      res.news.forEach((n,idx)=>{const tc=tagClass[n.tag]||'news-tag-default';const short=n.content.length>120?n.content.substring(0,120)+'...':n.content;const imgHtml=n.imageUrl?`<div style="height:120px;overflow:hidden;border-radius:8px;margin-bottom:10px;"><img src="${n.imageUrl}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.style.display='none'"></div>`:'';const viewImgBtn=n.imageUrl?`<button class="news-view-img-btn" onclick="event.stopPropagation();showNewsImage('${n.imageUrl.replace(/'/g,'&#39;')}','${(n.title||'').replace(/'/g,'&#39;')}')"><i class="fas fa-image"></i></button>`:'';
       itemsHtml+=`<div class="news-strip-item" onclick="showNewsDetail(${idx})">${imgHtml}<div class="news-strip-item-meta"><span class="news-tag-pill ${tc}">${n.tag||'ทั่วไป'}</span><span class="news-date" style="font-size:.73rem;color:#bbb;"><i class="fas fa-clock"></i> ${n.date||''}</span>${viewImgBtn}</div><div class="news-strip-item-title">${n.title}</div><div class="news-strip-item-content">${short}</div></div>`;});
       let dotsHtml=''; if(res.news.length>1)res.news.forEach((_,i)=>{dotsHtml+=`<button class="news-strip-dot${i===0?' active':''}" data-idx="${i}" onclick="newsScrollTo(${i})"></button>`;});
       container.innerHTML=`<div class="news-section-wrap"><div class="news-section-header"><i class="fas fa-newspaper"></i> ข่าวสารและประกาศ<span style="margin-left:auto;font-size:.78rem;color:#aaa;font-weight:400;">${res.news.length} รายการ</span></div><div class="news-strip-scroll-wrap" id="news-scroll-wrap"><div class="news-strip-inner" id="news-strip-inner">${itemsHtml}</div></div>${dotsHtml?`<div class="news-strip-dots">${dotsHtml}</div>`:''}</div>`;
@@ -843,3 +843,199 @@ window.onload = function () {
   };
   window._mgmtGoTo=function(dir){goTo(current+dir);};
 })();
+
+// ════════════════════════════════════════════════════
+//  ACCESSIBILITY — FONT SIZE
+// ════════════════════════════════════════════════════
+(function initFontSize() {
+  const LEVELS = ['font-sm','font-md','font-lg','font-xl'];
+  const DEFAULT_IDX = 1; // font-md = 16px
+  let currentIdx = parseInt(localStorage.getItem('voc_font_size') || DEFAULT_IDX, 10);
+  if (isNaN(currentIdx) || currentIdx < 0 || currentIdx > 3) currentIdx = DEFAULT_IDX;
+
+  function applyFontSize(idx) {
+    document.body.classList.remove(...LEVELS);
+    document.body.classList.add(LEVELS[idx]);
+    currentIdx = idx;
+    localStorage.setItem('voc_font_size', idx);
+    // update button active state
+    ['font-decrease','font-reset','font-increase'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.classList.remove('active');
+    });
+    if (idx === DEFAULT_IDX) {
+      const rb = document.getElementById('font-reset');
+      if (rb) rb.classList.add('active');
+    }
+  }
+
+  window.changeFontSize = function(direction) {
+    if (direction === 0) {
+      applyFontSize(DEFAULT_IDX);
+    } else {
+      const next = Math.max(0, Math.min(3, currentIdx + direction));
+      applyFontSize(next);
+    }
+  };
+
+  // apply on page load
+  document.addEventListener('DOMContentLoaded', () => applyFontSize(currentIdx));
+})();
+
+// ════════════════════════════════════════════════════
+//  LANGUAGE SWITCH — Thai / English via /api/translate
+// ════════════════════════════════════════════════════
+(function initLangSwitch() {
+  let _currentLang = localStorage.getItem('voc_lang') || 'th';
+  // Cache แปลแล้ว ไม่ต้องยิง API ซ้ำ
+  const _transCache = {};
+
+  // Collect all elements with data-i18n (text) and data-i18n-placeholder (input placeholder)
+  function _collectTexts() {
+    const elems = Array.from(document.querySelectorAll('[data-i18n]'));
+    const phElems = Array.from(document.querySelectorAll('[data-i18n-placeholder]'));
+    return { elems, phElems };
+  }
+
+  // Store original Thai texts once
+  let _origTexts = null;
+  let _origPh = null;
+
+  function _storeOriginals() {
+    if (_origTexts) return;
+    const { elems, phElems } = _collectTexts();
+    _origTexts = elems.map(el => ({ el, text: el.innerHTML }));
+    _origPh = phElems.map(el => ({ el, ph: el.getAttribute('placeholder') }));
+  }
+
+  function _setLangButtons(lang) {
+    document.getElementById('btn-lang-th')?.classList.toggle('active', lang === 'th');
+    document.getElementById('btn-lang-en')?.classList.toggle('active', lang === 'en');
+  }
+
+  async function _applyEnglish() {
+    _storeOriginals();
+    const texts = _origTexts.map(o => o.text);
+    const phs   = _origPh.map(o => o.ph);
+
+    // Show loading state
+    _origTexts.forEach(o => o.el.classList.add('i18n-loading'));
+
+    const cacheKey = 'en';
+    let translatedTexts = _transCache[cacheKey + '_text'];
+    let translatedPh    = _transCache[cacheKey + '_ph'];
+
+    if (!translatedTexts) {
+      try {
+        const allTexts = [...texts, ...phs].filter(Boolean);
+        const resp = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texts: allTexts, targetLang: 'en' }),
+        });
+        const data = await resp.json();
+        if (data.success && Array.isArray(data.translated)) {
+          translatedTexts = data.translated.slice(0, texts.length);
+          translatedPh    = data.translated.slice(texts.length);
+          _transCache[cacheKey + '_text'] = translatedTexts;
+          _transCache[cacheKey + '_ph']   = translatedPh;
+        } else {
+          throw new Error('translate API failed');
+        }
+      } catch (e) {
+        console.warn('[i18n] translate failed, staying Thai:', e.message);
+        _origTexts.forEach(o => o.el.classList.remove('i18n-loading'));
+        return;
+      }
+    }
+
+    // Apply translations
+    _origTexts.forEach((o, i) => {
+      o.el.innerHTML = translatedTexts[i] || o.text;
+      o.el.classList.remove('i18n-loading');
+    });
+    _origPh?.forEach((o, i) => {
+      if (translatedPh[i]) o.el.setAttribute('placeholder', translatedPh[i]);
+    });
+    // Update html lang attribute
+    document.documentElement.lang = 'en';
+  }
+
+  function _applyThai() {
+    if (!_origTexts) return;
+    _origTexts.forEach(o => { o.el.innerHTML = o.text; });
+    _origPh?.forEach(o => { o.el.setAttribute('placeholder', o.ph); });
+    document.documentElement.lang = 'th';
+  }
+
+  window.switchLang = async function(lang) {
+    if (lang === _currentLang) return;
+    _currentLang = lang;
+    localStorage.setItem('voc_lang', lang);
+    _setLangButtons(lang);
+    if (lang === 'en') {
+      await _applyEnglish();
+    } else {
+      _applyThai();
+    }
+  };
+
+  // Apply saved language on load
+  document.addEventListener('DOMContentLoaded', () => {
+    _setLangButtons(_currentLang);
+    if (_currentLang === 'en') {
+      // slight delay เพื่อให้ DOM render เสร็จก่อน
+      setTimeout(() => window.switchLang('en'), 600);
+    }
+  });
+})();
+
+// ════════════════════════════════════════════════════
+//  CONTACT FORM (section ส่งคำขอช่วยเหลือ)
+// ════════════════════════════════════════════════════
+window.submitContactForm = async function(e) {
+  e.preventDefault();
+  const name    = document.getElementById('cf-name')?.value.trim();
+  const email   = document.getElementById('cf-email')?.value.trim();
+  const type    = document.getElementById('cf-type')?.value;
+  const message = document.getElementById('cf-message')?.value.trim();
+  const btn     = document.getElementById('cf-submit-btn');
+
+  if (!message) {
+    showAlert('⚠️', 'กรุณากรอกข้อความ', 'ช่อง "ข้อความ" จำเป็นต้องกรอก');
+    return;
+  }
+
+  // ส่งเป็น ticket ประเภท "ปัญหาเว็บไซต์" ผ่าน /api/submit
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังส่ง...';
+
+  try {
+    const payload = {
+      subject: `[${type.toUpperCase()}] ส่งคำขอจากหน้าหลัก`,
+      detail: message,
+      name: name || 'ไม่ระบุ',
+      studentId: email || '',
+      customerType: 'บุคคลทั่วไป',
+      categories: ['ปัญหาเว็บไซต์'],
+      priority: 'medium',
+      userNote: `ชื่อ: ${name||'-'} | Email: ${email||'-'} | ประเภท: ${type}`,
+      isAnon: !name,
+      username: 'guest',
+      turnstileToken: 'bypass-no-widget',
+    };
+
+    const res = await api.post('/api/submit', payload);
+    if (res.success) {
+      document.getElementById('contact-form').reset();
+      showAlert('✅', 'ส่งสำเร็จ!', `ขอบคุณที่ติดต่อเรา\nเลข Ticket: ${res.ticketId}\n(สามารถใช้ติดตามสถานะได้)`);
+    } else {
+      showAlert('❌', 'ส่งไม่สำเร็จ', res.message || 'กรุณาลองใหม่อีกครั้ง');
+    }
+  } catch (err) {
+    showAlert('❌', 'เกิดข้อผิดพลาด', err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-paper-plane"></i> <span data-i18n="contact_send">ส่งข้อความ</span>';
+  }
+};
