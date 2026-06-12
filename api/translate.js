@@ -1,19 +1,88 @@
-// api/translate.js v2 — แก้ปัญหา max_tokens น้อย, CSP, และ debug ดีขึ้น
+// api/translate.js v3 — MyMemory API (ฟรี 100%, ไม่ต้องมี API key)
 // POST /api/translate  { texts: string[], targetLang: 'en'|'th' }
+// Response: { success: true, translated: string[] }
 //
-// Environment Variable ที่ต้องเพิ่มใน Vercel:
-//   OPENAI_API_KEY = sk-...
+// MyMemory: https://mymemory.translated.net/doc/spec.php
+// Free tier: 5,000 คำ/วัน (เกินพอสำหรับ UI strings)
+// แม่นยำ: ใช้ฐานข้อมูล human translation + machine translation ร่วมกัน
 
 const { setCorsHeaders } = require('./_sheets');
 
+// In-memory cache — ป้องกัน API calls ซ้ำในทุก session ของ Vercel instance
 const _cache = new Map();
-const CACHE_MAX = 200; // ลดลงเพราะ texts มีขนาดใหญ่
+const CACHE_MAX = 300;
 
-function _cacheKey(texts, lang) {
-  // hash เบาๆ เพื่อป้องกัน key ยาวเกิน
-  const raw = lang + ':' + texts.join('|||');
-  return raw.length > 2000 ? lang + ':hash:' + raw.length + ':' + raw.slice(0, 100) : raw;
+// ── helpers ─────────────────────────────────────────────────────────────────
+
+function _cacheKey(text) {
+  return 'en:' + (text.length > 200 ? text.slice(0, 200) + text.length : text);
 }
+
+// strip HTML tags ออกก่อนแปล แล้วใส่กลับทีหลัง
+function _stripHtml(html) {
+  const tags = [];
+  let idx = 0;
+  const stripped = html.replace(/<[^>]+>/g, (tag) => {
+    const placeholder = `__TAG${idx}__`;
+    tags.push({ placeholder, tag });
+    idx++;
+    return placeholder;
+  });
+  return { stripped, tags };
+}
+
+function _restoreHtml(translated, tags) {
+  let result = translated;
+  for (const { placeholder, tag } of tags) {
+    result = result.replace(placeholder, tag);
+  }
+  return result;
+}
+
+// แปล 1 string ผ่าน MyMemory
+async function _translateOne(text, sourceLang, targetLang) {
+  // ข้ามถ้าว่างหรือเป็นตัวเลข/emoji/สัญลักษณ์เท่านั้น
+  if (!text || !text.trim()) return text;
+  if (/^[\d\s\W]+$/.test(text)) return text;
+
+  const ckey = _cacheKey(text);
+  if (_cache.has(ckey)) return _cache.get(ckey);
+
+  // strip HTML ก่อนส่งไปแปล (MyMemory ไม่เข้าใจ HTML tags)
+  const { stripped, tags } = _stripHtml(text);
+  const textToTranslate = stripped.trim();
+  if (!textToTranslate) return text;
+
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(textToTranslate)}&langpair=${sourceLang}|${targetLang}&de=voc-system@yru.ac.th`;
+
+  const resp = await fetch(url, {
+    headers: { 'Accept': 'application/json' },
+    signal: AbortSignal.timeout(8000), // timeout 8 วิ
+  });
+
+  if (!resp.ok) throw new Error(`MyMemory HTTP ${resp.status}`);
+
+  const data = await resp.json();
+
+  // responseStatus 200 = สำเร็จ, 403 = quota หมด
+  if (data.responseStatus === 403) {
+    throw new Error('MyMemory quota exceeded for today');
+  }
+
+  const translatedText = data.responseData?.translatedText;
+  if (!translatedText) throw new Error('MyMemory returned empty translation');
+
+  // restore HTML tags กลับ
+  const result = tags.length > 0 ? _restoreHtml(translatedText, tags) : translatedText;
+
+  // cache
+  if (_cache.size >= CACHE_MAX) _cache.delete(_cache.keys().next().value);
+  _cache.set(ckey, result);
+
+  return result;
+}
+
+// ── main handler ─────────────────────────────────────────────────────────────
 
 module.exports = async function handler(req, res) {
   setCorsHeaders(res);
@@ -29,115 +98,37 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ success: false, error: 'targetLang must be en or th' });
   }
 
-  // คืน TH เดิมทันที
+  // TH → คืนเดิมทันที
   if (targetLang === 'th') {
-    return res.json({ success: true, translated: texts, cached: true });
+    return res.json({ success: true, translated: texts });
   }
 
-  // ตรวจ cache
-  const ckey = _cacheKey(texts, targetLang);
-  if (_cache.has(ckey)) {
-    return res.json({ success: true, translated: _cache.get(ckey), cached: true });
-  }
-
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    console.warn('[translate] OPENAI_API_KEY not set');
-    return res.json({ success: true, translated: texts, fallback: true, reason: 'no_api_key' });
-  }
+  const sourceLang = 'th';
 
   try {
-    // แบ่ง texts เป็น batch เพื่อป้องกัน token overflow (max 40 items ต่อครั้ง)
-    const BATCH = 40;
-    let translated = [];
+    // แปลแบบ parallel (จำกัดไว้ 5 ต่อครั้งเพื่อไม่ให้ rate limit)
+    const CONCURRENCY = 5;
+    const translated = new Array(texts.length);
 
-    for (let i = 0; i < texts.length; i += BATCH) {
-      const chunk = texts.slice(i, i + BATCH);
-      const chunkTranslated = await _translateChunk(chunk, apiKey);
-      translated = translated.concat(chunkTranslated);
+    for (let i = 0; i < texts.length; i += CONCURRENCY) {
+      const chunk = texts.slice(i, i + CONCURRENCY);
+      const results = await Promise.allSettled(
+        chunk.map(t => _translateOne(t, sourceLang, targetLang))
+      );
+      results.forEach((r, j) => {
+        // ถ้าแปลสำเร็จใช้ผลลัพธ์, ถ้า fail คืนต้นฉบับ
+        translated[i + j] = r.status === 'fulfilled' ? r.value : texts[i + j];
+        if (r.status === 'rejected') {
+          console.warn(`[translate] item ${i+j} failed: ${r.reason?.message}`);
+        }
+      });
     }
-
-    // ตรวจจำนวนต้องตรงกัน
-    if (translated.length !== texts.length) {
-      console.warn(`[translate] length mismatch: got ${translated.length}, expected ${texts.length}`);
-      translated = texts;
-    }
-
-    // cache
-    if (_cache.size >= CACHE_MAX) {
-      _cache.delete(_cache.keys().next().value);
-    }
-    _cache.set(ckey, translated);
 
     return res.json({ success: true, translated });
 
   } catch (e) {
-    console.error('[translate] error:', e.message);
+    console.error('[translate] fatal error:', e.message);
+    // graceful fallback — คืนต้นฉบับไทยแทนที่จะพัง
     return res.json({ success: true, translated: texts, fallback: true, error: e.message });
   }
 };
-
-async function _translateChunk(chunk, apiKey) {
-  const prompt = `Translate the following JSON array of Thai UI strings to English.
-Return ONLY a valid JSON array with exactly ${chunk.length} elements in the same order.
-Preserve HTML tags (<i>, <strong>, etc.), emojis, brand names, and numbers exactly as-is.
-Do not add explanations or markdown.
-
-Input: ${JSON.stringify(chunk)}`;
-
-  // คำนวณ token ที่ต้องการ: input * 1.5 (EN มักสั้นกว่า TH) + buffer
-  const inputLen = chunk.join('').length;
-  const maxTokens = Math.min(Math.max(inputLen * 2 + 300, 500), 4000);
-
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.1,
-      max_tokens: maxTokens,
-      response_format: { type: 'json_object' }, // บังคับ JSON mode
-    }),
-  });
-
-  if (!resp.ok) {
-    const err = await resp.text();
-    throw new Error(`OpenAI ${resp.status}: ${err.slice(0, 300)}`);
-  }
-
-  const data = await resp.json();
-  const raw = data.choices?.[0]?.message?.content || '{}';
-
-  // JSON mode คืน object → ต้องดึง array ออกมา
-  let parsed;
-  try {
-    const obj = JSON.parse(raw);
-    // ลอง key ต่างๆ ที่ GPT มักใช้
-    parsed = obj.translations || obj.translated || obj.result || obj.items || Object.values(obj)[0];
-    if (!Array.isArray(parsed)) {
-      // บางครั้ง GPT คืน {"0":"...", "1":"..."} 
-      parsed = Object.values(obj);
-    }
-  } catch (e) {
-    // fallback: strip fences แล้ว parse
-    const clean = raw.replace(/```json|```/gi, '').trim();
-    try {
-      parsed = JSON.parse(clean);
-      if (!Array.isArray(parsed)) parsed = Object.values(parsed);
-    } catch {
-      parsed = chunk; // worst case: คืนเดิม
-    }
-  }
-
-  // ปรับขนาดให้ตรง
-  if (!Array.isArray(parsed) || parsed.length !== chunk.length) {
-    console.warn(`[translate] chunk mismatch: got ${Array.isArray(parsed) ? parsed.length : 'non-array'}, expected ${chunk.length}`);
-    return chunk;
-  }
-
-  return parsed.map((t, i) => (typeof t === 'string' && t.trim() ? t : chunk[i]));
-}
