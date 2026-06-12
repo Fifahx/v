@@ -902,120 +902,167 @@ window.onload = function () {
 // ════════════════════════════════════════════════════
 (function initLangSwitch() {
   let _currentLang = localStorage.getItem('voc_lang') || 'th';
-  // Cache แปลแล้ว ไม่ต้องยิง API ซ้ำ
-  const _transCache = {};
+  let _isBusy = false; // ป้องกัน double-click ขณะกำลังแปล
 
-  // Collect all elements with data-i18n (text) and data-i18n-placeholder (input placeholder)
-  function _collectTexts() {
-    const elems = Array.from(document.querySelectorAll('[data-i18n]'));
-    const phElems = Array.from(document.querySelectorAll('[data-i18n-placeholder]'));
-    return { elems, phElems };
-  }
+  // cache: key = จำนวน elements + lang, value = { texts, phs }
+  let _enCache = null;
+  let _origTexts = null; // [{ el, text }]
+  let _origPh    = null; // [{ el, ph }]
 
-  // Store original Thai texts once
-  let _origTexts = null;
-  let _origPh = null;
-
-  function _storeOriginals() {
-    const { elems, phElems } = _collectTexts();
-    // reset ถ้ายังไม่มี elements หรือ elements มีเนื้อหาใหม่แล้ว (เช่นหลัง navigate)
-    const count = elems.length;
-    if (_origTexts && _origTexts.length === count && count > 0) return; // ไม่เปลี่ยน
-    _origTexts = elems.map(el => ({ el, text: el.innerHTML }));
-    _origPh = phElems.map(el => ({ el, ph: el.getAttribute('placeholder') }));
-    if (count === 0) console.warn('[i18n] ไม่พบ elements ที่มี data-i18n — ตรวจสอบ HTML');
-  }
-
-  function _setLangButtons(lang) {
-    document.getElementById('btn-lang-th')?.classList.toggle('active', lang === 'th');
-    document.getElementById('btn-lang-en')?.classList.toggle('active', lang === 'en');
-  }
-
-  async function _applyEnglish() {
-    const prevCount = _origTexts ? _origTexts.length : -1;
-    _storeOriginals();
-    // ถ้า elements เปลี่ยน (เช่นหน้าใหม่) → clear cache เพื่อแปลใหม่
-    if (_origTexts.length !== prevCount) {
-      delete _transCache['en_text'];
-      delete _transCache['en_ph'];
+  // ── helpers ──────────────────────────────────────
+  function _setButtons(lang, busy) {
+    const thBtn = document.getElementById('btn-lang-th');
+    const enBtn = document.getElementById('btn-lang-en');
+    if (!thBtn || !enBtn) return;
+    thBtn.classList.toggle('active', lang === 'th');
+    enBtn.classList.toggle('active', lang === 'en');
+    // แสดง spinner บนปุ่มที่กำลังทำงาน
+    if (busy) {
+      enBtn.innerHTML = '⏳ EN';
+      enBtn.disabled = true;
+      thBtn.disabled = true;
+    } else {
+      enBtn.innerHTML = '🇬🇧 EN';
+      enBtn.disabled = false;
+      thBtn.disabled = false;
     }
-    const texts = _origTexts.map(o => o.text);
-    const phs   = (_origPh || []).map(o => o.ph);
+  }
 
-    // Show loading state
+  function _collectElems() {
+    return {
+      elems:   Array.from(document.querySelectorAll('[data-i18n]')),
+      phElems: Array.from(document.querySelectorAll('[data-i18n-placeholder]')),
+    };
+  }
+
+  // เก็บต้นฉบับไทย — reset อัตโนมัติถ้า DOM เปลี่ยน
+  function _snapshot() {
+    const { elems, phElems } = _collectElems();
+    // ถ้า element count เปลี่ยน หรือยังไม่เคย snapshot → ทำใหม่
+    if (_origTexts && _origTexts.length === elems.length && elems.length > 0) return;
+    _origTexts = elems.map(el => ({ el, text: el.innerHTML }));
+    _origPh    = phElems.map(el => ({ el, ph: el.getAttribute('placeholder') || '' }));
+    _enCache   = null; // element เปลี่ยน → cache แปลเก่าใช้ไม่ได้
+    console.log(`[i18n] snapshot ${elems.length} elements`);
+  }
+
+  // ── apply translations ────────────────────────────
+  async function _applyEN() {
+    _snapshot();
+    if (!_origTexts || _origTexts.length === 0) {
+      console.warn('[i18n] ไม่มี elements ที่มี data-i18n');
+      return;
+    }
+
+    // ถ้ามี cache แล้ว → apply ทันที
+    if (_enCache) {
+      _origTexts.forEach((o, i) => { o.el.innerHTML = _enCache.texts[i] || o.text; });
+      _origPh?.forEach((o, i)   => { if (_enCache.phs[i]) o.el.setAttribute('placeholder', _enCache.phs[i]); });
+      document.documentElement.lang = 'en';
+      return;
+    }
+
+    // แสดง loading
     _origTexts.forEach(o => o.el.classList.add('i18n-loading'));
 
-    const cacheKey = 'en';
-    let translatedTexts = _transCache[cacheKey + '_text'];
-    let translatedPh    = _transCache[cacheKey + '_ph'];
+    const texts = _origTexts.map(o => o.text);
+    const phs   = (_origPh || []).map(o => o.ph).filter(Boolean);
+    const allTexts = [...texts, ...phs];
 
-    if (!translatedTexts) {
-      try {
-        const allTexts = [...texts, ...phs].filter(Boolean);
-        const resp = await fetch('/api/translate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ texts: allTexts, targetLang: 'en' }),
-        });
-        const data = await resp.json();
-        if (data.success && Array.isArray(data.translated)) {
-          translatedTexts = data.translated.slice(0, texts.length);
-          translatedPh    = data.translated.slice(texts.length);
-          _transCache[cacheKey + '_text'] = translatedTexts;
-          _transCache[cacheKey + '_ph']   = translatedPh;
-        } else {
-          throw new Error('translate API failed');
-        }
-      } catch (e) {
-        console.warn('[i18n] translate failed, staying Thai:', e.message);
-        _origTexts.forEach(o => o.el.classList.remove('i18n-loading'));
-        return;
+    try {
+      const resp = await fetch('/api/translate', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ texts: allTexts, targetLang: 'en' }),
+      });
+
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+      const data = await resp.json();
+      if (!data.success || !Array.isArray(data.translated)) {
+        throw new Error(data.error || 'API returned success=false');
       }
-    }
 
-    // Apply translations
-    _origTexts.forEach((o, i) => {
-      o.el.innerHTML = translatedTexts[i] || o.text;
-      o.el.classList.remove('i18n-loading');
-    });
-    _origPh?.forEach((o, i) => {
-      if (translatedPh[i]) o.el.setAttribute('placeholder', translatedPh[i]);
-    });
-    // Update html lang attribute
-    document.documentElement.lang = 'en';
+      const tTexts = data.translated.slice(0, texts.length);
+      const tPhs   = data.translated.slice(texts.length);
+
+      // บันทึก cache
+      _enCache = { texts: tTexts, phs: tPhs };
+
+      // Apply
+      _origTexts.forEach((o, i) => { o.el.innerHTML = tTexts[i] || o.text; });
+      _origPh?.forEach((o, i)   => { if (tPhs[i]) o.el.setAttribute('placeholder', tPhs[i]); });
+      document.documentElement.lang = 'en';
+
+    } catch (err) {
+      console.error('[i18n] แปลล้มเหลว:', err.message);
+      // คืน Thai + แจ้ง user เบาๆ
+      _origTexts.forEach(o => o.el.classList.remove('i18n-loading'));
+      // reset ปุ่มกลับเป็น TH
+      _currentLang = 'th';
+      localStorage.setItem('voc_lang', 'th');
+      _setButtons('th', false);
+      // แสดง toast เล็กน้อย
+      _showToast('ไม่สามารถแปลภาษาได้ในขณะนี้ กรุณาลองใหม่');
+      return;
+    } finally {
+      _origTexts.forEach(o => o.el.classList.remove('i18n-loading'));
+    }
   }
 
-  function _applyThai() {
+  function _applyTH() {
     if (!_origTexts) return;
     _origTexts.forEach(o => { o.el.innerHTML = o.text; });
     _origPh?.forEach(o => { o.el.setAttribute('placeholder', o.ph); });
     document.documentElement.lang = 'th';
   }
 
+  function _showToast(msg) {
+    const old = document.getElementById('i18n-toast');
+    if (old) old.remove();
+    const t = document.createElement('div');
+    t.id = 'i18n-toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:10px;font-size:.85rem;z-index:9999;font-family:Sarabun,sans-serif;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  // ── public API ────────────────────────────────────
   window.switchLang = async function(lang) {
-    // อนุญาตให้ force re-apply ได้ถ้าเรียกซ้ำ — เพิ่ม visual feedback ก่อน
-    _setLangButtons(lang);
-    if (lang === _currentLang && lang === 'th' && !_origTexts) return; // Thai+ยังไม่มี originals = ไม่ต้องทำอะไร
+    if (_isBusy) return; // ป้องกัน double-click
+    if (lang === _currentLang) return;
+
+    _isBusy = true;
+    _setButtons(lang, lang === 'en'); // spinner เฉพาะตอนไปหา EN
     _currentLang = lang;
     localStorage.setItem('voc_lang', lang);
-    if (lang === 'en') {
-      await _applyEnglish();
-    } else {
-      _applyThai();
+
+    try {
+      if (lang === 'en') {
+        await _applyEN();
+      } else {
+        _applyTH();
+      }
+      _setButtons(lang, false);
+    } finally {
+      _isBusy = false;
     }
   };
 
-  // Apply saved language on load
-  function _langOnReady() {
-    _setLangButtons(_currentLang);
+  // apply ภาษาที่บันทึกไว้เมื่อหน้าโหลด
+  function _onReady() {
+    _setButtons(_currentLang, false);
     if (_currentLang === 'en') {
-      setTimeout(() => window.switchLang('en'), 300);
+      // หน่วง 500ms ให้ DOM render + JS init เสร็จก่อน
+      setTimeout(() => window.switchLang('en'), 500);
     }
   }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', _langOnReady);
+    document.addEventListener('DOMContentLoaded', _onReady);
   } else {
-    _langOnReady();
+    _onReady();
   }
 })();
 
