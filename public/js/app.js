@@ -746,6 +746,9 @@ function _exposeGlobals() {
   G.toggleDropdown=toggleDropdown; G.dismissGuestBanner=dismissGuestBanner;
   G.resetComplaintTypeSelection=()=>{};
   G.mgmtSlide=(dir)=>{if(window._mgmtGoTo)window._mgmtGoTo(dir);};
+  // accessibility — ensure these are always exposed (also set by IIFE below)
+  if (!G.changeFontSize) G.changeFontSize = (d) => console.warn('[a11y] changeFontSize not ready', d);
+  if (!G.switchLang)     G.switchLang     = (l) => console.warn('[a11y] switchLang not ready', l);
 }
 
 window.onload = function () {
@@ -854,8 +857,11 @@ window.onload = function () {
   if (isNaN(currentIdx) || currentIdx < 0 || currentIdx > 3) currentIdx = DEFAULT_IDX;
 
   function applyFontSize(idx) {
+    const SIZES = [14, 16, 18, 20]; // px ตรงกับ font-sm/md/lg/xl
     document.body.classList.remove(...LEVELS);
     document.body.classList.add(LEVELS[idx]);
+    // ตั้งค่า font-size บน <html> ด้วย เพื่อให้ rem cascade ทำงานทั่วทั้งหน้า
+    document.documentElement.style.fontSize = SIZES[idx] + 'px';
     currentIdx = idx;
     localStorage.setItem('voc_font_size', idx);
     // update button active state
@@ -911,10 +917,13 @@ window.onload = function () {
   let _origPh = null;
 
   function _storeOriginals() {
-    if (_origTexts) return;
     const { elems, phElems } = _collectTexts();
+    // reset ถ้ายังไม่มี elements หรือ elements มีเนื้อหาใหม่แล้ว (เช่นหลัง navigate)
+    const count = elems.length;
+    if (_origTexts && _origTexts.length === count && count > 0) return; // ไม่เปลี่ยน
     _origTexts = elems.map(el => ({ el, text: el.innerHTML }));
     _origPh = phElems.map(el => ({ el, ph: el.getAttribute('placeholder') }));
+    if (count === 0) console.warn('[i18n] ไม่พบ elements ที่มี data-i18n — ตรวจสอบ HTML');
   }
 
   function _setLangButtons(lang) {
@@ -923,9 +932,15 @@ window.onload = function () {
   }
 
   async function _applyEnglish() {
+    const prevCount = _origTexts ? _origTexts.length : -1;
     _storeOriginals();
+    // ถ้า elements เปลี่ยน (เช่นหน้าใหม่) → clear cache เพื่อแปลใหม่
+    if (_origTexts.length !== prevCount) {
+      delete _transCache['en_text'];
+      delete _transCache['en_ph'];
+    }
     const texts = _origTexts.map(o => o.text);
-    const phs   = _origPh.map(o => o.ph);
+    const phs   = (_origPh || []).map(o => o.ph);
 
     // Show loading state
     _origTexts.forEach(o => o.el.classList.add('i18n-loading'));
@@ -978,10 +993,11 @@ window.onload = function () {
   }
 
   window.switchLang = async function(lang) {
-    if (lang === _currentLang) return;
+    // อนุญาตให้ force re-apply ได้ถ้าเรียกซ้ำ — เพิ่ม visual feedback ก่อน
+    _setLangButtons(lang);
+    if (lang === _currentLang && lang === 'th' && !_origTexts) return; // Thai+ยังไม่มี originals = ไม่ต้องทำอะไร
     _currentLang = lang;
     localStorage.setItem('voc_lang', lang);
-    _setLangButtons(lang);
     if (lang === 'en') {
       await _applyEnglish();
     } else {

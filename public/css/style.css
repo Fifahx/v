@@ -5078,7 +5078,15 @@ html {
   min-width: 58px;
   font-size: .78rem;
 }
-/* Font size levels applied to body */
+/* Font size levels — set on html so rem cascades everywhere */
+html { font-size: 16px; }
+body.font-sm,
+body.font-sm ~ html,
+html:has(body.font-sm)  { font-size: 14px; }
+html:has(body.font-md)  { font-size: 16px; }
+html:has(body.font-lg)  { font-size: 18px; }
+html:has(body.font-xl)  { font-size: 20px; }
+/* fallback for browsers without :has() — set on body too */
 body.font-sm  { font-size: 14px; }
 body.font-md  { font-size: 16px; }
 body.font-lg  { font-size: 18px; }
