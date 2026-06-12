@@ -32,6 +32,23 @@
 
 <!-- ══ HEADER ══ -->
 <header>
+  <!-- ══ ACCESSIBILITY TOOLBAR ══ -->
+<div id="accessibility-bar" class="accessibility-bar">
+  <div class="a11y-inner">
+    <div class="a11y-group">
+      <span class="a11y-label"><i class="fas fa-text-height"></i> ขนาดตัวอักษร</span>
+      <button class="a11y-btn" id="font-decrease" onclick="changeFontSize(-1)" aria-label="ลดขนาดตัวอักษร" title="ลดขนาด">A<sup>-</sup></button>
+      <button class="a11y-btn a11y-reset" id="font-reset" onclick="changeFontSize(0)" aria-label="รีเซ็ตขนาดตัวอักษร" title="ค่าเริ่มต้น">A</button>
+      <button class="a11y-btn" id="font-increase" onclick="changeFontSize(1)" aria-label="เพิ่มขนาดตัวอักษร" title="เพิ่มขนาด">A<sup>+</sup></button>
+    </div>
+    <div class="a11y-divider"></div>
+    <div class="a11y-group">
+      <span class="a11y-label"><i class="fas fa-globe"></i> ภาษา</span>
+      <button class="a11y-btn lang-btn" id="btn-lang-th" onclick="switchLang('th')" aria-label="ภาษาไทย">🇹🇭 ไทย</button>
+      <button class="a11y-btn lang-btn" id="btn-lang-en" onclick="switchLang('en')" aria-label="English">🇬🇧 EN</button>
+    </div>
+  </div>
+</div>
   <!-- Top bar: logos + title -->
   <div class="header-top-bar">
     <div class="header-top-inner">
@@ -80,23 +97,6 @@
       </button>
     </div>
   </div>
-<!-- ══ ACCESSIBILITY TOOLBAR ══ -->
-<div id="accessibility-bar" class="accessibility-bar">
-  <div class="a11y-inner">
-    <div class="a11y-group">
-      <span class="a11y-label"><i class="fas fa-text-height"></i> ขนาดตัวอักษร</span>
-      <button class="a11y-btn" id="font-decrease" onclick="changeFontSize(-1)" aria-label="ลดขนาดตัวอักษร" title="ลดขนาด">A<sup>-</sup></button>
-      <button class="a11y-btn a11y-reset" id="font-reset" onclick="changeFontSize(0)" aria-label="รีเซ็ตขนาดตัวอักษร" title="ค่าเริ่มต้น">A</button>
-      <button class="a11y-btn" id="font-increase" onclick="changeFontSize(1)" aria-label="เพิ่มขนาดตัวอักษร" title="เพิ่มขนาด">A<sup>+</sup></button>
-    </div>
-    <div class="a11y-divider"></div>
-    <div class="a11y-group">
-      <span class="a11y-label"><i class="fas fa-globe"></i> ภาษา</span>
-      <button class="a11y-btn lang-btn" id="btn-lang-th" onclick="switchLang('th')" aria-label="ภาษาไทย">🇹🇭 ไทย</button>
-      <button class="a11y-btn lang-btn" id="btn-lang-en" onclick="switchLang('en')" aria-label="English">🇬🇧 EN</button>
-    </div>
-  </div>
-</div>
 </header>
 
 
@@ -705,6 +705,13 @@
         <a onclick="navigateTo('tracking')">ติดตามสถานะ</a><br>
         <a onclick="navigateTo('faq')">คำถามที่พบบ่อย</a>
       </p>
+    </div>
+    <div class="footer-col">
+      <h3>ความช่วยเหลือ</h3>
+      <p class="footer-contact-item"><i class="fas fa-tools"></i> แจ้งปัญหาการใช้งานระบบ</p>
+      <p class="footer-contact-item"><i class="fas fa-envelope"></i> <a href="mailto:voc-support@yru.ac.th">voc-support@yru.ac.th</a></p>
+      <p class="footer-contact-item"><i class="fas fa-phone-alt"></i> <a href="tel:073299614">073-299-614</a></p>
+      <p class="footer-contact-item"><i class="fas fa-clock"></i> จ.–ศ. 08:30–16:30 น.</p>
     </div>
   </div>
   <div class="footer-bottom">© 2026 VOC System | คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</div>

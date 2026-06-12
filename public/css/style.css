@@ -2332,7 +2332,7 @@ footer {
   max-width: 1100px;
   margin: auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 30px;
 }
 
@@ -5020,9 +5020,7 @@ html {
 ═══════════════════════════════════════════════════════════════ */
 .accessibility-bar {
   background: #0d2b1e;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  padding: 5px 0;
-  /* ไม่ต้อง sticky เพราะ header (parent) sticky แล้ว */
+  padding: 4px 0;
 }
 .a11y-inner {
   max-width: 1200px;
@@ -5179,108 +5177,6 @@ body.font-xl  { font-size: 20px; }
   line-height: 1.6;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CONTACT SECTION
-═══════════════════════════════════════════════════════════════ */
-.contact-wrap {
-  display: grid;
-  grid-template-columns: 1fr 280px;
-  gap: 28px;
-  align-items: start;
-}
-.contact-form {
-  background: #fff;
-  border-radius: 14px;
-  padding: 28px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.07);
-  border: 1px solid #e8f5ed;
-}
-.contact-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.contact-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-.contact-field label {
-  font-size: .84rem;
-  font-weight: 600;
-  color: #1b4332;
-}
-.contact-field input,
-.contact-field select,
-.contact-field textarea {
-  border: 1.5px solid #c8e6d4;
-  border-radius: 8px;
-  padding: 9px 12px;
-  font-family: 'Sarabun', sans-serif;
-  font-size: .88rem;
-  color: #1b4332;
-  transition: border-color .2s;
-  background: #fafff9;
-  resize: vertical;
-}
-.contact-field input:focus,
-.contact-field select:focus,
-.contact-field textarea:focus {
-  outline: none;
-  border-color: #2d6a4f;
-  background: #fff;
-}
-.contact-submit-btn {
-  background: linear-gradient(135deg,#2d6a4f,#52b788);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 11px 28px;
-  font-family: 'Sarabun', sans-serif;
-  font-size: .95rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity .2s, transform .15s;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.contact-submit-btn:hover { opacity: .88; transform: translateY(-1px); }
-.contact-submit-btn:disabled { opacity: .6; cursor: not-allowed; }
-.contact-info-side {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.contact-info-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 14px 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.06);
-  border: 1px solid #e8f5ed;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.contact-info-card > i {
-  color: #2d6a4f;
-  font-size: 1.2rem;
-  width: 20px;
-  text-align: center;
-}
-.cinfo-label {
-  font-size: .75rem;
-  color: #888;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-.cinfo-val {
-  font-size: .88rem;
-  color: #1b4332;
-  font-weight: 600;
-}
 
 /* ═══════════════════════════════════════════════════════════════
    LOCATION SECTION
@@ -5363,8 +5259,6 @@ body.font-xl  { font-size: 20px; }
   .a11y-label { display: none; }
   .features-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; grid-auto-rows: 1fr; }
   .feature-card { padding: 18px 14px; }
-  .contact-wrap { grid-template-columns: 1fr; }
-  .contact-row { grid-template-columns: 1fr; }
   .location-wrap { grid-template-columns: 1fr; }
   .location-map-box iframe { height: 240px; }
   .home-section-title { font-size: 1.05rem; }
