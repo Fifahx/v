@@ -158,7 +158,7 @@ module.exports = async function handler(req, res) {
         return;
       }
       const { stripped, tags } = _stripHtml(text);
-      const textToTranslate = stripped.trim();
+      const textToTranslate = stripped.replace(/\s*\n\s*/g, ' ').trim();
       if (!textToTranslate) {
         finalResult[idx] = text;
         return;
