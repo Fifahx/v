@@ -931,16 +931,14 @@ window.onload = function () {
 // ════════════════════════════════════════════════════
 (function initLangSwitch() {
   let _currentLang = localStorage.getItem('voc_lang') || 'th';
-  let _isBusy = false;     // ป้องกัน double-click ขณะกำลังแปล
-  let _mutating = false;   // ป้องกัน MutationObserver ทำงานซ้อนกัน
+  let _isBusy = false;
+  let _mutating = false;
   let _mutationTimer = null;
 
-  // ── translation cache: ข้อความไทย (ตัด whitespace) → ข้อความอังกฤษ ──
-  // เก็บใน localStorage เพื่อไม่ต้องเรียก /api/translate ซ้ำข้าม session
-  const CACHE_KEY  = 'voc_i18n_cache_v1';
-  const CACHE_MAX  = 1500;
-  const CHUNK_SIZE = 25;     // จำนวนข้อความต่อ request — กันไม่ให้ /api/translate ทำงานนานเกิน timeout
-  const FETCH_TIMEOUT = 15000; // ms ต่อ request
+  const CACHE_KEY  = 'voc_i18n_cache_v2'; // bump version เพื่อ clear cache เก่า
+  const CACHE_MAX  = 2000;
+  const CHUNK_SIZE = 20;       // เล็กลง เพื่อลด timeout risk ต่อ chunk
+  const FETCH_TIMEOUT = 20000;
 
   let _cache = {};
   try { _cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}') || {}; } catch (e) { _cache = {}; }
@@ -953,15 +951,14 @@ window.onload = function () {
         drop.forEach(k => delete _cache[k]);
       }
       localStorage.setItem(CACHE_KEY, JSON.stringify(_cache));
-    } catch (e) { /* localStorage เต็ม — ข้ามไปเฉยๆ */ }
+    } catch (e) {}
   }
 
-  // ── ติดตามสิ่งที่ถูกแปลแล้ว เพื่อใช้ตอนสลับกลับเป็นไทย ──
-  let _trackedTextNodes = [];   // [{ node, original }]
-  let _trackedAttrTargets = []; // [{ el, attr, original }]
+  let _trackedTextNodes = [];
+  let _trackedAttrTargets = [];
 
   const THAI_RE = /[\u0E00-\u0E7F]/;
-  const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT']);
+  const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT', 'CODE', 'PRE']);
   const ATTRS_TO_TRANSLATE = ['placeholder', 'title', 'aria-label'];
 
   function _splitWhitespace(s) {
@@ -970,29 +967,24 @@ window.onload = function () {
   }
 
   function _isTranslatableCore(core) {
-    if (!core) return false;
+    if (!core || !core.trim()) return false;
     if (!THAI_RE.test(core)) return false;
     return true;
   }
 
-  // ── เก็บ text node ในหน้าที่ยังเป็นภาษาไทย ──
-  //    เก็บทุก node ที่มีข้อความไทย ไม่ว่าจะมองเห็นหรือไม่
-  //    (แปลทั้งหมดไว้ก่อน เพื่อให้ cache พร้อมเมื่อเปิดหน้า)
+  // ── เก็บ text node ทั้งหมดที่มีข้อความไทย ──
+  // แก้: ไม่ skip .hidden pages แล้ว — แปลทุกอย่างรวมถึงหน้าที่ซ่อนอยู่
+  // เพื่อให้ cache พร้อมเมื่อ router เปิดหน้าใหม่
   function _collectTextNodes(root) {
     const nodes = [];
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode(node) {
         const parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
-        // ข้าม script, style
         if (SKIP_TAGS.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
-        // ข้าม element ที่ mark ว่า skip
         if (parent.closest('[data-i18n-skip]')) return NodeFilter.FILTER_REJECT;
-        // ข้าม modal overlay ที่ถูก hidden class (ไม่ใช่ page)
-        const closestHidden = parent.closest('.hidden');
-        if (closestHidden && closestHidden.id && closestHidden.id.startsWith('page-')) {
-          return NodeFilter.FILTER_REJECT;
-        }
+        // ข้ามเฉพาะ template/script content ไม่ข้าม hidden pages
+        if (parent.closest('template')) return NodeFilter.FILTER_REJECT;
         const { core } = _splitWhitespace(node.nodeValue);
         if (!_isTranslatableCore(core)) return NodeFilter.FILTER_SKIP;
         return NodeFilter.FILTER_ACCEPT;
@@ -1043,37 +1035,42 @@ window.onload = function () {
     }
   }
 
-  // ── แปลข้อความหลายรายการ แบ่งเป็น chunk เล็กๆ + cache ──
-  // คืนค่า { results, hadError } — ถ้า chunk ใดล้มเหลว จะคืนข้อความไทยเดิมสำหรับ
-  // รายการนั้น (ไม่ cache ค่าที่ fail ไว้ เพื่อให้ลองใหม่ครั้งหน้าได้)
+  // ── แปลข้อความหลายรายการ แบ่งเป็น chunk + cache ──
   async function _translateCores(cores) {
-    const unique  = [...new Set(cores)];
-    const toFetch = unique.filter(c => !(c in _cache));
+    // normalize: ตัด whitespace รอบข้าง เพื่อให้ cache hit แม้ whitespace ต่างกัน
+    const normalized = cores.map(c => c.trim());
+    const unique     = [...new Set(normalized)];
+    const toFetch    = unique.filter(c => c && !(c in _cache));
     let hadError = false;
 
+    // แปลทีละ chunk แบบ sequential (ไม่ parallel) เพื่อไม่ให้ rate limit
     for (let i = 0; i < toFetch.length; i += CHUNK_SIZE) {
       const chunk = toFetch.slice(i, i + CHUNK_SIZE);
-      try {
-        const translated = await _translateChunk(chunk);
-        chunk.forEach((c, j) => {
-          const tr = (translated[j] || '').trim();
-          // ถ้าแปลแล้วได้ข้อความเดิม (เหมือนต้นฉบับไทย) ถือว่า MyMemory แปลรายการนี้
-          // ไม่สำเร็จ (เช่นโดน rate-limit เป็นรายข้อความ) — ไม่ cache ไว้ เพื่อให้ลองใหม่ครั้งหน้า
-          if (tr && tr !== c.trim()) {
-            _cache[c] = tr;
-          } else {
-            hadError = true;
-          }
-        });
-      } catch (e) {
-        console.warn('[i18n] แปล chunk ไม่สำเร็จ:', e.message);
-        hadError = true; // ปล่อยให้ใช้ข้อความไทยเดิมไปก่อน — ไม่ cache ความล้มเหลว
+      let retries = 2;
+      while (retries-- > 0) {
+        try {
+          const translated = await _translateChunk(chunk);
+          chunk.forEach((c, j) => {
+            const tr = (translated[j] || '').trim();
+            if (tr && tr !== c) {
+              _cache[c] = tr;
+            } else if (!tr) {
+              hadError = true; // API คืนค่าว่าง
+            }
+            // ถ้า tr === c (แปลได้ผลเดิม) ถือว่า OK — เป็นคำที่ EN=TH เช่น ตัวเลข
+          });
+          break; // สำเร็จ ออกจาก retry loop
+        } catch (e) {
+          console.warn(`[i18n] chunk ${i} failed (${retries} retries left):`, e.message);
+          if (retries === 0) hadError = true;
+          else await new Promise(r => setTimeout(r, 500)); // รอก่อน retry
+        }
       }
     }
     _saveCache();
 
     return {
-      results: cores.map(c => (c in _cache) ? _cache[c] : c),
+      results: normalized.map(c => (c in _cache) ? _cache[c] : c),
       hadError,
     };
   }
@@ -1116,16 +1113,29 @@ window.onload = function () {
   }
 
   // ── เฝ้าดู DOM ที่เปลี่ยนแปลง ──
-  // - childList/characterData: เนื้อหาใหม่ที่โหลดมาทีหลัง (ticket list, แดชบอร์ด, modal)
-  // - attributes(class): การสลับหน้า (router toggle .hidden) → แปลหน้าที่เพิ่งเปิด
-  const _observer = new MutationObserver(() => {
-    if (_currentLang !== 'en' || _mutating) return;
+  // pause observer ขณะ _applyEN กำลังเขียน text nodes เพื่อป้องกัน infinite loop
+  const _observer = new MutationObserver((mutations) => {
+    if (_currentLang !== 'en' || _mutating || _isBusy) return;
+    // กรอง: สนใจเฉพาะ childList (เนื้อหาใหม่) และ class change (router เปิดหน้า)
+    const relevant = mutations.some(m =>
+      m.type === 'childList' && m.addedNodes.length > 0 ||
+      (m.type === 'attributes' && m.attributeName === 'class')
+    );
+    if (!relevant) return;
     clearTimeout(_mutationTimer);
     _mutationTimer = setTimeout(async () => {
       _mutating = true;
-      try { await _applyEN(document.body); } catch (e) { /* เงียบไว้ เดี๋ยวลองใหม่ตอน mutation ถัดไป */ }
-      finally { _mutating = false; }
-    }, 250);
+      _observer.disconnect(); // pause observer ขณะแปล
+      try {
+        await _applyEN(document.body);
+      } catch (e) {
+        console.warn('[i18n] mutation apply error:', e.message);
+      } finally {
+        _mutating = false;
+        // resume observer หลังแปลเสร็จ
+        _observer.observe(document.body, _observerOpts);
+      }
+    }, 400); // debounce 400ms
   });
 
   // ── helpers UI ─────────────────────────────────────
@@ -1171,23 +1181,28 @@ window.onload = function () {
     try {
       if (lang === 'en') {
         document.body.classList.add('i18n-loading');
+        _observer.disconnect(); // pause observer ขณะแปล
         try {
           const hadError = await _applyEN(document.body);
           if (hadError) {
-            // แปลไม่ครบ → ลองอีกครั้งหลัง 800ms (หลัง API ตอบกลับ)
             _showToast('กำลังแปลส่วนที่เหลือ...');
             setTimeout(async () => {
+              _observer.disconnect();
               try { await _applyEN(document.body); } catch(e) {}
-            }, 800);
+              finally { _observer.observe(document.body, _observerOpts); }
+            }, 1000);
           }
         } catch (err) {
           console.error('[i18n] แปลล้มเหลว:', err);
           _showToast('ไม่สามารถแปลภาษาได้ในขณะนี้ กรุณาลองใหม่');
         } finally {
           document.body.classList.remove('i18n-loading');
+          _observer.observe(document.body, _observerOpts); // resume
         }
       } else {
+        _observer.disconnect();
         _applyTH();
+        _observer.observe(document.body, _observerOpts);
       }
       _currentLang = lang;
       localStorage.setItem('voc_lang', lang);
@@ -1197,19 +1212,22 @@ window.onload = function () {
     }
   };
 
+  // observer options — ใช้ร่วมกัน เพื่อ reconnect ได้ง่าย
+  // ไม่ observe characterData เพื่อป้องกัน infinite loop ตอน _applyEN เขียน text
+  const _observerOpts = {
+    childList: true, subtree: true,
+    attributes: true, attributeFilter: ['class', 'hidden'],
+  };
+
   // apply ภาษาที่บันทึกไว้เมื่อหน้าโหลด
   function _onReady() {
     _setButtons(_currentLang, false);
-    _observer.observe(document.body, {
-      childList: true, subtree: true, characterData: true,
-      attributes: true, attributeFilter: ['class'],
-    });
+    _observer.observe(document.body, _observerOpts);
     if (_currentLang === 'en') {
-      // หน่วงให้ DOM render + JS init เสร็จก่อน
       setTimeout(() => {
-        _currentLang = 'th'; // reset เพื่อให้ switchLang('en') ทำงานจริง
+        _currentLang = 'th';
         window.switchLang('en');
-      }, 500);
+      }, 600);
     }
   }
 
