@@ -614,7 +614,7 @@ function renderAdminTickets(tickets){
       <div class="detail-box" id="adm-detail-${tid}">${needExpand?detailShort:detail}${needExpand?`<button class="btn-expand" onclick="expandAdminDetail('${tid}','${encodeURIComponent(detail)}')">ดูเพิ่มเติม ▼</button>`:''}</div>
       ${commentEntries.length?`<div style="margin-bottom:12px;"><div style="font-size:.75rem;font-weight:700;color:#aaa;text-transform:uppercase;margin-bottom:8px;"><i class="fas fa-comments"></i> ความคิดเห็น (${commentEntries.length} รายการ)</div><div class="comments-log">${commentEntries.map((c,idx)=>{const mm=c.match(/^\[(.*?)\]\s*(.*?):/);const timestamp=mm?mm[1]:'',author=mm?mm[2]:'';const text=c.replace(/^\[.*?\].*?:\s*/,'').trim();const isLatest=idx===commentEntries.length-1;return`<div class="comment-entry ${isLatest?'comment-latest':''}"><div class="comment-meta">${isLatest?'<span class="comment-new-badge">ใหม่</span>':''}${author?`<strong style="color:#2d6a4f;">${author}</strong> · `:''}<i class="fas fa-clock" style="font-size:.65rem;"></i> ${timestamp||'ไม่ระบุเวลา'}</div><div class="comment-text">${text}</div></div>`;}).join('')}</div></div>`:''}
       <div class="comment-add-box"><div style="font-size:.78rem;color:#2d6a4f;font-weight:700;margin-bottom:6px;"><i class="fas fa-plus-circle"></i> เพิ่มความคิดเห็น</div><textarea id="new-comment-${tid}" rows="2" placeholder="พิมพ์ความคิดเห็น..."></textarea><button class="btn-comment" onclick="addComment('${tid}')"><i class="fas fa-paper-plane"></i> ส่งความคิดเห็น</button></div>
-      <div class="update-row" style="margin-top:10px;"><select id="status-${tid}"><option value="รอดำเนินการ" ${t['สถานะ']==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option><option value="กำลังดำเนินการ" ${t['สถานะ']==='กำลังดำเนินการ'?'selected':''}>กำลังดำเนินการ</option><option value="รอตรวจสอบ" ${t['สถานะ']==='รอตรวจสอบ'?'selected':''}>รอตรวจสอบ</option><option value="เสร็จสิ้น" ${t['สถานะ']==='เสร็จสิ้น'?'selected':''}>เสร็จสิ้น</option><option value="ปฏิเสธ" ${t['สถานะ']==='ปฏิเสธ'?'selected':''}>ปฏิเสธ</option></select><input type="text" id="assignee-${tid}" placeholder="ผู้รับผิดชอบ" value="${t['ผู้รับผิดชอบ']||''}"><button class="btn-update" onclick="submitUpdate('${tid}')"><i class="fas fa-save"></i> บันทึก</button></div>
+      <div class="update-row" style="margin-top:10px;"><select id="status-${tid}" data-prev="${t['สถานะ']||'รอดำเนินการ'}" onchange="onStatusSelectChange('${tid}',this)"><option value="รอดำเนินการ" ${t['สถานะ']==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option><option value="กำลังดำเนินการ" ${t['สถานะ']==='กำลังดำเนินการ'?'selected':''}>กำลังดำเนินการ</option><option value="รอตรวจสอบ" ${t['สถานะ']==='รอตรวจสอบ'?'selected':''}>รอตรวจสอบ</option><option value="เสร็จสิ้น" ${t['สถานะ']==='เสร็จสิ้น'?'selected':''}>เสร็จสิ้น</option><option value="ปฏิเสธ" ${t['สถานะ']==='ปฏิเสธ'?'selected':''}>ปฏิเสธ</option></select><input type="text" id="assignee-${tid}" placeholder="ผู้รับผิดชอบ" value="${t['ผู้รับผิดชอบ']||''}"><button class="btn-update" onclick="submitUpdate('${tid}')"><i class="fas fa-save"></i> บันทึก</button></div>
     </div>`;
   });
   container.innerHTML=html;
@@ -625,21 +625,42 @@ function expandAdminDetail(tid,enc){const el=document.getElementById('adm-detail
 
 async function addComment(ticketId){const commentEl=document.getElementById('new-comment-'+ticketId);const comment=commentEl?.value.trim();if(!comment){await showAlert('กรุณาพิมพ์ความคิดเห็น','');return;}try{const res=await api.post('/api/tickets',{action:'addComment',ticketId,comment,author:currentUser?.fullname||currentUser?.username||'ผู้ดูแล'});if(res.success){if(commentEl)commentEl.value='';await showAlert('บันทึกความคิดเห็นสำเร็จ','');loadAdminTickets(document.querySelector('.filter-btn.active')?.id?.replace('filter-','')||'pending');}else await showAlert('ไม่สำเร็จ',res.message||'');}catch(e){await showAlert('เกิดข้อผิดพลาด',e.message);}}
 async function togglePin(tid,ns){if(!await showConfirm(ns?'ปักหมุด':'ยกเลิกปักหมุด',''))return;try{const res=await api.post('/api/tickets',{action:'togglePin',ticketId:tid,pinned:ns});if(res.success){const btn=document.getElementById(`pin-btn-${tid}`);if(btn){btn.style.border=`1px solid ${ns?'#2d6a4f':'#ddd'}`;btn.style.background=ns?'#e8f5e9':'#fff';btn.style.color=ns?'#2d6a4f':'#aaa';btn.innerHTML=`<i class="fas fa-thumbtack"></i>${ns?'แสดงอยู่':'ปักหมุด'}`;btn.setAttribute('onclick',`togglePin('${tid}',${!ns})`);}}  }catch(e){await showAlert('เกิดข้อผิดพลาด',e.message);}}
-async function submitUpdate(tid){
+// เมื่อเจ้าหน้าที่เปลี่ยนสถานะผ่าน dropdown → ถาม alert ยืนยันทันที
+// ถ้ายืนยัน จะบันทึกสถานะ (พร้อมผู้รับผิดชอบปัจจุบัน) ให้เลย โดยไม่ต้องกดปุ่ม "บันทึก" อีก
+// ถ้ายกเลิก จะคืนค่า dropdown กลับเป็นสถานะเดิม
+async function onStatusSelectChange(tid, selectEl) {
+  const ns  = selectEl.value;
+  const prev = selectEl.dataset.prev || ns;
+  if (ns === prev) return;
+
+  const ok = await showConfirm('ยืนยันการเปลี่ยนสถานะ', `คุณต้องการอัพเดทสถานะเป็น "<strong>${ns}</strong>" หรือไม่?`);
+  if (!ok) {
+    selectEl.value = prev; // ยกเลิก → คืนค่าเดิม
+    return;
+  }
+  selectEl.dataset.prev = ns;
+  await submitUpdate(tid, true); // true = ยืนยันแล้วจาก dropdown, ไม่ต้องถามซ้ำ
+}
+
+async function submitUpdate(tid, skipConfirm){
   // ตรวจสอบ token ก่อน — ถ้าไม่มีให้แจ้งเตือนทันที
   const _tok = loadToken();
   if (!_tok) {
     await showAlert('กรุณาเข้าสู่ระบบใหม่','Session หมดอายุ กรุณา Login ใหม่อีกครั้ง');
     return;
   }
-  const ns=document.getElementById('status-'+tid).value;
+  const selectEl=document.getElementById('status-'+tid);
+  const ns=selectEl.value;
   const as=document.getElementById('assignee-'+tid).value;
-  if(!await showConfirm('ยืนยันการบันทึก',`Ticket: <strong>${tid}</strong><br>สถานะ: <strong>${ns}</strong>`))return;
+  if(!skipConfirm){
+    if(!await showConfirm('ยืนยันการบันทึก',`Ticket: <strong>${tid}</strong><br>สถานะ: <strong>${ns}</strong>`))return;
+  }
   const btn=document.querySelector(`#card-${tid} .btn-update`);
   if(btn){btn.innerHTML='<i class="fas fa-spinner fa-spin"></i>';btn.disabled=true;}
   try {
     const res=await api.post('/api/tickets',{action:'update',ticketId:tid,newStatus:ns,assignee:as});
     if(res.success){
+      if(selectEl) selectEl.dataset.prev = ns;
       const card=document.getElementById('card-'+tid);
       if(card){card.style.transition='background .4s';card.style.background='#d4edda';setTimeout(()=>{card.style.background='';},1500);}
     } else {
@@ -733,7 +754,7 @@ function _exposeGlobals() {
   G.submitRating=submitRating; G.selectStar=selectStar;
   G.loadFaq=loadFaq; G.searchFaq=searchFaq; G.toggleFaq=toggleFaq;
   G.loadAdminTickets=loadAdminTickets; G.addComment=addComment; G.togglePin=togglePin;
-  G.submitUpdate=submitUpdate; G.deleteTicket=deleteTicket;
+  G.submitUpdate=submitUpdate; G.deleteTicket=deleteTicket; G.onStatusSelectChange=onStatusSelectChange;
   G.filterByCategory=filterByCategory; G.expandAdminDetail=expandAdminDetail;
   G.selectTicketFilter=selectTicketFilter; G.setFilter=setFilter;
   G.loadReport=loadReport; G.selectReportType=selectReportType;
@@ -898,25 +919,163 @@ window.onload = function () {
 })();
 
 // ════════════════════════════════════════════════════
-//  LANGUAGE SWITCH — Thai / English via /api/translate
+//  LANGUAGE SWITCH — Thai / English ทั้งหน้าเว็บ via /api/translate
+//  แปลข้อความทุกข้อความที่มองเห็นในหน้า (ไม่จำกัดแค่ data-i18n)
+//  โดยเดินสำรวจ DOM ทั้งหมด แปลอัตโนมัติ และจดจำต้นฉบับไทยไว้
+//  เพื่อสลับกลับได้ทันทีโดยไม่ต้องเรียก API ซ้ำ (ใช้ cache ใน localStorage)
 // ════════════════════════════════════════════════════
 (function initLangSwitch() {
   let _currentLang = localStorage.getItem('voc_lang') || 'th';
-  let _isBusy = false; // ป้องกัน double-click ขณะกำลังแปล
+  let _isBusy = false;     // ป้องกัน double-click ขณะกำลังแปล
+  let _mutating = false;   // ป้องกัน MutationObserver ทำงานซ้อนกัน
+  let _mutationTimer = null;
 
-  // cache: key = จำนวน elements + lang, value = { texts, phs }
-  let _enCache = null;
-  let _origTexts = null; // [{ el, text }]
-  let _origPh    = null; // [{ el, ph }]
+  // ── translation cache: ข้อความไทย (ตัด whitespace) → ข้อความอังกฤษ ──
+  // เก็บใน localStorage เพื่อไม่ต้องเรียก /api/translate ซ้ำข้าม session
+  const CACHE_KEY = 'voc_i18n_cache_v1';
+  const CACHE_MAX = 1500;
+  let _cache = {};
+  try { _cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}') || {}; } catch (e) { _cache = {}; }
 
-  // ── helpers ──────────────────────────────────────
+  function _saveCache() {
+    try {
+      const keys = Object.keys(_cache);
+      if (keys.length > CACHE_MAX) {
+        // ตัดรายการเก่าออกครึ่งหนึ่งเมื่อ cache ใหญ่เกินไป
+        const drop = keys.slice(0, keys.length - CACHE_MAX);
+        drop.forEach(k => delete _cache[k]);
+      }
+      localStorage.setItem(CACHE_KEY, JSON.stringify(_cache));
+    } catch (e) { /* localStorage เต็ม — ข้ามไปเฉยๆ */ }
+  }
+
+  // ── ติดตามสิ่งที่ถูกแปลแล้ว เพื่อใช้ตอนสลับกลับเป็นไทย ──
+  let _trackedTextNodes = [];   // [{ node, original }]
+  let _trackedAttrTargets = []; // [{ el, attr, original }]
+
+  const THAI_RE = /[\u0E00-\u0E7F]/;
+  const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT']);
+  const ATTRS_TO_TRANSLATE = ['placeholder', 'title', 'aria-label'];
+
+  function _splitWhitespace(s) {
+    const m = s.match(/^(\s*)([\s\S]*?)(\s*)$/);
+    return { lead: m[1], core: m[2], trail: m[3] };
+  }
+
+  function _isTranslatableCore(core) {
+    if (!core) return false;
+    if (!THAI_RE.test(core)) return false;
+    return true;
+  }
+
+  // ── เก็บ text node ทั้งหมดในหน้าที่ยังเป็นภาษาไทย ──
+  function _collectTextNodes(root) {
+    const nodes = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        if (SKIP_TAGS.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
+        if (parent.closest('[data-i18n-skip]')) return NodeFilter.FILTER_REJECT;
+        const { core } = _splitWhitespace(node.nodeValue);
+        if (!_isTranslatableCore(core)) return NodeFilter.FILTER_SKIP;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    return nodes;
+  }
+
+  // ── เก็บ attribute (placeholder / title / aria-label) ที่เป็นภาษาไทย ──
+  function _collectAttrTargets(root) {
+    const targets = [];
+    const all = root.querySelectorAll
+      ? root.querySelectorAll('[placeholder],[title],[aria-label]')
+      : [];
+    all.forEach(el => {
+      if (el.closest('[data-i18n-skip]')) return;
+      ATTRS_TO_TRANSLATE.forEach(attr => {
+        const val = el.getAttribute(attr);
+        if (val && _isTranslatableCore(val.trim())) targets.push({ el, attr });
+      });
+    });
+    return targets;
+  }
+
+  // ── เรียก /api/translate เป็น batch พร้อม cache ──
+  async function _translateCores(cores) {
+    const toFetch = [...new Set(cores)].filter(c => !(c in _cache));
+    if (toFetch.length) {
+      const resp = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: toFetch, targetLang: 'en' }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      if (!data.success || !Array.isArray(data.translated)) {
+        throw new Error(data.error || 'API returned success=false');
+      }
+      toFetch.forEach((c, i) => { _cache[c] = data.translated[i] || c; });
+      _saveCache();
+    }
+    return cores.map(c => _cache[c] || c);
+  }
+
+  // ── apply EN: เดินสำรวจ DOM ที่ยังเป็นไทย แล้วแปลทั้งหมด ──
+  async function _applyEN(root = document.body) {
+    const textNodes = _collectTextNodes(root);
+    const attrTargets = _collectAttrTargets(root);
+    if (!textNodes.length && !attrTargets.length) return;
+
+    const textParts = textNodes.map(n => _splitWhitespace(n.nodeValue));
+    const attrCores = attrTargets.map(({ el, attr }) => el.getAttribute(attr).trim());
+
+    const allCores = [...textParts.map(p => p.core), ...attrCores];
+    const translated = await _translateCores(allCores);
+
+    textNodes.forEach((n, i) => {
+      const { lead, trail } = textParts[i];
+      _trackedTextNodes.push({ node: n, original: n.nodeValue });
+      n.nodeValue = lead + (translated[i] || textParts[i].core) + trail;
+    });
+    attrTargets.forEach(({ el, attr }, i) => {
+      const idx = textNodes.length + i;
+      _trackedAttrTargets.push({ el, attr, original: el.getAttribute(attr) });
+      el.setAttribute(attr, translated[idx] || attrCores[i]);
+    });
+
+    document.documentElement.lang = 'en';
+  }
+
+  // ── apply TH: คืนค่าทุกอย่างที่เคยแปลกลับเป็นต้นฉบับไทย ──
+  function _applyTH() {
+    _trackedTextNodes.forEach(({ node, original }) => { node.nodeValue = original; });
+    _trackedAttrTargets.forEach(({ el, attr, original }) => { el.setAttribute(attr, original); });
+    _trackedTextNodes = [];
+    _trackedAttrTargets = [];
+    document.documentElement.lang = 'th';
+  }
+
+  // ── เฝ้าดู DOM ที่เปลี่ยนแปลง (เนื้อหาที่โหลดทีหลัง เช่น รายการ ticket, แดชบอร์ด) ──
+  const _observer = new MutationObserver(() => {
+    if (_currentLang !== 'en' || _mutating) return;
+    clearTimeout(_mutationTimer);
+    _mutationTimer = setTimeout(async () => {
+      _mutating = true;
+      try { await _applyEN(document.body); } catch (e) { /* เงียบไว้ เดี๋ยวลองใหม่ตอน mutation ถัดไป */ }
+      finally { _mutating = false; }
+    }, 250);
+  });
+
+  // ── helpers UI ─────────────────────────────────────
   function _setButtons(lang, busy) {
     const thBtn = document.getElementById('btn-lang-th');
     const enBtn = document.getElementById('btn-lang-en');
     if (!thBtn || !enBtn) return;
     thBtn.classList.toggle('active', lang === 'th');
     enBtn.classList.toggle('active', lang === 'en');
-    // แสดง spinner บนปุ่มที่กำลังทำงาน
     if (busy) {
       enBtn.innerHTML = '⏳ EN';
       enBtn.disabled = true;
@@ -928,100 +1087,12 @@ window.onload = function () {
     }
   }
 
-  function _collectElems() {
-    return {
-      elems:   Array.from(document.querySelectorAll('[data-i18n]')),
-      phElems: Array.from(document.querySelectorAll('[data-i18n-placeholder]')),
-    };
-  }
-
-  // เก็บต้นฉบับไทย — reset อัตโนมัติถ้า DOM เปลี่ยน
-  function _snapshot() {
-    const { elems, phElems } = _collectElems();
-    // ถ้า element count เปลี่ยน หรือยังไม่เคย snapshot → ทำใหม่
-    if (_origTexts && _origTexts.length === elems.length && elems.length > 0) return;
-    _origTexts = elems.map(el => ({ el, text: el.innerHTML }));
-    _origPh    = phElems.map(el => ({ el, ph: el.getAttribute('placeholder') || '' }));
-    _enCache   = null; // element เปลี่ยน → cache แปลเก่าใช้ไม่ได้
-    console.log(`[i18n] snapshot ${elems.length} elements`);
-  }
-
-  // ── apply translations ────────────────────────────
-  async function _applyEN() {
-    _snapshot();
-    if (!_origTexts || _origTexts.length === 0) {
-      console.warn('[i18n] ไม่มี elements ที่มี data-i18n');
-      return;
-    }
-
-    // ถ้ามี cache แล้ว → apply ทันที
-    if (_enCache) {
-      _origTexts.forEach((o, i) => { o.el.innerHTML = _enCache.texts[i] || o.text; });
-      _origPh?.forEach((o, i)   => { if (_enCache.phs[i]) o.el.setAttribute('placeholder', _enCache.phs[i]); });
-      document.documentElement.lang = 'en';
-      return;
-    }
-
-    // แสดง loading
-    _origTexts.forEach(o => o.el.classList.add('i18n-loading'));
-
-    const texts = _origTexts.map(o => o.text);
-    const phs   = (_origPh || []).map(o => o.ph).filter(Boolean);
-    const allTexts = [...texts, ...phs];
-
-    try {
-      const resp = await fetch('/api/translate', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ texts: allTexts, targetLang: 'en' }),
-      });
-
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
-      const data = await resp.json();
-      if (!data.success || !Array.isArray(data.translated)) {
-        throw new Error(data.error || 'API returned success=false');
-      }
-
-      const tTexts = data.translated.slice(0, texts.length);
-      const tPhs   = data.translated.slice(texts.length);
-
-      // บันทึก cache
-      _enCache = { texts: tTexts, phs: tPhs };
-
-      // Apply
-      _origTexts.forEach((o, i) => { o.el.innerHTML = tTexts[i] || o.text; });
-      _origPh?.forEach((o, i)   => { if (tPhs[i]) o.el.setAttribute('placeholder', tPhs[i]); });
-      document.documentElement.lang = 'en';
-
-    } catch (err) {
-      console.error('[i18n] แปลล้มเหลว:', err.message);
-      // คืน Thai + แจ้ง user เบาๆ
-      _origTexts.forEach(o => o.el.classList.remove('i18n-loading'));
-      // reset ปุ่มกลับเป็น TH
-      _currentLang = 'th';
-      localStorage.setItem('voc_lang', 'th');
-      _setButtons('th', false);
-      // แสดง toast เล็กน้อย
-      _showToast('ไม่สามารถแปลภาษาได้ในขณะนี้ กรุณาลองใหม่');
-      return;
-    } finally {
-      _origTexts.forEach(o => o.el.classList.remove('i18n-loading'));
-    }
-  }
-
-  function _applyTH() {
-    if (!_origTexts) return;
-    _origTexts.forEach(o => { o.el.innerHTML = o.text; });
-    _origPh?.forEach(o => { o.el.setAttribute('placeholder', o.ph); });
-    document.documentElement.lang = 'th';
-  }
-
   function _showToast(msg) {
     const old = document.getElementById('i18n-toast');
     if (old) old.remove();
     const t = document.createElement('div');
     t.id = 'i18n-toast';
+    t.setAttribute('data-i18n-skip', '');
     t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:10px;font-size:.85rem;z-index:9999;font-family:Sarabun,sans-serif;';
     t.textContent = msg;
     document.body.appendChild(t);
@@ -1029,21 +1100,32 @@ window.onload = function () {
   }
 
   // ── public API ────────────────────────────────────
-  window.switchLang = async function(lang) {
+  window.switchLang = async function (lang) {
     if (_isBusy) return; // ป้องกัน double-click
     if (lang === _currentLang) return;
 
     _isBusy = true;
     _setButtons(lang, lang === 'en'); // spinner เฉพาะตอนไปหา EN
-    _currentLang = lang;
-    localStorage.setItem('voc_lang', lang);
 
     try {
       if (lang === 'en') {
-        await _applyEN();
+        document.body.classList.add('i18n-loading');
+        try {
+          await _applyEN(document.body);
+        } catch (err) {
+          console.error('[i18n] แปลล้มเหลว:', err.message);
+          _applyTH(); // คืนสิ่งที่อาจแปลไปแล้วบางส่วนกลับเป็นไทย
+          _setButtons('th', false);
+          _showToast('ไม่สามารถแปลภาษาได้ในขณะนี้ กรุณาลองใหม่');
+          return; // _currentLang คงเดิม (th)
+        } finally {
+          document.body.classList.remove('i18n-loading');
+        }
       } else {
         _applyTH();
       }
+      _currentLang = lang;
+      localStorage.setItem('voc_lang', lang);
       _setButtons(lang, false);
     } finally {
       _isBusy = false;
@@ -1053,9 +1135,13 @@ window.onload = function () {
   // apply ภาษาที่บันทึกไว้เมื่อหน้าโหลด
   function _onReady() {
     _setButtons(_currentLang, false);
+    _observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     if (_currentLang === 'en') {
-      // หน่วง 500ms ให้ DOM render + JS init เสร็จก่อน
-      setTimeout(() => window.switchLang('en'), 500);
+      // หน่วงให้ DOM render + JS init เสร็จก่อน
+      setTimeout(() => {
+        _currentLang = 'th'; // reset เพื่อให้ switchLang('en') ทำงานจริง
+        window.switchLang('en');
+      }, 500);
     }
   }
 
