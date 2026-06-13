@@ -39,16 +39,37 @@ function _restoreHtml(translated, tags) {
   return result;
 }
 
-// แปล 1 string ผ่าน MyMemory
-async function _translateOne(text, sourceLang, targetLang) {
-  // ข้ามถ้าว่างหรือเป็นตัวเลข/emoji/สัญลักษณ์เท่านั้น
+// แปล 1 string ผ่าน Google Translate (endpoint สาธารณะ ไม่ต้องใช้ API key)
+// โควต้าสูงกว่า MyMemory มาก เหมาะเป็นตัวหลัก
+async function _translateOneGoogle(text, sourceLang, targetLang) {
   if (!text || !text.trim()) return text;
   if (/^[\d\s\W]+$/.test(text)) return text;
 
-  const ckey = _cacheKey(text);
-  if (_cache.has(ckey)) return _cache.get(ckey);
+  const { stripped, tags } = _stripHtml(text);
+  const textToTranslate = stripped.trim();
+  if (!textToTranslate) return text;
 
-  // strip HTML ก่อนส่งไปแปล (MyMemory ไม่เข้าใจ HTML tags)
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(textToTranslate)}`;
+
+  const resp = await fetch(url, {
+    headers: { 'Accept': 'application/json' },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!resp.ok) throw new Error(`Google HTTP ${resp.status}`);
+
+  const data = await resp.json();
+  const segments = Array.isArray(data) && Array.isArray(data[0]) ? data[0] : [];
+  const translatedText = segments.map(seg => (Array.isArray(seg) ? seg[0] : '')).join('');
+  if (!translatedText) throw new Error('Google returned empty translation');
+
+  return tags.length > 0 ? _restoreHtml(translatedText, tags) : translatedText;
+}
+
+// แปล 1 string ผ่าน MyMemory — ใช้เป็น fallback เมื่อ Google ใช้ไม่ได้
+async function _translateOneMyMemory(text, sourceLang, targetLang) {
+  if (!text || !text.trim()) return text;
+  if (/^[\d\s\W]+$/.test(text)) return text;
+
   const { stripped, tags } = _stripHtml(text);
   const textToTranslate = stripped.trim();
   if (!textToTranslate) return text;
@@ -57,23 +78,35 @@ async function _translateOne(text, sourceLang, targetLang) {
 
   const resp = await fetch(url, {
     headers: { 'Accept': 'application/json' },
-    signal: AbortSignal.timeout(8000), // timeout 8 วิ
+    signal: AbortSignal.timeout(8000),
   });
-
   if (!resp.ok) throw new Error(`MyMemory HTTP ${resp.status}`);
 
   const data = await resp.json();
-
-  // responseStatus 200 = สำเร็จ, 403 = quota หมด
-  if (data.responseStatus === 403) {
-    throw new Error('MyMemory quota exceeded for today');
-  }
+  if (data.responseStatus === 403) throw new Error('MyMemory quota exceeded for today');
 
   const translatedText = data.responseData?.translatedText;
   if (!translatedText) throw new Error('MyMemory returned empty translation');
 
-  // restore HTML tags กลับ
-  const result = tags.length > 0 ? _restoreHtml(translatedText, tags) : translatedText;
+  return tags.length > 0 ? _restoreHtml(translatedText, tags) : translatedText;
+}
+
+// แปล 1 string — ลอง Google ก่อน (โควต้าสูง) ถ้าพังให้ fallback ไป MyMemory
+async function _translateOne(text, sourceLang, targetLang) {
+  // ข้ามถ้าว่างหรือเป็นตัวเลข/emoji/สัญลักษณ์เท่านั้น
+  if (!text || !text.trim()) return text;
+  if (/^[\d\s\W]+$/.test(text)) return text;
+
+  const ckey = _cacheKey(text);
+  if (_cache.has(ckey)) return _cache.get(ckey);
+
+  let result;
+  try {
+    result = await _translateOneGoogle(text, sourceLang, targetLang);
+  } catch (e) {
+    console.warn(`[translate] Google ล้มเหลว ("${text.slice(0,30)}..."): ${e.message} — ลอง MyMemory แทน`);
+    result = await _translateOneMyMemory(text, sourceLang, targetLang);
+  }
 
   // cache
   if (_cache.size >= CACHE_MAX) _cache.delete(_cache.keys().next().value);
