@@ -919,67 +919,43 @@ window.onload = function () {
 })();
 
 // ════════════════════════════════════════════════════
-//  LANGUAGE SWITCH — Thai / English ทั้งหน้าเว็บ via /api/translate
-//  แปลข้อความทุกข้อความที่มองเห็นในหน้า (ไม่จำกัดแค่ data-i18n)
-//  - แปลเฉพาะ "ส่วนที่มองเห็นอยู่" (header/hero/footer + หน้าที่เปิดอยู่)
-//    ทีละน้อย เพื่อไม่ให้ค้าง/timeout เวลามีข้อความจำนวนมาก
-//  - เมื่อสลับหน้า (router เปลี่ยน class .hidden) หรือมีเนื้อหาใหม่โหลดมา
-//    (เช่น รายการ ticket, แดชบอร์ด) จะแปลส่วนนั้นเพิ่มให้อัตโนมัติ
-//  - จดจำต้นฉบับไทยไว้ เพื่อสลับกลับได้ทันทีโดยไม่ต้องเรียก API ซ้ำ
-//  - มี cache คำแปลใน localStorage + แบ่งส่งทีละ chunk + timeout
-//    เพื่อไม่ให้ปุ่มค้างแม้ API จะช้า/ล้มเหลว
+// ════════════════════════════════════════════════════
+// LANGUAGE SWITCH — Thai / English ทั้งหน้าเว็บ via /api/translate
 // ════════════════════════════════════════════════════
 (function initLangSwitch() {
   // ══════════════════════════════════════════════════════════════
-  //  VOC i18n v4 — HTML-snapshot approach
-  //  วิธีการ: snapshot innerHTML ของแต่ละหน้า แล้วส่งทั้งก้อนไปแปล
-  //  ข้อดี: ครอบคลุมทุกข้อความแน่นอน ไม่พลาด text node
+  //  VOC i18n v5 — Safe Text Node & Attribute Approach
+  //  แก้ไขปัญหา: แปลไม่ครบทุกส่วน + ปุ่มกดไม่ได้หลังจากเปลี่ยนภาษา
+  //  วิธีการ: ดึงเฉพาะ Text Nodes และ Attributes มาแปลโดยไม่ทำลายโครงสร้าง DOM
+  //  ทำให้รักษา Event Listeners ทั้งหมดไว้ได้ 100% และครอบคลุมทั้งหน้าเว็บ
   // ══════════════════════════════════════════════════════════════
 
   let _currentLang = localStorage.getItem('voc_lang') || 'th';
-  let _isBusy      = false;
-  let _mutating    = false;
+  let _isBusy = false;
+  let _mutating = false;
   let _mutationTimer = null;
 
-  // cache: { thaiText → englishText } เก็บใน localStorage
-  const CACHE_KEY     = 'voc_i18n_v4';
-  const CACHE_MAX     = 2000;
-  const CHUNK_SIZE    = 15;   // strings per API call
+  const CACHE_KEY = 'voc_i18n_v4';
+  const CACHE_MAX = 2000;
+  const CHUNK_SIZE = 20;   // ส่งแปลทีละ 20 ข้อความต่อหนึ่ง API call
   const FETCH_TIMEOUT = 20000;
 
   let _memCache = {};
-  try { _memCache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}') || {}; } catch(e) { _memCache = {}; }
+  try { _memCache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}') || {}; } catch (e) { _memCache = {}; }
 
   function _saveCache() {
     try {
       const keys = Object.keys(_memCache);
       if (keys.length > CACHE_MAX) keys.slice(0, keys.length - CACHE_MAX).forEach(k => delete _memCache[k]);
       localStorage.setItem(CACHE_KEY, JSON.stringify(_memCache));
-    } catch(e) {}
+    } catch (e) { }
   }
 
-  // สิ่งที่เก็บเพื่อ revert กลับไทย
-  // { el, attr: 'innerHTML'|'placeholder'|'title'|... , original }
+  // เก็บบันทึกค่าเดิมสำหรับสลับกลับเป็นภาษาไทย
   let _snapshots = [];
 
-  const THAI_RE    = /[\u0E00-\u0E7F]/;
-  const SKIP_TAGS  = new Set(['SCRIPT','STYLE','NOSCRIPT','CODE','PRE','IFRAME']);
-
-  // ── แยก Thai strings ออกจาก HTML string ──────────────────────
-  // คืน array ของ Thai strings ที่ต้องแปล (ไม่ซ้ำ)
-  function _extractThaiStrings(html) {
-    // ใช้ DOMParser เพื่อดึง text content จาก HTML
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    const set = new Set();
-    const walker = document.createTreeWalker(tmp, NodeFilter.SHOW_TEXT);
-    let n;
-    while ((n = walker.nextNode())) {
-      const t = n.nodeValue.trim();
-      if (t && THAI_RE.test(t)) set.add(t);
-    }
-    return [...set];
-  }
+  const THAI_RE = /[\u0E00-\u0E7F]/;
+  const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE', 'IFRAME', 'TEXTAREA']);
 
   // ── แปลกลุ่ม strings ด้วย /api/translate ─────────────────────
   async function _fetchTranslations(strings) {
@@ -988,7 +964,7 @@ window.onload = function () {
 
     for (let i = 0; i < toFetch.length; i += CHUNK_SIZE) {
       const chunk = toFetch.slice(i, i + CHUNK_SIZE);
-      const ctrl  = new AbortController();
+      const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT);
       try {
         const resp = await fetch('/api/translate', {
@@ -1004,7 +980,7 @@ window.onload = function () {
           const t = (data.translated[j] || '').trim();
           if (t && t !== s) _memCache[s] = t;
         });
-      } catch(e) {
+      } catch (e) {
         console.warn('[i18n] chunk failed:', e.message);
       } finally {
         clearTimeout(timer);
@@ -1013,81 +989,97 @@ window.onload = function () {
     _saveCache();
   }
 
-  // ── แทนที่ Thai strings ใน HTML string ด้วย English ──────────
-  function _replaceInHTML(html) {
-    // เรียงจากยาวไปสั้น เพื่อป้องกัน partial replacement
-    const keys = Object.keys(_memCache).sort((a, b) => b.length - a.length);
-    let result = html;
-    for (const thai of keys) {
-      if (!THAI_RE.test(thai)) continue;
-      const eng = _memCache[thai];
-      if (!eng) continue;
-      // escape สำหรับ regex
-      const escaped = thai.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      result = result.replace(new RegExp(escaped, 'g'), eng);
-    }
-    return result;
-  }
+  // ── ค้นหา Text Nodes และ Attributes ทั้งหมดที่ต้องแปล ──────────
+  function _scanDOM() {
+    const textNodes = [];
+    const attrElements = [];
+    const allThaiStrings = new Set();
 
-  // ── เก็บ elements ที่ต้องการแปล ──────────────────────────────
-  function _getTargetElements() {
-    const targets = [];
-    // 1. visible pages (ไม่ hidden)
-    document.querySelectorAll('[id^="page-"]').forEach(page => {
-      if (!page.classList.contains('hidden')) targets.push({ el: page, attr: 'innerHTML' });
-    });
-    // 2. ถ้าไม่มี page structure ให้ใช้ main content
-    if (targets.length === 0) {
-      const main = document.querySelector('main, #app, .app-container, body');
-      if (main) targets.push({ el: main, attr: 'innerHTML' });
-    }
-    // 3. attributes ของ elements ที่มองเห็น
-    document.querySelectorAll('[placeholder],[title],[aria-label]').forEach(el => {
-      if (el.closest('[data-i18n-skip]')) return;
-      ['placeholder','title','aria-label'].forEach(attr => {
-        const val = el.getAttribute(attr);
-        if (val && THAI_RE.test(val.trim())) {
-          targets.push({ el, attr });
+    // 1. ตรวจสอบ Text Nodes ทั่วทั้งร่างกายของเว็บ (ครอบคลุม บาร์บน, เมนู, หน้าเว็บ, ฟุตเตอร์)
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (node) {
+        if (node.parentElement && SKIP_TAGS.has(node.parentElement.tagName)) {
+          return NodeFilter.FILTER_REJECT;
         }
-      });
+        if (node.parentElement && node.parentElement.closest('[data-i18n-skip]')) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        const val = node.nodeValue.trim();
+        if (!val || !THAI_RE.test(val)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
     });
-    return targets;
+
+    let node;
+    while ((node = walker.nextNode())) {
+      textNodes.push(node);
+      allThaiStrings.add(node.nodeValue.trim());
+    }
+
+    // 2. ตรวจสอบ Attributes (placeholder, title, aria-label) และ option ของ select
+    document.querySelectorAll('[placeholder],[title],[aria-label], option').forEach(el => {
+      if (el.closest('[data-i18n-skip]')) return;
+
+      if (el.tagName === 'OPTION') {
+        const val = el.textContent.trim();
+        if (val && THAI_RE.test(val)) {
+          attrElements.push({ el, type: 'option', original: el.textContent });
+          allThaiStrings.add(val);
+        }
+      } else {
+        ['placeholder', 'title', 'aria-label'].forEach(attr => {
+          const val = el.getAttribute(attr);
+          if (val && THAI_RE.test(val.trim())) {
+            attrElements.push({ el, type: 'attr', attrName: attr, original: val });
+            allThaiStrings.add(val.trim());
+          }
+        });
+      }
+    });
+
+    return { textNodes, attrElements, allThaiStrings: [...allThaiStrings] };
   }
 
   // ── apply English ─────────────────────────────────────────────
   async function _applyEN() {
-    const targets = _getTargetElements();
-    if (!targets.length) return;
+    const { textNodes, attrElements, allThaiStrings } = _scanDOM();
+    if (allThaiStrings.length === 0) return;
 
-    // เก็บต้นฉบับ + รวบรวม Thai strings ทั้งหมด
-    const allThai = new Set();
-    targets.forEach(({ el, attr }) => {
-      const original = attr === 'innerHTML' ? el.innerHTML : el.getAttribute(attr);
-      // บันทึกเฉพาะที่ยังไม่เคยบันทึก (ป้องกัน double-track)
-      if (!_snapshots.find(s => s.el === el && s.attr === attr)) {
-        _snapshots.push({ el, attr, original });
-      }
-      // ดึง Thai strings
-      if (attr === 'innerHTML') {
-        _extractThaiStrings(original).forEach(s => allThai.add(s));
-      } else {
-        const t = original.trim();
-        if (THAI_RE.test(t)) allThai.add(t);
+    // ส่งชุดข้อความที่ยังไม่มีใน Cache ไปแปล
+    await _fetchTranslations(allThaiStrings);
+
+    // 1. เปลี่ยนภาษาของ Text Nodes ทั่วหน้า
+    textNodes.forEach(node => {
+      const orig = node.nodeValue;
+      const key = orig.trim();
+      if (_memCache[key]) {
+        if (!_snapshots.find(s => s.node === node)) {
+          _snapshots.push({ type: 'text', node, original: orig });
+        }
+        const translated = _memCache[key];
+        const leadingSpace = orig.match(/^\s*/)[0];
+        const trailingSpace = orig.match(/\s*$/)[0];
+        node.nodeValue = leadingSpace + translated + trailingSpace;
       }
     });
 
-    // แปลที่ยังไม่มีใน cache
-    await _fetchTranslations([...allThai]);
-
-    // apply
-    targets.forEach(({ el, attr }) => {
-      if (attr === 'innerHTML') {
-        const snap = _snapshots.find(s => s.el === el && s.attr === 'innerHTML');
-        if (snap) el.innerHTML = _replaceInHTML(snap.original);
-      } else {
-        const orig = el.getAttribute(attr);
-        const t = orig ? orig.trim() : '';
-        if (t && _memCache[t]) el.setAttribute(attr, _memCache[t]);
+    // 2. เปลี่ยนภาษาของ Attributes และ Options ในดรอปดาวน์
+    attrElements.forEach(({ el, type, attrName, original }) => {
+      const key = original.trim();
+      if (_memCache[key]) {
+        if (type === 'option') {
+          if (!_snapshots.find(s => s.el === el && s.type === 'option')) {
+            _snapshots.push({ type: 'option', el, original });
+          }
+          el.textContent = _memCache[key];
+        } else {
+          if (!_snapshots.find(s => s.el === el && s.type === 'attr' && s.attrName === attrName)) {
+            _snapshots.push({ type: 'attr', el, attrName, original });
+          }
+          el.setAttribute(attrName, _memCache[key]);
+        }
       }
     });
 
@@ -1096,17 +1088,21 @@ window.onload = function () {
 
   // ── apply Thai (revert) ────────────────────────────────────────
   function _applyTH() {
-    _snapshots.forEach(({ el, attr, original }) => {
-      if (attr === 'innerHTML') el.innerHTML = original;
-      else el.setAttribute(attr, original);
+    _snapshots.forEach(snap => {
+      if (snap.type === 'text') {
+        snap.node.nodeValue = snap.original;
+      } else if (snap.type === 'option') {
+        snap.el.textContent = snap.original;
+      } else if (snap.type === 'attr') {
+        snap.el.setAttribute(snap.attrName, snap.original);
+      }
     });
     _snapshots = [];
     document.documentElement.lang = 'th';
   }
 
-  // ── MutationObserver: จับเนื้อหาใหม่ที่โหลดทีหลัง ─────────────
-  // เช่น ticket list, dashboard, หน้าที่ router เพิ่งเปิด
-  const _observerOpts = { childList: true, subtree: true, attributes: true, attributeFilter: ['class','hidden'] };
+  // ── MutationObserver: จับเนื้อหาใหม่ที่โหลดเพิ่มหรือสลับหน้า ─────
+  const _observerOpts = { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden'] };
   const _observer = new MutationObserver((mutations) => {
     if (_currentLang !== 'en' || _mutating || _isBusy) return;
     const relevant = mutations.some(m => m.type === 'childList' && m.addedNodes.length > 0
@@ -1117,7 +1113,7 @@ window.onload = function () {
       _mutating = true;
       _observer.disconnect();
       try { await _applyEN(); }
-      catch(e) { console.warn('[i18n] mutation apply error:', e.message); }
+      catch (e) { console.warn('[i18n] mutation apply error:', e.message); }
       finally {
         _mutating = false;
         _observer.observe(document.body, _observerOpts);
@@ -1152,7 +1148,7 @@ window.onload = function () {
   }
 
   // ── public API ────────────────────────────────────────────────
-  window.switchLang = async function(lang) {
+  window.switchLang = async function (lang) {
     if (_isBusy) return;
     if (lang === _currentLang) return;
 
@@ -1165,7 +1161,7 @@ window.onload = function () {
         document.body.classList.add('i18n-loading');
         try {
           await _applyEN();
-        } catch(err) {
+        } catch (err) {
           console.error('[i18n] error:', err);
           _showToast('ไม่สามารถแปลภาษาได้ กรุณาลองใหม่');
         } finally {

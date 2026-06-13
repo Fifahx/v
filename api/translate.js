@@ -1,16 +1,12 @@
-// api/translate.js v3 — MyMemory API (ฟรี 100%, ไม่ต้องมี API key)
+// api/translate.js v4 — Optimized Google & MyMemory API
 // POST /api/translate  { texts: string[], targetLang: 'en'|'th' }
 // Response: { success: true, translated: string[] }
-//
-// MyMemory: https://mymemory.translated.net/doc/spec.php
-// Free tier: 5,000 คำ/วัน (เกินพอสำหรับ UI strings)
-// แม่นยำ: ใช้ฐานข้อมูล human translation + machine translation ร่วมกัน
 
 const { setCorsHeaders } = require('./_sheets');
 
 // In-memory cache — ป้องกัน API calls ซ้ำในทุก session ของ Vercel instance
 const _cache = new Map();
-const CACHE_MAX = 300;
+const CACHE_MAX = 500;
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -39,8 +35,7 @@ function _restoreHtml(translated, tags) {
   return result;
 }
 
-// แปล 1 string ผ่าน Google Translate (endpoint สาธารณะ ไม่ต้องใช้ API key)
-// โควต้าสูงกว่า MyMemory มาก เหมาะเป็นตัวหลัก
+// แปล 1 string ผ่าน Google Translate (เดี่ยว - ใช้เป็น Fallback)
 async function _translateOneGoogle(text, sourceLang, targetLang) {
   if (!text || !text.trim()) return text;
   if (/^[\d\s\W]+$/.test(text)) return text;
@@ -53,7 +48,7 @@ async function _translateOneGoogle(text, sourceLang, targetLang) {
 
   const resp = await fetch(url, {
     headers: { 'Accept': 'application/json' },
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(6000),
   });
   if (!resp.ok) throw new Error(`Google HTTP ${resp.status}`);
 
@@ -65,7 +60,7 @@ async function _translateOneGoogle(text, sourceLang, targetLang) {
   return tags.length > 0 ? _restoreHtml(translatedText, tags) : translatedText;
 }
 
-// แปล 1 string ผ่าน MyMemory — ใช้เป็น fallback เมื่อ Google ใช้ไม่ได้
+// แปล 1 string ผ่าน MyMemory (เดี่ยว - ใช้เป็น Fallback ลำดับสุดท้าย)
 async function _translateOneMyMemory(text, sourceLang, targetLang) {
   if (!text || !text.trim()) return text;
   if (/^[\d\s\W]+$/.test(text)) return text;
@@ -78,7 +73,7 @@ async function _translateOneMyMemory(text, sourceLang, targetLang) {
 
   const resp = await fetch(url, {
     headers: { 'Accept': 'application/json' },
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(6000),
   });
   if (!resp.ok) throw new Error(`MyMemory HTTP ${resp.status}`);
 
@@ -91,9 +86,8 @@ async function _translateOneMyMemory(text, sourceLang, targetLang) {
   return tags.length > 0 ? _restoreHtml(translatedText, tags) : translatedText;
 }
 
-// แปล 1 string — ลอง Google ก่อน (โควต้าสูง) ถ้าพังให้ fallback ไป MyMemory
+// แปลเดี่ยวแบบมีระบบ Fallback
 async function _translateOne(text, sourceLang, targetLang) {
-  // ข้ามถ้าว่างหรือเป็นตัวเลข/emoji/สัญลักษณ์เท่านั้น
   if (!text || !text.trim()) return text;
   if (/^[\d\s\W]+$/.test(text)) return text;
 
@@ -104,14 +98,18 @@ async function _translateOne(text, sourceLang, targetLang) {
   try {
     result = await _translateOneGoogle(text, sourceLang, targetLang);
   } catch (e) {
-    console.warn(`[translate] Google ล้มเหลว ("${text.slice(0,30)}..."): ${e.message} — ลอง MyMemory แทน`);
-    result = await _translateOneMyMemory(text, sourceLang, targetLang);
+    console.warn(`[translate] Google single fallback failed: ${e.message} — trying MyMemory`);
+    try {
+      result = await _translateOneMyMemory(text, sourceLang, targetLang);
+    } catch (err2) {
+      result = text; // คืนค่าเดิมถ้าพังหมด
+    }
   }
 
-  // cache
-  if (_cache.size >= CACHE_MAX) _cache.delete(_cache.keys().next().value);
-  _cache.set(ckey, result);
-
+  if (result && result !== text) {
+    if (_cache.size >= CACHE_MAX) _cache.delete(_cache.keys().next().value);
+    _cache.set(ckey, result);
+  }
   return result;
 }
 
@@ -139,29 +137,84 @@ module.exports = async function handler(req, res) {
   const sourceLang = 'th';
 
   try {
-    // แปลแบบ parallel (จำกัดไว้ 5 ต่อครั้งเพื่อไม่ให้ rate limit)
-    const CONCURRENCY = 5;
-    const translated = new Array(texts.length);
+    const finalResult = new Array(texts.length);
+    const indicesToTranslate = [];
+    const textsToTranslate = [];
 
-    for (let i = 0; i < texts.length; i += CONCURRENCY) {
-      const chunk = texts.slice(i, i + CONCURRENCY);
-      const results = await Promise.allSettled(
-        chunk.map(t => _translateOne(t, sourceLang, targetLang))
-      );
-      results.forEach((r, j) => {
-        // ถ้าแปลสำเร็จใช้ผลลัพธ์, ถ้า fail คืนต้นฉบับ
-        translated[i + j] = r.status === 'fulfilled' ? r.value : texts[i + j];
-        if (r.status === 'rejected') {
-          console.warn(`[translate] item ${i+j} failed: ${r.reason?.message}`);
+    // 1. แยกข้อความ: ตัวไหนดึงจาก Cache ได้ หรือไม่ต้องแปล ให้ใส่รอไว้เลย
+    texts.forEach((text, idx) => {
+      if (!text || !text.trim() || /^[\d\s\W]+$/.test(text)) {
+        finalResult[idx] = text;
+      } else {
+        const ckey = _cacheKey(text);
+        if (_cache.has(ckey)) {
+          finalResult[idx] = _cache.get(ckey);
+        } else {
+          indicesToTranslate.push(idx);
+          textsToTranslate.push(text);
         }
-      });
+      }
+    });
+
+    // ถ้าทุกคำมีใน Cache ครบแล้ว ส่งกลับได้ทันที ไม่ต้องยิง API
+    if (textsToTranslate.length === 0) {
+      return res.json({ success: true, translated: finalResult });
     }
 
-    return res.json({ success: true, translated });
+    // 2. รวบรวมคำที่เหลือ แปลแบบรวมกลุ่ม (Batch) เพื่อลดภาระและเลี่ยง Rate Limit (ยิงทีเดียวจบ)
+    try {
+      const combinedText = textsToTranslate.join('\n');
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(combinedText)}`;
+
+      const resp = await fetch(url, {
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(12000),
+      });
+
+      if (!resp.ok) throw new Error(`Google Batch HTTP ${resp.status}`);
+
+      const data = await resp.json();
+      const segments = Array.isArray(data) && Array.isArray(data[0]) ? data[0] : [];
+      const translatedCombined = segments.map(seg => (Array.isArray(seg) ? seg[0] : '')).join('');
+
+      // แยกคำแปลกลับมาเป็นรายบรรทัด
+      const translatedLines = translatedCombined.split('\n');
+
+      if (translatedLines.length === textsToTranslate.length) {
+        // จำนวนตรงกันอย่างสมบูรณ์ ผูกค่ากลับคืนและบันทึก Cache
+        indicesToTranslate.forEach((originalIdx, i) => {
+          const transText = translatedLines[i].trim();
+          finalResult[originalIdx] = transText || texts[originalIdx];
+
+          if (transText) {
+            const ckey = _cacheKey(texts[originalIdx]);
+            if (_cache.size >= CACHE_MAX) _cache.delete(_cache.keys().next().value);
+            _cache.set(ckey, transText);
+          }
+        });
+
+        return res.json({ success: true, translated: finalResult });
+      } else {
+        throw new Error(`Line mismatch in batch (${translatedLines.length} vs ${textsToTranslate.length})`);
+      }
+
+    } catch (batchError) {
+      console.warn(`[translate] Batch failed (${batchError.message}), falling back to safe individual sequence...`);
+
+      // 3. แผนสำรอง (Fallback): แปลเรียงตัวแบบจำกัดความถี่ เพื่อความทนทานสูงสุด
+      for (let i = 0; i < indicesToTranslate.length; i++) {
+        const originalIdx = indicesToTranslate[i];
+        finalResult[originalIdx] = await _translateOne(texts[originalIdx], sourceLang, targetLang);
+
+        // หน่วงเวลาเล็กน้อย 50ms ระหว่างตัวเพื่อไม่ให้โดน Rate limit บล็อกซ้ำสอง
+        await new Promise(r => setTimeout(r, 50));
+      }
+
+      return res.json({ success: true, translated: finalResult });
+    }
 
   } catch (e) {
     console.error('[translate] fatal error:', e.message);
-    // graceful fallback — คืนต้นฉบับไทยแทนที่จะพัง
     return res.json({ success: true, translated: texts, fallback: true, error: e.message });
   }
 };
