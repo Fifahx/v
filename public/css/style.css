@@ -2369,6 +2369,7 @@ footer {
   opacity: .7;
   border-top: 1px solid rgba(255, 255, 255, .1);
   padding-top: 20px;
+  position: relative;
 }
 
 /* RESPONSIVE */
@@ -4509,7 +4510,8 @@ html {
    ════════════════════════════════════════════════ */
 /* admin-fab — ย้ายจาก fixed floating มาอยู่ใน footer-bottom */
 .admin-fab {
-  position: static;
+  position: absolute;
+  right:0;
   width: 34px;
   height: 34px;
   border-radius: 50%;
