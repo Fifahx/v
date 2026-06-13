@@ -935,7 +935,7 @@ window.onload = function () {
   let _mutating = false;
   let _mutationTimer = null;
 
-  const CACHE_KEY = 'voc_i18n_v4';
+  const CACHE_KEY = 'voc_i18n_v5';
   const CACHE_MAX = 2000;
   const CHUNK_SIZE = 20;   // ส่งแปลทีละ 20 ข้อความต่อหนึ่ง API call
   const FETCH_TIMEOUT = 20000;
@@ -957,56 +957,33 @@ window.onload = function () {
   const THAI_RE = /[\u0E00-\u0E7F]/;
   const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE', 'IFRAME', 'TEXTAREA']);
 
-  // ── แปล Real-time ด้วย Google Translate (เรียกตรงจาก Browser) ────
-  // ไม่พึ่ง backend /api/translate — แปลทันทีที่ตรวจพบข้อความไทย
-  async function _translateChunk(chunk) {
-    const combinedText = chunk.join('\n');
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=th&tl=en&dt=t&q=${encodeURIComponent(combinedText)}`;
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT);
-    try {
-      const resp = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: ctrl.signal });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
-      const segments = Array.isArray(data) && Array.isArray(data[0]) ? data[0] : [];
-      const translatedCombined = segments.map(seg => (Array.isArray(seg) ? seg[0] : '')).join('');
-      const lines = translatedCombined.split('\n');
-      if (lines.length === chunk.length) {
-        chunk.forEach((s, j) => {
-          const t = (lines[j] || '').trim();
-          if (t && t !== s) _memCache[s] = t;
-        });
-        return true;
-      }
-      throw new Error('line mismatch');
-    } catch (e) {
-      for (const s of chunk) {
-        try {
-          const u = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=th&tl=en&dt=t&q=${encodeURIComponent(s)}`;
-          const r = await fetch(u, { headers: { 'Accept': 'application/json' } });
-          if (!r.ok) continue;
-          const d = await r.json();
-          const segs = Array.isArray(d) && Array.isArray(d[0]) ? d[0] : [];
-          const t = segs.map(seg => (Array.isArray(seg) ? seg[0] : '')).join('').trim();
-          if (t && t !== s) _memCache[s] = t;
-        } catch (e2) { /* ข้ามไป */ }
-      }
-      return false;
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-
+  // ── แปลกลุ่ม strings ผ่าน /api/translate (Gemini แปล+ขัดให้กระชับ) ────
   async function _fetchTranslations(strings) {
     const toFetch = strings.filter(s => !(s in _memCache));
     if (!toFetch.length) return;
 
     for (let i = 0; i < toFetch.length; i += CHUNK_SIZE) {
       const chunk = toFetch.slice(i, i + CHUNK_SIZE);
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT);
       try {
-        await _translateChunk(chunk);
+        const resp = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texts: chunk, targetLang: 'en' }),
+          signal: ctrl.signal,
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        if (!data.success || !Array.isArray(data.translated)) throw new Error('bad response');
+        chunk.forEach((s, j) => {
+          const t = (data.translated[j] || '').trim();
+          if (t && t !== s) _memCache[s] = t;
+        });
       } catch (e) {
         console.warn('[i18n] chunk failed:', e.message);
+      } finally {
+        clearTimeout(timer);
       }
     }
     _saveCache();
