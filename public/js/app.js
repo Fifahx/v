@@ -1047,7 +1047,16 @@ window.onload = function () {
       const chunk = toFetch.slice(i, i + CHUNK_SIZE);
       try {
         const translated = await _translateChunk(chunk);
-        chunk.forEach((c, j) => { _cache[c] = translated[j] || c; });
+        chunk.forEach((c, j) => {
+          const tr = (translated[j] || '').trim();
+          // ถ้าแปลแล้วได้ข้อความเดิม (เหมือนต้นฉบับไทย) ถือว่า MyMemory แปลรายการนี้
+          // ไม่สำเร็จ (เช่นโดน rate-limit เป็นรายข้อความ) — ไม่ cache ไว้ เพื่อให้ลองใหม่ครั้งหน้า
+          if (tr && tr !== c.trim()) {
+            _cache[c] = tr;
+          } else {
+            hadError = true;
+          }
+        });
       } catch (e) {
         console.warn('[i18n] แปล chunk ไม่สำเร็จ:', e.message);
         hadError = true; // ปล่อยให้ใช้ข้อความไทยเดิมไปก่อน — ไม่ cache ความล้มเหลว
