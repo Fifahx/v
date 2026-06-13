@@ -921,8 +921,13 @@ window.onload = function () {
 // ════════════════════════════════════════════════════
 //  LANGUAGE SWITCH — Thai / English ทั้งหน้าเว็บ via /api/translate
 //  แปลข้อความทุกข้อความที่มองเห็นในหน้า (ไม่จำกัดแค่ data-i18n)
-//  โดยเดินสำรวจ DOM ทั้งหมด แปลอัตโนมัติ และจดจำต้นฉบับไทยไว้
-//  เพื่อสลับกลับได้ทันทีโดยไม่ต้องเรียก API ซ้ำ (ใช้ cache ใน localStorage)
+//  - แปลเฉพาะ "ส่วนที่มองเห็นอยู่" (header/hero/footer + หน้าที่เปิดอยู่)
+//    ทีละน้อย เพื่อไม่ให้ค้าง/timeout เวลามีข้อความจำนวนมาก
+//  - เมื่อสลับหน้า (router เปลี่ยน class .hidden) หรือมีเนื้อหาใหม่โหลดมา
+//    (เช่น รายการ ticket, แดชบอร์ด) จะแปลส่วนนั้นเพิ่มให้อัตโนมัติ
+//  - จดจำต้นฉบับไทยไว้ เพื่อสลับกลับได้ทันทีโดยไม่ต้องเรียก API ซ้ำ
+//  - มี cache คำแปลใน localStorage + แบ่งส่งทีละ chunk + timeout
+//    เพื่อไม่ให้ปุ่มค้างแม้ API จะช้า/ล้มเหลว
 // ════════════════════════════════════════════════════
 (function initLangSwitch() {
   let _currentLang = localStorage.getItem('voc_lang') || 'th';
@@ -932,8 +937,11 @@ window.onload = function () {
 
   // ── translation cache: ข้อความไทย (ตัด whitespace) → ข้อความอังกฤษ ──
   // เก็บใน localStorage เพื่อไม่ต้องเรียก /api/translate ซ้ำข้าม session
-  const CACHE_KEY = 'voc_i18n_cache_v1';
-  const CACHE_MAX = 1500;
+  const CACHE_KEY  = 'voc_i18n_cache_v1';
+  const CACHE_MAX  = 1500;
+  const CHUNK_SIZE = 25;     // จำนวนข้อความต่อ request — กันไม่ให้ /api/translate ทำงานนานเกิน timeout
+  const FETCH_TIMEOUT = 15000; // ms ต่อ request
+
   let _cache = {};
   try { _cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}') || {}; } catch (e) { _cache = {}; }
 
@@ -941,7 +949,6 @@ window.onload = function () {
     try {
       const keys = Object.keys(_cache);
       if (keys.length > CACHE_MAX) {
-        // ตัดรายการเก่าออกครึ่งหนึ่งเมื่อ cache ใหญ่เกินไป
         const drop = keys.slice(0, keys.length - CACHE_MAX);
         drop.forEach(k => delete _cache[k]);
       }
@@ -968,7 +975,8 @@ window.onload = function () {
     return true;
   }
 
-  // ── เก็บ text node ทั้งหมดในหน้าที่ยังเป็นภาษาไทย ──
+  // ── เก็บ text node ในหน้าที่ยังเป็นภาษาไทย และ "มองเห็นอยู่" เท่านั้น ──
+  //    (ข้าม element ที่อยู่ใน #page-xxx ที่ถูกซ่อนด้วย class .hidden)
   function _collectTextNodes(root) {
     const nodes = [];
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
@@ -977,6 +985,7 @@ window.onload = function () {
         if (!parent) return NodeFilter.FILTER_REJECT;
         if (SKIP_TAGS.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
         if (parent.closest('[data-i18n-skip]')) return NodeFilter.FILTER_REJECT;
+        if (parent.closest('[id^="page-"].hidden')) return NodeFilter.FILTER_REJECT;
         const { core } = _splitWhitespace(node.nodeValue);
         if (!_isTranslatableCore(core)) return NodeFilter.FILTER_SKIP;
         return NodeFilter.FILTER_ACCEPT;
@@ -987,7 +996,7 @@ window.onload = function () {
     return nodes;
   }
 
-  // ── เก็บ attribute (placeholder / title / aria-label) ที่เป็นภาษาไทย ──
+  // ── เก็บ attribute (placeholder / title / aria-label) ที่เป็นภาษาไทย และมองเห็นอยู่ ──
   function _collectAttrTargets(root) {
     const targets = [];
     const all = root.querySelectorAll
@@ -995,6 +1004,7 @@ window.onload = function () {
       : [];
     all.forEach(el => {
       if (el.closest('[data-i18n-skip]')) return;
+      if (el.closest('[id^="page-"].hidden')) return;
       ATTRS_TO_TRANSLATE.forEach(attr => {
         const val = el.getAttribute(attr);
         if (val && _isTranslatableCore(val.trim())) targets.push({ el, attr });
@@ -1003,50 +1013,80 @@ window.onload = function () {
     return targets;
   }
 
-  // ── เรียก /api/translate เป็น batch พร้อม cache ──
-  async function _translateCores(cores) {
-    const toFetch = [...new Set(cores)].filter(c => !(c in _cache));
-    if (toFetch.length) {
+  // ── ส่ง chunk เดียวไปแปล พร้อม timeout ป้องกันการค้าง ──
+  async function _translateChunk(chunk) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+    try {
       const resp = await fetch('/api/translate', {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texts: toFetch, targetLang: 'en' }),
+        body:    JSON.stringify({ texts: chunk, targetLang: 'en' }),
+        signal:  controller.signal,
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
       if (!data.success || !Array.isArray(data.translated)) {
         throw new Error(data.error || 'API returned success=false');
       }
-      toFetch.forEach((c, i) => { _cache[c] = data.translated[i] || c; });
-      _saveCache();
+      return data.translated;
+    } finally {
+      clearTimeout(timer);
     }
-    return cores.map(c => _cache[c] || c);
   }
 
-  // ── apply EN: เดินสำรวจ DOM ที่ยังเป็นไทย แล้วแปลทั้งหมด ──
+  // ── แปลข้อความหลายรายการ แบ่งเป็น chunk เล็กๆ + cache ──
+  // คืนค่า { results, hadError } — ถ้า chunk ใดล้มเหลว จะคืนข้อความไทยเดิมสำหรับ
+  // รายการนั้น (ไม่ cache ค่าที่ fail ไว้ เพื่อให้ลองใหม่ครั้งหน้าได้)
+  async function _translateCores(cores) {
+    const unique  = [...new Set(cores)];
+    const toFetch = unique.filter(c => !(c in _cache));
+    let hadError = false;
+
+    for (let i = 0; i < toFetch.length; i += CHUNK_SIZE) {
+      const chunk = toFetch.slice(i, i + CHUNK_SIZE);
+      try {
+        const translated = await _translateChunk(chunk);
+        chunk.forEach((c, j) => { _cache[c] = translated[j] || c; });
+      } catch (e) {
+        console.warn('[i18n] แปล chunk ไม่สำเร็จ:', e.message);
+        hadError = true; // ปล่อยให้ใช้ข้อความไทยเดิมไปก่อน — ไม่ cache ความล้มเหลว
+      }
+    }
+    _saveCache();
+
+    return {
+      results: cores.map(c => (c in _cache) ? _cache[c] : c),
+      hadError,
+    };
+  }
+
+  // ── apply EN: เดินสำรวจ DOM ส่วนที่มองเห็นอยู่ + ยังเป็นไทย แล้วแปล ──
+  // คืนค่า true ถ้ามีบาง chunk แปลไม่สำเร็จ (แสดง toast เตือนแบบไม่บล็อก)
   async function _applyEN(root = document.body) {
-    const textNodes = _collectTextNodes(root);
+    const textNodes   = _collectTextNodes(root);
     const attrTargets = _collectAttrTargets(root);
-    if (!textNodes.length && !attrTargets.length) return;
+    if (!textNodes.length && !attrTargets.length) return false;
 
     const textParts = textNodes.map(n => _splitWhitespace(n.nodeValue));
     const attrCores = attrTargets.map(({ el, attr }) => el.getAttribute(attr).trim());
+    const allCores  = [...textParts.map(p => p.core), ...attrCores];
 
-    const allCores = [...textParts.map(p => p.core), ...attrCores];
-    const translated = await _translateCores(allCores);
+    const { results, hadError } = await _translateCores(allCores);
 
     textNodes.forEach((n, i) => {
       const { lead, trail } = textParts[i];
       _trackedTextNodes.push({ node: n, original: n.nodeValue });
-      n.nodeValue = lead + (translated[i] || textParts[i].core) + trail;
+      n.nodeValue = lead + (results[i] || textParts[i].core) + trail;
     });
     attrTargets.forEach(({ el, attr }, i) => {
       const idx = textNodes.length + i;
       _trackedAttrTargets.push({ el, attr, original: el.getAttribute(attr) });
-      el.setAttribute(attr, translated[idx] || attrCores[i]);
+      el.setAttribute(attr, results[idx] || attrCores[i]);
     });
 
     document.documentElement.lang = 'en';
+    return hadError;
   }
 
   // ── apply TH: คืนค่าทุกอย่างที่เคยแปลกลับเป็นต้นฉบับไทย ──
@@ -1058,7 +1098,9 @@ window.onload = function () {
     document.documentElement.lang = 'th';
   }
 
-  // ── เฝ้าดู DOM ที่เปลี่ยนแปลง (เนื้อหาที่โหลดทีหลัง เช่น รายการ ticket, แดชบอร์ด) ──
+  // ── เฝ้าดู DOM ที่เปลี่ยนแปลง ──
+  // - childList/characterData: เนื้อหาใหม่ที่โหลดมาทีหลัง (ticket list, แดชบอร์ด, modal)
+  // - attributes(class): การสลับหน้า (router toggle .hidden) → แปลหน้าที่เพิ่งเปิด
   const _observer = new MutationObserver(() => {
     if (_currentLang !== 'en' || _mutating) return;
     clearTimeout(_mutationTimer);
@@ -1100,6 +1142,8 @@ window.onload = function () {
   }
 
   // ── public API ────────────────────────────────────
+  // หมายเหตุ: ไม่ว่าผลลัพธ์จะสำเร็จ/ล้มเหลว/timeout — ฟังก์ชันนี้จะ
+  // คืนสถานะปุ่มกลับมาใช้งานได้เสมอ (ไม่ปล่อยให้ค้างเป็น spinner)
   window.switchLang = async function (lang) {
     if (_isBusy) return; // ป้องกัน double-click
     if (lang === _currentLang) return;
@@ -1111,13 +1155,11 @@ window.onload = function () {
       if (lang === 'en') {
         document.body.classList.add('i18n-loading');
         try {
-          await _applyEN(document.body);
+          const hadError = await _applyEN(document.body);
+          if (hadError) _showToast('แปลบางส่วนไม่สำเร็จ ระบบจะลองใหม่ให้อัตโนมัติ');
         } catch (err) {
-          console.error('[i18n] แปลล้มเหลว:', err.message);
-          _applyTH(); // คืนสิ่งที่อาจแปลไปแล้วบางส่วนกลับเป็นไทย
-          _setButtons('th', false);
+          console.error('[i18n] แปลล้มเหลว:', err);
           _showToast('ไม่สามารถแปลภาษาได้ในขณะนี้ กรุณาลองใหม่');
-          return; // _currentLang คงเดิม (th)
         } finally {
           document.body.classList.remove('i18n-loading');
         }
@@ -1128,14 +1170,17 @@ window.onload = function () {
       localStorage.setItem('voc_lang', lang);
       _setButtons(lang, false);
     } finally {
-      _isBusy = false;
+      _isBusy = false; // เสมอ — ปุ่มไม่ค้าง แม้ API จะ error/timeout
     }
   };
 
   // apply ภาษาที่บันทึกไว้เมื่อหน้าโหลด
   function _onReady() {
     _setButtons(_currentLang, false);
-    _observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    _observer.observe(document.body, {
+      childList: true, subtree: true, characterData: true,
+      attributes: true, attributeFilter: ['class'],
+    });
     if (_currentLang === 'en') {
       // หน่วงให้ DOM render + JS init เสร็จก่อน
       setTimeout(() => {
@@ -1151,4 +1196,3 @@ window.onload = function () {
     _onReady();
   }
 })();
-
