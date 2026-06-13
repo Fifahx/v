@@ -975,17 +975,24 @@ window.onload = function () {
     return true;
   }
 
-  // ── เก็บ text node ในหน้าที่ยังเป็นภาษาไทย และ "มองเห็นอยู่" เท่านั้น ──
-  //    (ข้าม element ที่อยู่ใน #page-xxx ที่ถูกซ่อนด้วย class .hidden)
+  // ── เก็บ text node ในหน้าที่ยังเป็นภาษาไทย ──
+  //    เก็บทุก node ที่มีข้อความไทย ไม่ว่าจะมองเห็นหรือไม่
+  //    (แปลทั้งหมดไว้ก่อน เพื่อให้ cache พร้อมเมื่อเปิดหน้า)
   function _collectTextNodes(root) {
     const nodes = [];
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode(node) {
         const parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
+        // ข้าม script, style
         if (SKIP_TAGS.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
+        // ข้าม element ที่ mark ว่า skip
         if (parent.closest('[data-i18n-skip]')) return NodeFilter.FILTER_REJECT;
-        if (parent.closest('[id^="page-"].hidden')) return NodeFilter.FILTER_REJECT;
+        // ข้าม modal overlay ที่ถูก hidden class (ไม่ใช่ page)
+        const closestHidden = parent.closest('.hidden');
+        if (closestHidden && closestHidden.id && closestHidden.id.startsWith('page-')) {
+          return NodeFilter.FILTER_REJECT;
+        }
         const { core } = _splitWhitespace(node.nodeValue);
         if (!_isTranslatableCore(core)) return NodeFilter.FILTER_SKIP;
         return NodeFilter.FILTER_ACCEPT;
@@ -996,7 +1003,7 @@ window.onload = function () {
     return nodes;
   }
 
-  // ── เก็บ attribute (placeholder / title / aria-label) ที่เป็นภาษาไทย และมองเห็นอยู่ ──
+  // ── เก็บ attribute (placeholder / title / aria-label) ที่เป็นภาษาไทย ──
   function _collectAttrTargets(root) {
     const targets = [];
     const all = root.querySelectorAll
@@ -1004,7 +1011,8 @@ window.onload = function () {
       : [];
     all.forEach(el => {
       if (el.closest('[data-i18n-skip]')) return;
-      if (el.closest('[id^="page-"].hidden')) return;
+      const closestHidden = el.closest('.hidden');
+      if (closestHidden && closestHidden.id && closestHidden.id.startsWith('page-')) return;
       ATTRS_TO_TRANSLATE.forEach(attr => {
         const val = el.getAttribute(attr);
         if (val && _isTranslatableCore(val.trim())) targets.push({ el, attr });
@@ -1154,18 +1162,24 @@ window.onload = function () {
   // หมายเหตุ: ไม่ว่าผลลัพธ์จะสำเร็จ/ล้มเหลว/timeout — ฟังก์ชันนี้จะ
   // คืนสถานะปุ่มกลับมาใช้งานได้เสมอ (ไม่ปล่อยให้ค้างเป็น spinner)
   window.switchLang = async function (lang) {
-    if (_isBusy) return; // ป้องกัน double-click
+    if (_isBusy) return;
     if (lang === _currentLang) return;
 
     _isBusy = true;
-    _setButtons(lang, lang === 'en'); // spinner เฉพาะตอนไปหา EN
+    _setButtons(lang, lang === 'en');
 
     try {
       if (lang === 'en') {
         document.body.classList.add('i18n-loading');
         try {
           const hadError = await _applyEN(document.body);
-          if (hadError) _showToast('แปลบางส่วนไม่สำเร็จ ระบบจะลองใหม่ให้อัตโนมัติ');
+          if (hadError) {
+            // แปลไม่ครบ → ลองอีกครั้งหลัง 800ms (หลัง API ตอบกลับ)
+            _showToast('กำลังแปลส่วนที่เหลือ...');
+            setTimeout(async () => {
+              try { await _applyEN(document.body); } catch(e) {}
+            }, 800);
+          }
         } catch (err) {
           console.error('[i18n] แปลล้มเหลว:', err);
           _showToast('ไม่สามารถแปลภาษาได้ในขณะนี้ กรุณาลองใหม่');
@@ -1179,7 +1193,7 @@ window.onload = function () {
       localStorage.setItem('voc_lang', lang);
       _setButtons(lang, false);
     } finally {
-      _isBusy = false; // เสมอ — ปุ่มไม่ค้าง แม้ API จะ error/timeout
+      _isBusy = false;
     }
   };
 
