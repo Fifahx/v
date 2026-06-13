@@ -242,16 +242,14 @@
       <p class="home-section-sub" data-i18n="loc_sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา ตั้งอยู่ในใจกลางเมืองยะลา</p>
       <div class="location-wrap">
         <div class="location-map-box">
-          <!-- Static map image — ไม่มีปัญหา CSP / AdBlocker -->
-          <a href="https://maps.google.com/?q=มหาวิทยาลัยราชภัฏยะลา+ยะลา" target="_blank" rel="noopener" aria-label="เปิดแผนที่ใน Google Maps">
-            <img
-              src="https://maps.googleapis.com/maps/api/staticmap?center=มหาวิทยาลัยราชภัฏยะลา,ยะลา&zoom=15&size=640x340&scale=2&markers=color:green%7Cมหาวิทยาลัยราชภัฏยะลา,ยะลา&language=th"
-              alt="แผนที่มหาวิทยาลัยราชภัฏยะลา"
-              width="100%" height="340"
-              style="width:100%;height:340px;object-fit:cover;border-radius:12px;display:block;"
-              onerror="this.parentElement.innerHTML=window._mapFallbackHTML()"
-            >
-          </a>
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d478.70075698111214!2d101.2894853942507!3d6.547284131587036!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31b374304e314be1%3A0x11968d5acbbaf7ca!2z4LiE4LiT4Liw4Lin4Li04LiX4Lii4Liy4Lio4Liy4Liq4LiV4Lij4LmM4LmA4LiX4LiE4LmC4LiZ4LmC4Lil4Lii4Li14LmB4Lil4Liw4LiB4Liy4Lij4LmA4LiB4Lip4LiV4Lij!5e1!3m2!1sen!2ssg!4v1781282044569!5m2!1sen!2ssg"
+            style="width:100%;height:340px;border:0;border-radius:12px;display:block;"
+            allowfullscreen=""
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="แผนที่คณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยราชภัฏยะลา"
+          ></iframe>
         </div>
         <div class="location-info-box">
           <div class="loc-info-item">
@@ -534,7 +532,7 @@
       <h2><i class="fas fa-list-alt"></i> ติดตามสถานะ</h2>
     </div>
     <div class="track-bar">
-      <input type="text" id="track-input" placeholder="VOC-2568-XXXX">
+      <input type="text" id="track-input" placeholder="กรอกรหัสติดตามสถานะที่นี่...">
       <button onclick="doTrack()"><i class="fas fa-search"></i> ค้นหา</button>
     </div>
     <div id="track-result"></div>
