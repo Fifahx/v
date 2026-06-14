@@ -1221,19 +1221,26 @@ window.onload = function () {
     _onReady();
   }
 })();
-// ════ ACCESSIBILITY BAR — ซ่อนเมื่อ scroll ลง แสดงเมื่อ scroll ขึ้นมาบนสุด ════
+// ════ ACCESSIBILITY BAR — ซ่อนเมื่อ scroll ลง แสดงเมื่อ scroll กลับขึ้นบนสุด ════
 (function () {
-  let _lastY = 0;
-  window.addEventListener('scroll', function () {
-    const bar = document.getElementById('accessibility-bar');
-    if (!bar) return;
-    const currentY = window.scrollY;
-    // แสดงเฉพาะเมื่ออยู่บนสุด (< 10px) เท่านั้น
-    if (currentY < 10) {
+  function _updateBar() {
+    const bar    = document.getElementById('accessibility-bar');
+    const header = document.querySelector('header');
+    if (!bar || !header) return;
+
+    const atTop = window.scrollY < 10;
+    if (atTop) {
       bar.classList.remove('bar-hidden');
+      // header sticky เริ่มต้นหลัง bar — วาง top เท่ากับความสูง bar
+      header.style.top = bar.offsetHeight + 'px';
     } else {
       bar.classList.add('bar-hidden');
+      // bar หายไป → header ขึ้นมาติดขอบบน
+      header.style.top = '0px';
     }
-    _lastY = currentY;
-  }, { passive: true });
+  }
+
+  window.addEventListener('scroll', _updateBar, { passive: true });
+  // รัน 1 ครั้งตอนโหลด
+  document.addEventListener('DOMContentLoaded', _updateBar);
 })();
