@@ -1255,40 +1255,83 @@ window.onload = function () {
   }, { passive: true });
 })();
 
-// ════ SCROLL FAB — เลื่อนขึ้นบน/ลงล่าง ════
+// ════ SCROLL FAB — เลื่อนขึ้นบน/ลงล่าง (direction-aware + throttle 150ms) ════
 (function () {
-  const BOTTOM_THRESHOLD = 100; // px จากขอบล่าง ถือว่า "อยู่ล่างสุดแล้ว"
+  const BOTTOM_THRESHOLD = 60; // px จากขอบล่าง ถือว่า "อยู่ล่างสุดแล้ว"
+  const THROTTLE_MS      = 150;
+
+  let _lastScrollY  = window.scrollY;
+  let _rafPending   = false;
+  let _throttleTimer = null;
+
+  // true = ชี้ขึ้น (จะพาไปบนสุด), false = ชี้ลง (จะพาไปล่างสุด)
+  let _pointUp = false;
 
   function _isAtBottom() {
     return (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - BOTTOM_THRESHOLD);
   }
+  function _isAtTop() {
+    return window.scrollY < 10;
+  }
 
-  function _updateFab() {
+  function _applyFab(pointUp) {
     const fab  = document.getElementById('scroll-fab');
+    const icon = document.getElementById('scroll-fab-icon');
     if (!fab || !icon) return;
 
-    if (_isAtBottom()) {
-      // อยู่ล่างสุด → ปุ่มพาขึ้นบน (ลูกศรชี้ขึ้น)
+    _pointUp = pointUp;
+    if (pointUp) {
       fab.classList.add('at-bottom');
       fab.title = 'เลื่อนขึ้นด้านบน';
       fab.setAttribute('aria-label', 'เลื่อนขึ้นด้านบน');
+      icon.className = 'fas fa-chevron-up';
     } else {
-      // ไม่ใช่ล่างสุด → ปุ่มพาลงล่าง (ลูกศรชี้ลง)
       fab.classList.remove('at-bottom');
       fab.title = 'เลื่อนลงด้านล่าง';
       fab.setAttribute('aria-label', 'เลื่อนลงด้านล่าง');
+      icon.className = 'fas fa-chevron-down';
     }
   }
 
-  window.toggleScrollFab = function () {
+  function _updateFab() {
+    const currentY   = window.scrollY;
+    const scrolledDown = currentY > _lastScrollY; // scroll ลง = true
+
+    // กรณีชัดเจน: ถึงล่างสุด หรือ กลับขึ้นบนสุด → override ทันที
     if (_isAtBottom()) {
+      _applyFab(true);   // ชี้ขึ้น
+    } else if (_isAtTop()) {
+      _applyFab(false);  // ชี้ลง
+    } else {
+      // กลางหน้า — ดูทิศทาง scroll
+      _applyFab(scrolledDown); // scroll ลง → ชี้ขึ้น (เบรกฉุกเฉิน), scroll ขึ้น → ชี้ลง
+    }
+
+    _lastScrollY = currentY;
+    _rafPending  = false;
+  }
+
+  function _onScroll() {
+    // Throttle 150ms: ไม่ว่าจะสะบัดนิ้วรัวแค่ไหน จะ update แค่ครั้งเดียวใน 150ms
+    if (_throttleTimer) return;
+    _throttleTimer = setTimeout(function () {
+      _throttleTimer = null;
+      if (!_rafPending) {
+        _rafPending = true;
+        requestAnimationFrame(_updateFab);
+      }
+    }, THROTTLE_MS);
+  }
+
+  window.toggleScrollFab = function () {
+    if (_pointUp) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
   };
 
-  window.addEventListener('scroll', _updateFab, { passive: true });
+  window.addEventListener('scroll', _onScroll, { passive: true });
   window.addEventListener('load', _updateFab);
   document.addEventListener('DOMContentLoaded', _updateFab);
 })();
