@@ -5337,3 +5337,50 @@ body.font-xl  { font-size: 20px; }
   color: #fff;
   text-decoration: underline;
 }
+
+/* ════ SCROLL FAB — ปุ่มเลื่อนขึ้น/ลง ════ */
+.scroll-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 24px;
+  z-index: 1200;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2d6a4f, #52b788);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(45, 106, 79, 0.45);
+  transition: background 0.25s, transform 0.2s, box-shadow 0.2s;
+  opacity: 0.88;
+}
+.scroll-fab:hover {
+  background: linear-gradient(135deg, #1b4332, #2d6a4f);
+  opacity: 1;
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(45, 106, 79, 0.55);
+}
+.scroll-fab:active {
+  transform: scale(0.94);
+}
+/* ไอคอน rotate เมื่อสลับทิศ */
+.scroll-fab .fas {
+  transition: transform 0.3s ease;
+}
+.scroll-fab.at-bottom .fas {
+  transform: rotate(180deg);
+}
+@media (max-width: 768px) {
+  .scroll-fab {
+    bottom: 18px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    font-size: .95rem;
+  }
+}

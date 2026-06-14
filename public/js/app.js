@@ -1254,3 +1254,44 @@ window.onload = function () {
     requestAnimationFrame(_updateBar);
   }, { passive: true });
 })();
+
+// ════ SCROLL FAB — เลื่อนขึ้นบน/ลงล่าง ════
+(function () {
+  const BOTTOM_THRESHOLD = 60; // px จากขอบล่าง ถือว่า "อยู่ล่างสุดแล้ว"
+
+  function _isAtBottom() {
+    return (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - BOTTOM_THRESHOLD);
+  }
+
+  function _updateFab() {
+    const fab  = document.getElementById('scroll-fab');
+    const icon = document.getElementById('scroll-fab-icon');
+    if (!fab || !icon) return;
+
+    if (_isAtBottom()) {
+      // อยู่ล่างสุด → ปุ่มพาขึ้นบน (ลูกศรชี้ขึ้น)
+      fab.classList.add('at-bottom');
+      fab.title = 'เลื่อนขึ้นด้านบน';
+      fab.setAttribute('aria-label', 'เลื่อนขึ้นด้านบน');
+      icon.className = 'fas fa-chevron-up';
+    } else {
+      // ไม่ใช่ล่างสุด → ปุ่มพาลงล่าง (ลูกศรชี้ลง)
+      fab.classList.remove('at-bottom');
+      fab.title = 'เลื่อนลงด้านล่าง';
+      fab.setAttribute('aria-label', 'เลื่อนลงด้านล่าง');
+      icon.className = 'fas fa-chevron-down';
+    }
+  }
+
+  window.toggleScrollFab = function () {
+    if (_isAtBottom()) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+  };
+
+  window.addEventListener('scroll', _updateFab, { passive: true });
+  window.addEventListener('load', _updateFab);
+  document.addEventListener('DOMContentLoaded', _updateFab);
+})();
