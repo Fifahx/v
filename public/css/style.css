@@ -4519,10 +4519,12 @@ html {
 /* admin-fab — ย้ายจาก fixed floating มาอยู่ใน footer-bottom */
 .admin-fab {
   position: absolute;
-  right:0;
-  width: 34px;
+  right: -162px; /* ย้ายออกจากขอบขวา */
+  bottom: -20px;
+  width: auto;
+  padding: 10px 4rem 10px 12px;
   height: 34px;
-  border-radius: 50%;
+  border-radius: 50px 0 0 50px;
   background: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.55);
   border: 1.5px solid rgba(255, 255, 255, 0.2);
@@ -4532,16 +4534,20 @@ html {
   font-size: 0.85rem;
   cursor: pointer;
   box-shadow: none;
-  transition: background 0.25s, color 0.25s, transform 0.2s;
+  transition: background 0.25s, color 0.25s, transform 0.7s ease-in;
   opacity: 0.6;
   flex-shrink: 0;
+}
+
+.admin-fab span {
+  margin-left: 9px;
 }
 
 .admin-fab:hover {
   background: rgba(255, 255, 255, 0.25);
   color: #fff;
   opacity: 1;
-  transform: scale(1.1);
+  transform: translateX(-6.7rem);
 }
 
 .admin-fab:active {
