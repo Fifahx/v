@@ -1221,3 +1221,19 @@ window.onload = function () {
     _onReady();
   }
 })();
+// ════ ACCESSIBILITY BAR — ซ่อนเมื่อ scroll ลง แสดงเมื่อ scroll ขึ้นมาบนสุด ════
+(function () {
+  let _lastY = 0;
+  window.addEventListener('scroll', function () {
+    const bar = document.getElementById('accessibility-bar');
+    if (!bar) return;
+    const currentY = window.scrollY;
+    // แสดงเฉพาะเมื่ออยู่บนสุด (< 10px) เท่านั้น
+    if (currentY < 10) {
+      bar.classList.remove('bar-hidden');
+    } else {
+      bar.classList.add('bar-hidden');
+    }
+    _lastY = currentY;
+  }, { passive: true });
+})();
