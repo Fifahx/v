@@ -5279,9 +5279,20 @@ body.font-xl  { font-size: 20px; }
    RESPONSIVE — Mobile
 ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .accessibility-bar { padding: 5px 0; }
-  .a11y-inner { gap: 8px; }
+  .accessibility-bar { padding: 4px 0; }
+  .a11y-inner {
+    gap: 6px;
+    padding: 0 12px;
+    flex-wrap: nowrap;        /* บังคับ 1 แถวเสมอ ป้องกัน wrap ทำให้ความสูงเปลี่ยน */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .a11y-inner::-webkit-scrollbar { display: none; }
   .a11y-label { display: none; }
+  .a11y-divider { display: none; }
+  .a11y-btn { padding: 3px 8px; font-size: .76rem; }
+  .lang-btn { min-width: 46px; }
   .features-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; grid-auto-rows: 1fr; }
   .feature-card { padding: 18px 14px; }
   .location-wrap { grid-template-columns: 1fr; }
@@ -5290,6 +5301,8 @@ body.font-xl  { font-size: 20px; }
 }
 @media (max-width: 480px) {
   .features-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
+  .a11y-btn { padding: 2px 7px; font-size: .73rem; }
+  .lang-btn { min-width: 40px; }
 }
 
 /* Translation spinner */

@@ -1228,21 +1228,29 @@ window.onload = function () {
     const header = document.querySelector('header');
     if (!bar || !header) return;
 
-    const barH = bar.offsetHeight;
+    // ใช้ getBoundingClientRect เพื่อความแม่นยำบน mobile (รองรับ wrap/no-wrap)
+    const barH = bar.getBoundingClientRect().height;
     if (window.scrollY < 10) {
-      // อยู่บนสุด — แสดง bar, header อยู่ถัดลงมา
       bar.classList.remove('bar-hidden');
       header.style.top = barH + 'px';
     } else {
-      // scroll ลง — ซ่อน bar, header ขึ้นชิดบน
       bar.classList.add('bar-hidden');
       header.style.top = '0px';
     }
   }
 
   window.addEventListener('scroll', _updateBar, { passive: true });
+
+  // รัน ทั้งตอน DOMContentLoaded และ load เพื่อความแน่ใจหลัง font/resource โหลด
   document.addEventListener('DOMContentLoaded', function () {
-    // รัน 1 ครั้งหลัง DOM พร้อมเพื่อตั้ง top เริ่มต้นให้ถูกต้อง
-    setTimeout(_updateBar, 50);
+    requestAnimationFrame(_updateBar);
   });
+  window.addEventListener('load', function () {
+    requestAnimationFrame(_updateBar);
+  });
+
+  // รองรับ mobile orientation change และ resize (เช่น กาง/หุบ keyboard)
+  window.addEventListener('resize', function () {
+    requestAnimationFrame(_updateBar);
+  }, { passive: true });
 })();
