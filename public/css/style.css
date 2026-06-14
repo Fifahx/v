@@ -5372,9 +5372,7 @@ body.font-xl  { font-size: 20px; }
 .scroll-fab .fas {
   transition: transform 0.3s ease;
 }
-.scroll-fab.at-bottom .fas {
-  transform: rotate(180deg);
-}
+
 @media (max-width: 768px) {
   .scroll-fab {
     bottom: 18px;
