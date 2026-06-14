@@ -2387,7 +2387,7 @@ footer {
   }
 
   .footer-container {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
   }
 
@@ -3833,6 +3833,7 @@ header {
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 @media(max-width:480px) {
@@ -5140,6 +5141,7 @@ body.font-xl  { font-size: 20px; }
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 .home-section-title i { color: #2d6a4f; }
 .home-section-sub {
@@ -5279,6 +5281,8 @@ body.font-xl  { font-size: 20px; }
    RESPONSIVE — Mobile
 ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
+  .home-section-line { display: none; }
+  .home-section-header { justify-content: center; }
   .accessibility-bar { padding: 4px 0; }
   .a11y-inner {
     gap: 6px;
@@ -5297,7 +5301,7 @@ body.font-xl  { font-size: 20px; }
   .feature-card { padding: 18px 14px; }
   .location-wrap { grid-template-columns: 1fr; }
   .location-map-box iframe { height: 240px; }
-  .home-section-title { font-size: 1.05rem; }
+  .home-section-title { font-size: 1.05rem; white-space: normal; text-align: center; justify-content: center; }
 }
 @media (max-width: 480px) {
   .features-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
@@ -5382,5 +5386,13 @@ body.font-xl  { font-size: 20px; }
     width: 40px;
     height: 40px;
     font-size: .95rem;
+  }
+}
+
+/* footer 1 column บนมือถือเล็ก */
+@media (max-width: 480px) {
+  .footer-container {
+    grid-template-columns: 1fr;
+    gap: 14px;
   }
 }
