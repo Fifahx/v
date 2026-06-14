@@ -2824,6 +2824,7 @@ footer {
   border-radius: 12px;
   box-shadow: var(--shadow);
   padding: 18px;
+  margin-bottom: 16px;
 }
 
 .rpt-card-title {
@@ -4894,16 +4895,9 @@ html {
   }
 }
 
-/* ── ข้อ 4: เยื้อน profile modal ออกจาก hamburger ── */
-/* profile overlay ขยับ position ของ modal-box ให้ไม่ทับกัน */
-#profile-overlay .voc-modal-box {
-  margin-right: 48px;
-  /* เว้นพื้นที่ให้ hamburger */
-}
-
 @media (min-width: 701px) {
 
-  /* desktop: ไม่ต้องเยื้อน */
+  /* desktop */
   #profile-overlay .voc-modal-box {
     margin-right: 0;
   }

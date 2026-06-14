@@ -1284,7 +1284,7 @@ window.onload = function () {
       fab.classList.add('at-bottom');
       fab.title = 'เลื่อนขึ้นด้านบน';
       fab.setAttribute('aria-label', 'เลื่อนขึ้นด้านบน');
-      icon.className = 'fas fa-chevron-up';
+      icon.className = 'fas fa-chevron-down';
     } else {
       fab.classList.remove('at-bottom');
       fab.title = 'เลื่อนลงด้านล่าง';
