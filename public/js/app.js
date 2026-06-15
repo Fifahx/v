@@ -360,6 +360,7 @@ function changeStep(step) {
     setTimeout(_tryRenderTurnstile, 1500);
   }
 }
+
 function setOption(el, key, val) { el.parentElement.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); vocData[key] = val; }
 function toggleAnon() {
   const isAnon = document.getElementById('isAnon').checked;
