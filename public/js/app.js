@@ -1631,8 +1631,8 @@ window.onload = function () {
 
   function _render({ total, todayCount, updated }) {
     const el = (id) => document.getElementById(id);
-    if (el('stat-total'))   el('stat-total').textContent   = _fmt(total);
-    if (el('stat-today'))   el('stat-today').textContent   = _fmt(todayCount);
+    if (el('stat-total')) el('stat-total').textContent = _fmt(total);
+    if (el('stat-today')) el('stat-today').textContent = _fmt(todayCount);
     if (el('stat-updated')) el('stat-updated').textContent = _fmtDate(updated);
   }
 
@@ -1642,11 +1642,11 @@ window.onload = function () {
       let data;
       if (alreadyCounted) {
         // เคยนับแล้วในเซสชันนี้ → GET อย่างเดียว
-        const r = await fetch('/api/pageviews');
+        const r = await fetch('/api/dashboard?action=pageviews');
         data = await r.json();
       } else {
         // นับครั้งแรก → POST
-        const r = await fetch('/api/pageviews', { method: 'POST' });
+        const r = await fetch('/api/dashboard?action=pageviews', { method: 'POST' });
         data = await r.json();
         sessionStorage.setItem(SESSION_KEY, '1');
       }
