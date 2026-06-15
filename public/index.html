@@ -473,12 +473,15 @@
           <!-- แนบลิงก์ไฟล์ -->
           <div class="file-link-wrap" style="margin-top:4px;">
             <label style="font-size:.87rem;color:#555;font-weight:600;display:block;margin-bottom:6px;">
-              <i class="fas fa-link"></i> ลิงก์ไฟล์แนบ <span style="font-weight:400;color:#aaa;">(ไม่บังคับ)</span>
+              <i class="fas fa-link"></i>ลิงก์ไฟล์แนบ<span style="font-weight:400;color:#aaa;">(ไม่บังคับ)</span>
             </label>
-            <input type="url" id="v-file-link" class="voc-input" placeholder="https://drive.google.com/... หรือลิงก์ไฟล์อื่นๆ">
-            <div style="margin-top:5px;font-size:.78rem;color:#aaa;"><i class="fas fa-info-circle"></i> วางลิงก์จาก Google Drive, OneDrive, Dropbox หรือที่อื่นๆ</div>
+              <input type="url" id="v-file-link" class="voc-input" placeholder="https://drive.google.com/...">
+            <div style="margin:12px 0;text-align:center;color:#999;">หรือ</div>
+            <label class="btn-submit" style="display:inline-block;cursor:pointer;"><i class="fas fa-upload"></i>อัปโหลดรูปภาพ / PDF
+              <input type="file" id="v-file-upload" accept="image/*,.pdf" hidden onchange="uploadAttachment(this)">
+            </label>
+            <div id="upload-status" style="margin-top:10px;font-size:.85rem;color:#666;"></div>
           </div>
-        </div>
         <div style="display:flex;">
           <button class="btn-back" onclick="changeStep(2)">← ย้อนกลับ</button>
           <button class="btn-submit" onclick="prepareReview()">ถัดไป - ตรวจสอบข้อมูล →</button>

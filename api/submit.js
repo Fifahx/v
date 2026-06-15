@@ -188,9 +188,12 @@ module.exports = async function handler(req, res) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
   try {
     const p = req.body;
+    const fileName =
+      typeof p.fileName === 'string' ? p.fileName.slice(0, 255): '';
+    const fileType =
+      typeof p.fileType === 'string' ? p.fileType.slice(0, 100): '';
 
     // ── Validation เบื้องต้น ──
     if (!p.subject || !p.detail) {
@@ -267,6 +270,8 @@ module.exports = async function handler(req, res) {
       '',
       '',
       fileUrl,
+      fileName,
+      fileType,
     ]);
 
     sendNotifyEmail(ticketId, p);

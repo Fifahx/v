@@ -369,16 +369,58 @@ function toggleAnon() {
   fields.style.pointerEvents = isAnon ? 'none' : '';
   fields.querySelectorAll('input').forEach(el => { el.disabled = isAnon; if (isAnon) el.value = ''; });
 }
-function handleFileSelect(inputEl) {
-  // Legacy: ไม่ใช้แล้ว — ใช้ link input แทน
+
+async function uploadAttachment(inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    await showAlert(
+      'ไฟล์ใหญ่เกินไป',
+      'อนุญาตสูงสุด 5 MB'
+    );
+    return;
+  }
+  const status = document.getElementById('upload-status');
+  status.innerHTML =
+    '<i class="fas fa-spinner fa-spin"></i> กำลังอัปโหลด...';
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: fd
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || 'อัปโหลดไม่สำเร็จ');
+    }
+    attachedFile = {
+      url: data.url,
+      fileName: file.name,
+      fileType: file.type
+    };
+    status.innerHTML = `
+            <span style="color:green">
+                <i class="fas fa-check-circle"></i>
+                ${file.name}
+            </span>
+        `;
+  } catch (err) {
+    status.innerHTML = `
+            <span style="color:red">
+                ${err.message}
+            </span>
+        `;
+  }
 }
+
 function prepareReview() {
   const subject = document.getElementById('v-subject')?.value.trim(); const detail = document.getElementById('v-detail')?.value.trim(); const note = document.getElementById('v-note')?.value.trim() || '';
   if (!subject) { showAlert('กรุณากรอกหัวข้อ', ''); return; } if (!detail) { showAlert('กรุณากรอกรายละเอียด', ''); return; }
   const isAnon = document.getElementById('isAnon')?.checked; const name = isAnon ? 'ไม่ระบุตัวตน' : (document.getElementById('v-name')?.value || '-'); const sid = isAnon ? '-' : (document.getElementById('v-sid')?.value || '-');
   const pMap = { high: { label: '🔴 เร่งด่วน', sub: 'ภายใน 24 ชม.', cls: 'high' }, medium: { label: '🟡 ปานกลาง', sub: 'ภายใน 3 วัน', cls: 'medium' }, low: { label: '🟢 ทั่วไป', sub: 'ภายใน 7 วัน', cls: 'low' } };
   const pInfo = pMap[vocData.priority] || pMap.medium; const detailHtml = detail.replace(/\n/g, '<br>');
-  const _rl = document.getElementById('v-file-link')?.value.trim() || '';
+  const _rl = attachedFile?.url || document.getElementById('v-file-link')?.value.trim() || '';
   const _fileLinkHtml = _rl && _rl.startsWith('http') ? `<div class="review-section"><div class="review-section-title">・ลิงก์ไฟล์แนบ</div><div style="padding:10px 14px;background:#f5f5f5;border-radius:8px;"><a href="${_rl}" target="_blank" style="color:#2d6a4f;word-break:break-all;font-size:.87rem;"><i class="fas fa-external-link-alt"></i> ${_rl}</a></div></div>` : '';
   document.getElementById('review-area').innerHTML = `<div class="review-card"><div class="review-card-header"><h3>ตรวจสอบข้อมูลก่อนส่ง</h3></div><div class="review-section"><div class="review-section-title">👤 ข้อมูลผู้แจ้ง</div><div class="review-row"><span class="ri">・</span><span class="rl">ประเภท</span><span class="rv">${vocData.cType}</span></div><div class="review-row"><span class="ri">・</span><span class="rl">ชื่อ-นามสกุล</span><span class="rv">${name}</span></div><div class="review-row"><span class="ri">・</span><span class="rl">รหัส/หน่วยงาน</span><span class="rv">${sid}</span></div></div><div class="review-section"><div class="review-section-title">📂 รายละเอียดเรื่อง</div><div class="review-row"><span class="ri">・</span><span class="rl">ประเภทเรื่อง</span><span class="rv">${vocData.category}</span></div><div class="review-row"><span class="ri">・</span><span class="rl">ความเร่งด่วน</span><span class="rv"><span class="priority-pill ${pInfo.cls}">${pInfo.label}</span><small style="color:#999;margin-left:6px;">${pInfo.sub}</small></span></div><div class="review-row"><span class="ri">・</span><span class="rl">หัวข้อ</span><span class="rv" style="font-weight:700;">${subject}</span></div></div><div class="review-section"><div class="review-section-title">・ รายละเอียด</div><div style="background:#f8faf9;border-radius:10px;padding:14px;font-size:.9rem;color:#444;line-height:1.75;border-left:3px solid var(--dgreen);">${detailHtml}</div></div>${note ? `<div class="review-section"><div class="review-section-title">・ หมายเหตุ</div><div style="background:#fffbf0;border-radius:10px;padding:12px 14px;font-size:.88rem;color:#555;border-left:3px solid #f77f00;">${note}</div></div>` : ''}${_fileLinkHtml}<div style="background:#e8f5e9;border-radius:10px;padding:12px 16px;margin:16px 24px;font-size:.82rem;color:#2d6a4f;"><i class="fas fa-info-circle"></i> ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้</div></div>`;
   changeStep(4);
@@ -407,11 +449,28 @@ async function finalSubmit() {
   try {
     // ใช้ link ที่ user กรอกโดยตรง แทนการ upload
     const _linkInput = document.getElementById('v-file-link');
-    let fileUrl = (_linkInput && _linkInput.value.trim().startsWith('http'))
-      ? _linkInput.value.trim()
-      : '';
+    let fileUrl = '';
+    if (attachedFile?.url) {fileUrl = attachedFile.url;
+    } else if (_linkInput && _linkInput.value.trim().startsWith('http')
+    ){
+      fileUrl = _linkInput.value.trim();
+    }
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังส่ง...';
-    const res = await api.post('/api/submit', { customerType: vocData.cType, isAnon: document.getElementById('isAnon').checked, name: document.getElementById('v-name').value, studentId: document.getElementById('v-sid').value, categories: [vocData.category], priority: vocData.priority, subject: document.getElementById('v-subject').value, detail: document.getElementById('v-detail').value, userNote: document.getElementById('v-note')?.value.trim() || '', fileUrl, username: currentUser ? currentUser.username : 'guest', turnstileToken: _turnstileToken || 'bypass-no-widget' });
+    const res = await api.post('/api/submit',
+      { customerType: vocData.cType,
+        isAnon: document.getElementById('isAnon').checked,
+        name: document.getElementById('v-name').value,
+        studentId: document.getElementById('v-sid').value,
+        categories: [vocData.category],
+        priority: vocData.priority,
+        subject: document.getElementById('v-subject').value,
+        detail: document.getElementById('v-detail').value,
+        userNote: document.getElementById('v-note')?.value.trim() || '',
+        fileUrl,
+        fileName: attachedFile?.fileName || '',
+        fileType: attachedFile?.fileType || '',
+        username: currentUser ? currentUser.username : 'guest',
+        turnstileToken: _turnstileToken || 'bypass-no-widget' });
     if (res.success) {
       submitted = true; // ← mark ว่าส่งสำเร็จแล้ว finally จะไม่แตะปุ่ม
       markClientSubmit(); resetTurnstile(); attachedFile = null;
