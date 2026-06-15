@@ -435,12 +435,43 @@ async function finalSubmit() {
 
 // ════ PROGRESS BAR ════
 function buildProgressBar(status) {
-  const steps = ['ส่งคำร้อง', 'ตรวจสอบข้อมูล', 'มอบหมายผู้ดูแล', 'ดำเนินการ', 'เสร็จสิ้น'];
-  const statusMap = { 'รอดำเนินการ': 1, 'กำลังดำเนินการ': 2, 'รอตรวจสอบ': 3, 'เสร็จสิ้น': 4, 'ปฏิเสธ': -1 };
-  if (status === 'ปฏิเสธ') return `<div style="margin-top:12px;padding:10px 14px;background:#fde8e8;border-radius:10px;color:#d00000;font-size:.82rem;font-weight:700;text-align:center;">❌ ไม่รับดำเนินการ / ปฏิเสธคำร้อง</div>`;
-  const cur = statusMap[status] ?? 0; const pct = cur <= 0 ? 0 : Math.round((cur / (steps.length - 1)) * 100);
-  const stepsHtml = steps.map((label, i) => { const isDone = i < cur, isActive = i === cur; const cls = isDone ? 'done' : isActive ? 'active' : ''; return `<div class="prog-step"><div class="prog-dot ${cls}">${isDone ? '✓' : i + 1}</div><div class="prog-label ${cls}">${label}</div></div>`; }).join('');
-  return `<div class="ticket-progress"><div class="progress-steps"><div class="progress-fill-bar" style="width:${pct}%"></div>${stepsHtml}</div></div>`;
+  // 5 ขั้นตอนครบ: รับเรื่อง → ตรวจสอบ → มอบหมาย → ดำเนินการ → เสร็จสิ้น
+  const steps = [
+    { label: 'รับเรื่อง',       icon: 'fas fa-inbox' },
+    { label: 'ตรวจสอบข้อมูล',   icon: 'fas fa-search' },
+    { label: 'มอบหมายผู้ดูแล',  icon: 'fas fa-user-check' },
+    { label: 'กำลังดำเนินการ',  icon: 'fas fa-cog' },
+    { label: 'เสร็จสิ้น',       icon: 'fas fa-check-circle' },
+  ];
+  // สถานะจาก Sheets → ขั้นตอนที่ active (0-based index)
+  const statusMap = {
+    'รอดำเนินการ'     : 1,  // ผ่าน: รับเรื่อง, active: ตรวจสอบ
+    'กำลังดำเนินการ'  : 3,  // ผ่าน: รับ+ตรวจ+มอบ, active: ดำเนินการ
+    'รอตรวจสอบ'      : 2,  // ผ่าน: รับ+ตรวจ, active: มอบหมาย
+    'เสร็จสิ้น'       : 4,  // ทุก step done
+    'ปฏิเสธ'          : -1,
+  };
+  if (status === 'ปฏิเสธ') return \`<div class="prog-rejected"><i class="fas fa-times-circle"></i> ไม่รับดำเนินการ / ปฏิเสธคำร้อง</div>\`;
+  const cur = statusMap[status] ?? 0;
+  const isDoneAll = cur >= steps.length - 1;
+  const pct = cur <= 0 ? 0 : Math.round((cur / (steps.length - 1)) * 100);
+  const stepsHtml = steps.map((s, i) => {
+    const isDone = i < cur || isDoneAll;
+    const isActive = i === cur && !isDoneAll;
+    const cls = isDone ? 'done' : isActive ? 'active' : '';
+    return \`<div class="prog-step">
+      <div class="prog-dot \${cls}">
+        \${isDone ? '<i class="fas fa-check"></i>' : \`<i class="\${s.icon}"></i>\`}
+      </div>
+      <div class="prog-label \${cls}">\${s.label}</div>
+    </div>\`;
+  }).join('');
+  return \`<div class="ticket-progress">
+    <div class="progress-steps">
+      <div class="progress-fill-bar" style="width:\${pct}%"></div>
+      \${stepsHtml}
+    </div>
+  </div>\`;
 }
 
 // ════ NEWS ════
@@ -556,7 +587,86 @@ function toggleFaq(id) { const item = document.getElementById('faq-' + id); if (
 function searchFaq() { const q = document.getElementById('faq-search')?.value.trim() || ''; const container = document.getElementById('faq-content'); container.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>'; api.get('/api/faq').then(res => { if (res.success) renderFaq(res.faqs || [], q); }); }
 
 // ════ REPORT ════
-function printReport() { const content = document.getElementById('report-content'); if (!content || content.querySelector('.loading-spinner')) { showAlert('รายงานยังไม่โหลด', ''); return; } const rptNames = { service: 'สรุปการให้บริการ', users: 'ผู้ใช้บริการ', duration: 'เวลาให้บริการ', monthly: 'สรุปรายเดือน' }; const now = new Date().toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' }); const printWin = window.open('', '_blank', 'width=900,height=700'); printWin.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>VOC รายงาน</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Sarabun',sans-serif;background:#fff;color:#222;padding:32px 40px;}.print-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2d6a4f;padding-bottom:16px;margin-bottom:24px;}.print-header h1{font-size:1.4rem;color:#2d6a4f;font-weight:800;}@media print{body{padding:16px 20px;}}</style></head><body><div class="print-header"><div><h1>VOC System — ${rptNames[currentReportType] || 'รายงาน'}</h1><p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร · มหาวิทยาลัยราชภัฏยะลา</p></div><div style="text-align:right;font-size:.8rem;color:#888;"><div>วันที่พิมพ์: ${now}</div><div>ผู้พิมพ์: ${currentUser?.fullname || currentUser?.username || 'admin'}</div></div></div>${content.innerHTML}<script>setTimeout(function(){window.print();},600);<\/script></body></html>`); printWin.document.close(); }
+function printReport() {
+  if (!window._lastReportData) { showAlert('⚠️','รายงานยังไม่โหลด','กรุณาเลือกประเภทรายงานและรอข้อมูลโหลดก่อนพิมพ์'); return; }
+  const rptNames = { service:'สรุปการให้บริการ', users:'ผู้ใช้บริการ', duration:'เวลาให้บริการ', monthly:'สรุปรายเดือน' };
+  const now = new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const r   = window._lastReportData;
+  const typ = currentReportType;
+  let body  = '';
+
+  const tblStyle = `style="width:100%;border-collapse:collapse;font-size:.88rem;margin-top:12px;"`;
+  const thStyle  = `style="background:#2d6a4f;color:#fff;padding:8px 10px;text-align:left;"`;
+  const tdStyle  = `style="padding:7px 10px;border-bottom:1px solid #e0e0e0;"`;
+  const tdR      = `style="padding:7px 10px;border-bottom:1px solid #e0e0e0;text-align:right;"`;
+  const secTitle = t => `<h3 style="color:#2d6a4f;margin:22px 0 6px;font-size:1rem;border-left:4px solid #2d6a4f;padding-left:10px;">${t}</h3>`;
+
+  if (typ === 'service') {
+    const statRows = Object.entries(r.byStatus||{}).sort((a,b)=>b[1]-a[1])
+      .map(([k,v])=>`<tr><td ${tdStyle}>${k}</td><td ${tdR}>${v}</td><td ${tdR}>${r.total?Math.round(v/r.total*100):0}%</td></tr>`).join('');
+    const catRows = Object.entries(r.byCategory||{}).sort((a,b)=>b[1]-a[1])
+      .map(([k,v])=>`<tr><td ${tdStyle}>${k}</td><td ${tdR}>${v}</td><td ${tdR}>${r.total?Math.round(v/r.total*100):0}%</td></tr>`).join('');
+    const priRows = [['เร่งด่วน',r.byPriority?.high||0],['ปานกลาง',r.byPriority?.medium||0],['ทั่วไป',r.byPriority?.low||0]]
+      .map(([k,v])=>`<tr><td ${tdStyle}>${k}</td><td ${tdR}>${v}</td><td ${tdR}>${r.total?Math.round(v/r.total*100):0}%</td></tr>`).join('');
+    body = `
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+        ${[['ทั้งหมด',r.total,'#1b4332'],['เสร็จสิ้น',r.done,'#2d6a4f'],['รอ/ดำเนินการ',r.pending,'#f77f00'],['ปฏิเสธ',r.rejected,'#d00000']].map(([l,v,c])=>`<div style="border:2px solid ${c};border-radius:10px;padding:12px;text-align:center;"><div style="font-size:1.8rem;font-weight:800;color:${c};">${v}</div><div style="font-size:.78rem;color:#666;">${l}</div></div>`).join('')}
+      </div>
+      <div style="background:#e8f5e9;border-radius:8px;padding:10px 16px;margin-bottom:16px;">อัตราความสำเร็จ: <strong style="color:#2d6a4f;font-size:1.2rem;">${r.successRate}%</strong></div>
+      ${secTitle('สถานะทั้งหมด')}
+      <table ${tblStyle}><tr><th ${thStyle}>สถานะ</th><th ${thStyle} style="text-align:right;">จำนวน</th><th ${thStyle} style="text-align:right;">%</th></tr>${statRows}</table>
+      ${secTitle('ประเภทเรื่อง')}
+      <table ${tblStyle}><tr><th ${thStyle}>ประเภท</th><th ${thStyle} style="text-align:right;">จำนวน</th><th ${thStyle} style="text-align:right;">%</th></tr>${catRows}</table>
+      ${secTitle('ความเร่งด่วน')}
+      <table ${tblStyle}><tr><th ${thStyle}>ระดับ</th><th ${thStyle} style="text-align:right;">จำนวน</th><th ${thStyle} style="text-align:right;">%</th></tr>${priRows}</table>`;
+  } else if (typ === 'users') {
+    const rows = (r.users||[]).map((u,i)=>`<tr><td ${tdStyle}>${i+1}</td><td ${tdStyle}><strong>${u.username}</strong></td><td ${tdR}>${u.total}</td><td ${tdR}>${u.done}</td><td ${tdR}>${u.pending}</td><td ${tdR}>${u.successRate}%</td><td ${tdStyle}>${u.topCategory||'-'}</td></tr>`).join('');
+    body = `${secTitle('รายชื่อผู้ใช้บริการ')}
+      <table ${tblStyle}><tr><th ${thStyle}>#</th><th ${thStyle}>ผู้ใช้</th><th ${thStyle} style="text-align:right;">ทั้งหมด</th><th ${thStyle} style="text-align:right;">เสร็จ</th><th ${thStyle} style="text-align:right;">รอ</th><th ${thStyle} style="text-align:right;">%สำเร็จ</th><th ${thStyle}>หมวดบ่อยสุด</th></tr>${rows||'<tr><td colspan="7" style="padding:12px;color:#bbb;">ไม่มีข้อมูล</td></tr>'}</table>`;
+  } else if (typ === 'duration') {
+    const rows = (r.items||[]).slice(0,30).map(d=>`<tr><td ${tdStyle} style="color:#2d6a4f;font-weight:700;">${d.ticketId}</td><td ${tdStyle}>${d.subject}</td><td ${tdStyle}>${{high:'เร่งด่วน',medium:'ปานกลาง',low:'ทั่วไป'}[d.priority]||d.priority}</td><td ${tdR}>${d.hours} ชม.</td></tr>`).join('');
+    body = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+        ${[['เรื่องที่เสร็จ',r.total,'#2d6a4f'],['เวลาเฉลี่ยรวม',(r.avgHours||'-')+' ชม.','#3a86ff'],['เวลาเฉลี่ยเร่งด่วน',(r.avgByPriority?.high||'-')+' ชม.','#d00000']].map(([l,v,c])=>`<div style="border:2px solid ${c};border-radius:10px;padding:12px;text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:${c};">${v}</div><div style="font-size:.78rem;color:#666;">${l}</div></div>`).join('')}
+      </div>
+      ${secTitle('รายการเวลาให้บริการ (สูงสุด 30 รายการ)')}
+      <table ${tblStyle}><tr><th ${thStyle}>Ticket ID</th><th ${thStyle}>หัวข้อ</th><th ${thStyle}>ความเร่งด่วน</th><th ${thStyle} style="text-align:right;">เวลา</th></tr>${rows||'<tr><td colspan="4" style="padding:12px;color:#bbb;">ไม่มีข้อมูล</td></tr>'}</table>`;
+  } else if (typ === 'monthly') {
+    const months = r.months||[];
+    const rows = months.map(m=>`<tr><td ${tdStyle}>${m.month}</td><td ${tdR}>${m.total}</td><td ${tdR}>${m.done}</td><td ${tdR}>${m.pending}</td><td ${tdR}>${m.rejected}</td><td ${tdR}>${m.total?Math.round(m.done/m.total*100):0}%</td></tr>`).join('');
+    body = `${secTitle('สรุปรายเดือน')}
+      <table ${tblStyle}><tr><th ${thStyle}>เดือน</th><th ${thStyle} style="text-align:right;">ทั้งหมด</th><th ${thStyle} style="text-align:right;">เสร็จ</th><th ${thStyle} style="text-align:right;">รอ</th><th ${thStyle} style="text-align:right;">ปฏิเสธ</th><th ${thStyle} style="text-align:right;">%สำเร็จ</th></tr>${rows||'<tr><td colspan="6" style="padding:12px;color:#bbb;">ไม่มีข้อมูล</td></tr>'}</table>`;
+  }
+
+  const printWin = window.open('','_blank','width=960,height=720');
+  printWin.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>VOC รายงาน — ${rptNames[typ]||''}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Sarabun',sans-serif;background:#fff;color:#222;padding:28px 36px;}
+    .print-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2d6a4f;padding-bottom:14px;margin-bottom:20px;}
+    .print-header h1{font-size:1.35rem;color:#2d6a4f;font-weight:800;}
+    .print-header p{font-size:.82rem;color:#666;margin-top:3px;}
+    .print-meta{text-align:right;font-size:.78rem;color:#888;line-height:1.7;}
+    .print-footer{margin-top:32px;border-top:1px solid #e0e0e0;padding-top:10px;font-size:.75rem;color:#aaa;text-align:center;}
+    @media print{body{padding:12px 16px;} button{display:none!important;}}
+  </style></head><body>
+  <div class="print-header">
+    <div>
+      <h1>VOC System — ${rptNames[typ]||'รายงาน'}</h1>
+      <p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร · มหาวิทยาลัยราชภัฏยะลา</p>
+    </div>
+    <div class="print-meta">
+      <div>วันที่พิมพ์: ${now}</div>
+      <div>ผู้พิมพ์: ${window.currentUser?.fullname || window.currentUser?.username || 'admin'}</div>
+    </div>
+  </div>
+  ${body}
+  <div class="print-footer">VOC System | คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</div>
+  <script>setTimeout(function(){window.print();},600);<\/script>
+  </body></html>`);
+  printWin.document.close();
+}
 
 async function loadReport(type) {
   window._currentReportType = type || currentReportType;
@@ -569,11 +679,54 @@ async function loadReport(type) {
   if (_lbl) _lbl.textContent = _rptNames[currentReportType] || 'รายงาน'; if (_ico) _ico.className = _rptIcons[currentReportType] || 'fas fa-clipboard-list';
   const box = document.getElementById('report-content'); if (!box) return;
   box.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลดรายงาน...</p></div>';
-  try { const res = await api.get('/api/report?type=' + currentReportType); if (!res.success) { box.innerHTML = '<p style="color:red;padding:20px;">โหลดไม่สำเร็จ</p>'; return; } if (currentReportType === 'service') renderReportService(res.report, box); if (currentReportType === 'users') renderReportUsers(res.report, box); if (currentReportType === 'duration') renderReportDuration(res.report, box); if (currentReportType === 'monthly') renderReportMonthly(res.report, box); }
+  try { const res = await api.get('/api/report?type=' + currentReportType); if (!res.success) { box.innerHTML = '<p style="color:red;padding:20px;">โหลดไม่สำเร็จ</p>'; return; } window._lastReportData = res.report; if (currentReportType === 'service') renderReportService(res.report, box); if (currentReportType === 'users') renderReportUsers(res.report, box); if (currentReportType === 'duration') renderReportDuration(res.report, box); if (currentReportType === 'monthly') renderReportMonthly(res.report, box); }
   catch (e) { box.innerHTML = `<p style="color:red;padding:20px;">${e.message}</p>`; }
 }
 
-function renderReportService(r, box) { const statusRows = Object.entries(r.byStatus || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<tr><td>${k}</td><td style="text-align:right;font-weight:700;">${v}</td><td style="text-align:right;color:#888;">${r.total ? `${Math.round(v / r.total * 100)}%` : '0%'}</td></tr>`).join(''); const catRows = Object.entries(r.byCategory || {}).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => { const pct = r.total ? Math.round(v / r.total * 100) : 0; return `<div class="rpt-bar-row"><span class="rpt-bar-label">${k}</span><div class="rpt-bar-track"><div class="rpt-bar-fill" style="width:${pct}%"></div></div><span class="rpt-bar-count">${v}</span></div>`; }).join(''); box.innerHTML = `<div class="rpt-kpi-grid"><div class="rpt-kpi"><div class="rpt-kpi-num">${r.total}</div><div class="rpt-kpi-label">📋 ทั้งหมด</div></div><div class="rpt-kpi green"><div class="rpt-kpi-num" style="color:#2d6a4f">${r.done}</div><div class="rpt-kpi-label">✅ เสร็จสิ้น</div></div><div class="rpt-kpi orange"><div class="rpt-kpi-num" style="color:#f77f00">${r.pending}</div><div class="rpt-kpi-label">⏳ รอ/ดำเนินการ</div></div><div class="rpt-kpi red"><div class="rpt-kpi-num" style="color:#d00000">${r.rejected}</div><div class="rpt-kpi-label">❌ ปฏิเสธ</div></div></div><div class="rpt-success-bar-wrap"><div style="display:flex;justify-content:space-between;font-size:.84rem;color:#888;margin-bottom:6px;"><span>อัตราความสำเร็จ</span><span style="font-weight:700;color:#2d6a4f;font-size:1.1rem;">${r.successRate}%</span></div><div class="rpt-bar-track big"><div class="rpt-bar-fill" style="width:${r.successRate}%"></div></div></div><div class="rpt-two-col"><div class="rpt-card"><div class="rpt-card-title"><i class="fas fa-list-ul"></i> สถานะทั้งหมด</div><table class="rpt-table"><tr><th>สถานะ</th><th>จำนวน</th><th>%</th></tr>${statusRows}</table></div><div class="rpt-card"><div class="rpt-card-title"><i class="fas fa-tags"></i> ประเภทเรื่อง (Top 8)</div>${catRows || '<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div></div>`; }
+function renderReportService(r, box) {
+  const statusRows = Object.entries(r.byStatus||{}).sort((a,b)=>b[1]-a[1])
+    .map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right;font-weight:700;">${v}</td><td style="text-align:right;color:#888;">${r.total?Math.round(v/r.total*100):0}%</td></tr>`).join('');
+  const catRows = Object.entries(r.byCategory||{}).sort((a,b)=>b[1]-a[1]).slice(0,8)
+    .map(([k,v])=>{const p=r.total?Math.round(v/r.total*100):0;return `<div class="rpt-bar-row"><span class="rpt-bar-label">${k}</span><div class="rpt-bar-track"><div class="rpt-bar-fill" style="width:${p}%"></div></div><span class="rpt-bar-count">${v}</span></div>`;}).join('');
+  const priRows = [['🔴 เร่งด่วน',r.byPriority?.high||0,'#d00000'],['🟡 ปานกลาง',r.byPriority?.medium||0,'#f77f00'],['🟢 ทั่วไป',r.byPriority?.low||0,'#2d6a4f']]
+    .map(([k,v,c])=>`<tr><td>${k}</td><td style="text-align:right;font-weight:700;color:${c};">${v}</td><td style="text-align:right;color:#888;">${r.total?Math.round(v/r.total*100):0}%</td></tr>`).join('');
+
+  box.innerHTML = `
+    <div class="rpt-kpi-grid">
+      <div class="rpt-kpi"><div class="rpt-kpi-num">${r.total}</div><div class="rpt-kpi-label">📋 ทั้งหมด</div></div>
+      <div class="rpt-kpi green"><div class="rpt-kpi-num" style="color:#2d6a4f">${r.done}</div><div class="rpt-kpi-label">✅ เสร็จสิ้น</div></div>
+      <div class="rpt-kpi orange"><div class="rpt-kpi-num" style="color:#f77f00">${r.pending}</div><div class="rpt-kpi-label">⏳ รอ/ดำเนินการ</div></div>
+      <div class="rpt-kpi red"><div class="rpt-kpi-num" style="color:#d00000">${r.rejected}</div><div class="rpt-kpi-label">❌ ปฏิเสธ</div></div>
+    </div>
+    <div class="rpt-success-bar-wrap">
+      <div style="display:flex;justify-content:space-between;font-size:.84rem;color:#888;margin-bottom:6px;">
+        <span>อัตราความสำเร็จ</span><span style="font-weight:700;color:#2d6a4f;font-size:1.1rem;">${r.successRate}%</span>
+      </div>
+      <div class="rpt-bar-track big"><div class="rpt-bar-fill" style="width:${r.successRate}%"></div></div>
+    </div>
+    <div class="rpt-three-col">
+      <div class="rpt-card">
+        <div class="rpt-card-title"><i class="fas fa-list-ul"></i> สถานะทั้งหมด</div>
+        <table class="rpt-table"><tr><th>สถานะ</th><th>จำนวน</th><th>%</th></tr>${statusRows}</table>
+      </div>
+      <div class="rpt-card">
+        <div class="rpt-card-title"><i class="fas fa-exclamation-circle"></i> ความเร่งด่วน</div>
+        <table class="rpt-table"><tr><th>ระดับ</th><th>จำนวน</th><th>%</th></tr>${priRows}</table>
+        <div class="rpt-donut-wrap" style="margin-top:16px;">
+          <canvas id="rpt-donut-pri" width="120" height="120"></canvas>
+        </div>
+      </div>
+      <div class="rpt-card">
+        <div class="rpt-card-title"><i class="fas fa-tags"></i> ประเภทเรื่อง (Top 8)</div>
+        ${catRows||'<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}
+      </div>
+    </div>`;
+  setTimeout(()=>{
+    _drawDonut('rpt-donut-pri',
+      [{value:r.byPriority?.high||0},{value:r.byPriority?.medium||0},{value:r.byPriority?.low||0}],
+      ['#d00000','#f77f00','#2d6a4f']);
+  },50);
+}
 function renderReportUsers(r, box) { const rows = (r.users || []).map((u, i) => `<tr><td style="color:#888;font-size:.82rem;">${i + 1}</td><td><strong>${u.username}</strong></td><td style="text-align:center;">${u.total}</td><td style="text-align:center;color:#2d6a4f;font-weight:700;">${u.done}</td><td style="text-align:center;color:#f77f00;">${u.pending}</td><td style="text-align:center;">${u.successRate}%</td><td style="font-size:.8rem;color:#666;">${u.topCategory}</td><td><button onclick="showUserReport('${u.username}')" style="padding:4px 10px;background:var(--dgreen);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.76rem;">รายงาน</button></td></tr>`).join(''); box.innerHTML = `<div class="rpt-card" style="overflow-x:auto;"><div class="rpt-card-title"><i class="fas fa-users"></i> รายชื่อผู้ใช้บริการ</div><table class="rpt-table"><tr><th>#</th><th>ผู้ใช้</th><th>ทั้งหมด</th><th>เสร็จ</th><th>รอ</th><th>%สำเร็จ</th><th>หมวดบ่อยสุด</th><th></th></tr>${rows || '<tr><td colspan="8" style="color:#bbb;">ยังไม่มีข้อมูล</td></tr>'}</table></div>`; }
 function renderReportDuration(r, box) { const rows = (r.items || []).slice(0, 20).map(d => `<tr><td style="font-size:.8rem;color:#2d6a4f;font-weight:700;">${d.ticketId}</td><td style="font-size:.82rem;">${d.subject}</td><td>${d.priority}</td><td style="text-align:right;font-weight:700;">${d.hours} ชม.</td></tr>`).join(''); const avgLabel = h => h !== null ? h + ' ชม.' : '-'; box.innerHTML = `<div class="rpt-kpi-grid"><div class="rpt-kpi"><div class="rpt-kpi-num">${r.total}</div><div class="rpt-kpi-label">🎯 เรื่องที่เสร็จแล้ว</div></div><div class="rpt-kpi blue"><div class="rpt-kpi-num" style="color:#3a86ff;">${avgLabel(r.avgHours)}</div><div class="rpt-kpi-label">⏱️ เวลาเฉลี่ยรวม</div></div></div><div class="rpt-card" style="overflow-x:auto;"><div class="rpt-card-title"><i class="fas fa-list"></i> รายการล่าสุด</div><table class="rpt-table"><tr><th>Ticket</th><th>หัวข้อ</th><th>ความเร่งด่วน</th><th>เวลา</th></tr>${rows || '<tr><td colspan="4" style="color:#bbb;">ยังไม่มีข้อมูล</td></tr>'}</table></div>`; }
 function renderReportMonthly(r, box) { const months = r.months || []; const maxTotal = Math.max(...months.map(m => m.total), 1); const bars = months.map(m => { const pct = Math.round(m.total / maxTotal * 100); return `<div class="rpt-month-row"><div class="rpt-month-label">${m.month}</div><div style="flex:1;"><div class="rpt-bar-track"><div class="rpt-bar-fill" style="width:${pct}%"></div></div></div><div class="rpt-month-count">${m.total}</div></div>`; }).join(''); box.innerHTML = `<div class="rpt-card"><div class="rpt-card-title"><i class="fas fa-chart-bar"></i> จำนวน Ticket รายเดือน</div>${bars || '<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div>`; }
@@ -584,7 +737,117 @@ function renderUserReport(r, box) { const scClass = { 'รอดำเนิน�
 
 // ════ ADMIN DASHBOARD ════
 async function loadDashboard() { document.getElementById('dash-content').innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>'; try { const [dr, sr] = await Promise.all([api.get('/api/dashboard'), api.get('/api/ratings?action=summary')]); if (dr.success) renderDashboard(dr.stats, sr.summary || { avg: 0, total: 0 }); else document.getElementById('dash-content').innerHTML = '<p style="color:red;">โหลดไม่สำเร็จ</p>'; } catch (e) { document.getElementById('dash-content').innerHTML = `<p style="color:red;">${e.message}</p>`; } }
-function renderDashboard(s, rs) { const mxC = Math.max(...Object.values(s.byCategory), 1); const mxU = Math.max(...Object.values(s.byCustomer), 1); let catB = '', cusB = '', urgH = ''; Object.entries(s.byCategory).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => { catB += `<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(v / mxC * 100)}%"></div></div><span class="bar-count">${v}</span></div>`; }); Object.entries(s.byCustomer).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => { cusB += `<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill orange" style="width:${Math.round(v / mxU * 100)}%"></div></div><span class="bar-count">${v}</span></div>`; }); if (s.urgentTickets && s.urgentTickets.length > 0) urgH = `<div class="urgent-banner"><h4><i class="fas fa-exclamation-triangle"></i> ⚠️ ${s.urgentTickets.length} เรื่องเร่งด่วนยังไม่เสร็จ</h4>${s.urgentTickets.map(t => `<div class="urgent-item"><span class="priority-badge p-high">🔴 เร่งด่วน</span><strong>${t.ticketId}</strong><span style="flex:1;">${t.subject}</span></div>`).join('')}</div>`; document.getElementById('dash-content').innerHTML = `${urgH}<div class="dash-grid"><div class="stat-card"><div class="stat-num">${s.total}</div><div class="stat-label">📋 ทั้งหมด</div></div><div class="stat-card orange"><div class="stat-num" style="color:#f77f00;">${s.pending}</div><div class="stat-label">⏳ รอดำเนินการ</div></div><div class="stat-card blue"><div class="stat-num" style="color:#3a86ff;">${s.inprogress}</div><div class="stat-label">🔄 กำลังดำเนินการ</div></div><div class="stat-card"><div class="stat-num" style="color:#2d6a4f;">${s.done}</div><div class="stat-label">✅ เสร็จสิ้น</div></div></div><div class="dash-charts"><div class="chart-card"><h4><i class="fas fa-tags"></i> ประเภทเรื่อง</h4>${catB || '<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div><div class="chart-card" style="text-align:center;"><h4><i class="fas fa-star"></i> คะแนนพึงพอใจ</h4><div style="font-size:3.2rem;font-weight:800;color:var(--dgreen);line-height:1;">${rs.avg || '-'}</div><div style="font-size:.83rem;color:#888;">${rs.total || 0} รีวิว</div><button onclick="navigateTo('admin-reviews')" style="margin-top:12px;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">ดูรีวิว</button></div><div class="chart-card"><h4><i class="fas fa-users"></i> ประเภทผู้แจ้ง</h4>${cusB || '<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div></div>`; }
+function _drawDonut(canvasId, data, colors) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height, cx = W/2, cy = H/2, r = Math.min(W,H)/2 - 8, ri = r * 0.58;
+  const total = data.reduce((a,b) => a + b.value, 0);
+  if (!total) { ctx.fillStyle='#eee'; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill(); return; }
+  let angle = -Math.PI / 2;
+  data.forEach((d, i) => {
+    const slice = (d.value / total) * Math.PI * 2;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx, cy, r, angle, angle + slice);
+    ctx.closePath(); ctx.fillStyle = colors[i % colors.length]; ctx.fill();
+    angle += slice;
+  });
+  ctx.beginPath(); ctx.arc(cx, cy, ri, 0, Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+}
+function renderDashboard(s, rs) {
+  const mxC = Math.max(...Object.values(s.byCategory||{0:1}), 1);
+  const mxU = Math.max(...Object.values(s.byCustomer||{0:1}), 1);
+  let catB = '', cusB = '', urgH = '';
+  const successRate = s.total ? Math.round(s.done / s.total * 100) : 0;
+  const inprogress  = s.inprogress || 0;
+
+  Object.entries(s.byCategory||{}).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
+    const pct = Math.round(v/mxC*100);
+    catB += `<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><span class="bar-count">${v}</span></div>`;
+  });
+  Object.entries(s.byCustomer||{}).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
+    cusB += `<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill orange" style="width:${Math.round(v/mxU*100)}%"></div></div><span class="bar-count">${v}</span></div>`;
+  });
+  if (s.urgentTickets?.length) urgH = `<div class="urgent-banner"><h4><i class="fas fa-exclamation-triangle"></i> ⚠️ ${s.urgentTickets.length} เรื่องเร่งด่วนยังไม่เสร็จ</h4>${s.urgentTickets.map(t=>`<div class="urgent-item"><span class="priority-badge p-high">🔴 เร่งด่วน</span><strong>${t.ticketId}</strong><span style="flex:1;">${t.subject}</span></div>`).join('')}</div>`;
+
+  // สร้าง monthly mini-bars จาก byMonth
+  const monthEntries = Object.entries(s.byMonth||{}).sort((a,b)=>a[0].localeCompare(b[0])).slice(-6);
+  const mxM = Math.max(...monthEntries.map(e=>e[1]),1);
+  const monthBars = monthEntries.map(([k,v])=>`<div class="dash-mini-bar-col"><div class="dash-mini-bar-fill" style="height:${Math.round(v/mxM*100)}%"></div><div class="dash-mini-bar-label">${k.split('/')[0]}/${String(parseInt(k.split('/')[1])-543).slice(-2)}</div><div class="dash-mini-bar-val">${v}</div></div>`).join('');
+
+  const starFull = Math.round(rs.avg||0);
+  const stars = [1,2,3,4,5].map(i=>`<i class="${i<=starFull?'fas':'far'} fa-star" style="color:#f0a500;font-size:1.1rem;"></i>`).join('');
+
+  document.getElementById('dash-content').innerHTML = `
+${urgH}
+<div class="dash-grid-5">
+  <div class="stat-card"><div class="stat-icon" style="background:#e8f5e9;"><i class="fas fa-inbox" style="color:#2d6a4f;"></i></div><div class="stat-num">${s.total}</div><div class="stat-label">ทั้งหมด</div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#fff8e1;"><i class="fas fa-hourglass-half" style="color:#f77f00;"></i></div><div class="stat-num" style="color:#f77f00;">${s.pending}</div><div class="stat-label">รอดำเนินการ</div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#e3f2fd;"><i class="fas fa-cog" style="color:#3a86ff;"></i></div><div class="stat-num" style="color:#3a86ff;">${inprogress}</div><div class="stat-label">กำลังดำเนินการ</div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#e8f5e9;"><i class="fas fa-check-circle" style="color:#2d6a4f;"></i></div><div class="stat-num" style="color:#2d6a4f;">${s.done}</div><div class="stat-label">เสร็จสิ้น</div></div>
+  <div class="stat-card"><div class="stat-icon" style="background:#fde8e8;"><i class="fas fa-times-circle" style="color:#d00000;"></i></div><div class="stat-num" style="color:#d00000;">${s.rejected||0}</div><div class="stat-label">ปฏิเสธ</div></div>
+</div>
+
+<div class="dash-charts-grid">
+  <div class="chart-card">
+    <h4><i class="fas fa-chart-pie"></i> สัดส่วนสถานะ</h4>
+    <div class="donut-wrap">
+      <canvas id="donut-status" width="160" height="160"></canvas>
+      <div class="donut-legend">
+        <div class="dl-item"><span class="dl-dot" style="background:#f77f00;"></span>รอดำเนินการ <b>${s.pending}</b></div>
+        <div class="dl-item"><span class="dl-dot" style="background:#3a86ff;"></span>กำลังดำเนินการ <b>${inprogress}</b></div>
+        <div class="dl-item"><span class="dl-dot" style="background:#2d6a4f;"></span>เสร็จสิ้น <b>${s.done}</b></div>
+        <div class="dl-item"><span class="dl-dot" style="background:#d00000;"></span>ปฏิเสธ <b>${s.rejected||0}</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <h4><i class="fas fa-chart-pie"></i> สัดส่วนความเร่งด่วน</h4>
+    <div class="donut-wrap">
+      <canvas id="donut-priority" width="160" height="160"></canvas>
+      <div class="donut-legend">
+        <div class="dl-item"><span class="dl-dot" style="background:#d00000;"></span>เร่งด่วน <b>${s.byPriority?.high||0}</b></div>
+        <div class="dl-item"><span class="dl-dot" style="background:#f77f00;"></span>ปานกลาง <b>${s.byPriority?.medium||0}</b></div>
+        <div class="dl-item"><span class="dl-dot" style="background:#2d6a4f;"></span>ทั่วไป <b>${s.byPriority?.low||0}</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <h4><i class="fas fa-tags"></i> ประเภทเรื่อง</h4>
+    ${catB||'<p style="color:#bbb;padding:20px 0;">ยังไม่มีข้อมูล</p>'}
+  </div>
+  <div class="chart-card">
+    <h4><i class="fas fa-users"></i> ประเภทผู้แจ้ง</h4>
+    ${cusB||'<p style="color:#bbb;padding:20px 0;">ยังไม่มีข้อมูล</p>'}
+  </div>
+  <div class="chart-card">
+    <h4><i class="fas fa-chart-bar"></i> Ticket รายเดือน (6 เดือนล่าสุด)</h4>
+    <div class="dash-mini-bars">${monthBars||'<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div>
+  </div>
+  <div class="chart-card" style="text-align:center;">
+    <h4><i class="fas fa-star"></i> ความพึงพอใจ</h4>
+    <div style="font-size:2.8rem;font-weight:800;color:var(--dgreen);line-height:1.2;">${rs.avg||'-'}</div>
+    <div style="margin:6px 0;">${stars}</div>
+    <div style="font-size:.83rem;color:#888;margin-bottom:12px;">${rs.total||0} รีวิว</div>
+    <div class="donut-wrap" style="justify-content:center;">
+      <canvas id="donut-rating" width="120" height="120"></canvas>
+    </div>
+    <button onclick="navigateTo('admin-reviews')" style="margin-top:12px;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">ดูรีวิว</button>
+  </div>
+</div>`;
+
+  // วาด donut charts
+  _drawDonut('donut-status',
+    [{value:s.pending},{value:inprogress},{value:s.done},{value:s.rejected||0}],
+    ['#f77f00','#3a86ff','#2d6a4f','#d00000']);
+  _drawDonut('donut-priority',
+    [{value:s.byPriority?.high||0},{value:s.byPriority?.medium||0},{value:s.byPriority?.low||0}],
+    ['#d00000','#f77f00','#2d6a4f']);
+  const dist = rs.dist||{};
+  _drawDonut('donut-rating',
+    [5,4,3,2,1].map(i=>({value:dist[i]||0})),
+    ['#2d6a4f','#40916c','#f0a500','#f77f00','#d00000']);
+}
 
 // ════ ADMIN TICKETS ════
 function setFilter(id) { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); const e = document.getElementById('filter-' + id); if (e) e.classList.add('active'); }
