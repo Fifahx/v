@@ -684,6 +684,25 @@ label {
   font-weight: 600;
 }
 
+.file-tab-btn {
+  padding: 6px 16px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-family: 'Sarabun', sans-serif;
+  font-size: .85rem;
+  color: #888;
+  transition: all .2s;
+}
+
+.file-tab-btn.active {
+  border-color: var(--dgreen);
+  background: #e8f5e9;
+  color: var(--dgreen);
+  font-weight: 700;
+}
+
 /* REVIEW CARD (ข้อ 5) */
 .review-card {
   background: #fff;

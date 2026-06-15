@@ -372,6 +372,57 @@ function toggleAnon() {
 function handleFileSelect(inputEl) {
   // Legacy: ไม่ใช้แล้ว — ใช้ link input แทน
 }
+
+// ════ FILE UPLOAD (Step 3) ════
+function switchFileTab(tab) {
+  document.getElementById('file-panel-link').style.display = tab === 'link' ? '' : 'none';
+  document.getElementById('file-panel-upload').style.display = tab === 'upload' ? '' : 'none';
+  document.getElementById('tab-link').classList.toggle('active', tab === 'link');
+  document.getElementById('tab-upload').classList.toggle('active', tab === 'upload');
+  // reset ฝั่งที่ไม่ได้ใช้
+  if (tab === 'link') { attachedFile = null; clearFileUpload(); }
+  if (tab === 'upload') { const li = document.getElementById('v-file-link'); if (li) li.value = ''; }
+}
+
+function handleFileUploadSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) {
+    showAlert('ไฟล์ใหญ่เกินไป', 'ขนาดไฟล์ต้องไม่เกิน 10 MB');
+    input.value = ''; return;
+  }
+  attachedFile = file;
+  document.getElementById('file-upload-label').textContent = file.name;
+  document.getElementById('file-upload-name').textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+  document.getElementById('file-upload-preview').style.display = '';
+}
+
+function clearFileUpload() {
+  attachedFile = null;
+  const inp = document.getElementById('v-file-input');
+  if (inp) inp.value = '';
+  const label = document.getElementById('file-upload-label');
+  if (label) label.textContent = 'เลือกรูปภาพหรือ PDF (สูงสุด 10 MB)';
+  const preview = document.getElementById('file-upload-preview');
+  if (preview) preview.style.display = 'none';
+}
+
+async function uploadAttachedFile() {
+  if (!attachedFile) return null;
+  const prog = document.getElementById('file-upload-progress');
+  if (prog) prog.style.display = '';
+  try {
+    const fd = new FormData();
+    fd.append('file', attachedFile);
+    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.success && data.url) return data.url;
+    throw new Error(data.error || 'อัพโหลดไม่สำเร็จ');
+  } finally {
+    if (prog) prog.style.display = 'none';
+  }
+}
+
 function prepareReview() {
   const subject = document.getElementById('v-subject')?.value.trim(); const detail = document.getElementById('v-detail')?.value.trim(); const note = document.getElementById('v-note')?.value.trim() || '';
   if (!subject) { showAlert('กรุณากรอกหัวข้อ', ''); return; } if (!detail) { showAlert('กรุณากรอกรายละเอียด', ''); return; }
@@ -406,10 +457,14 @@ async function finalSubmit() {
   let submitted = false; // ← flag: ถ้า true แล้ว finally จะไม่ re-enable ปุ่ม
   try {
     // ใช้ link ที่ user กรอกโดยตรง แทนการ upload
-    const _linkInput = document.getElementById('v-file-link');
-    let fileUrl = (_linkInput && _linkInput.value.trim().startsWith('http'))
-      ? _linkInput.value.trim()
-      : '';
+    let fileUrl = '';
+    if (attachedFile) {
+      fileUrl = await uploadAttachedFile() || '';
+    } else {
+      const _linkInput = document.getElementById('v-file-link');
+      fileUrl = (_linkInput && _linkInput.value.trim().startsWith('http'))
+        ? _linkInput.value.trim() : '';
+    }
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังส่ง...';
     const res = await api.post('/api/submit', { customerType: vocData.cType, isAnon: document.getElementById('isAnon').checked, name: document.getElementById('v-name').value, studentId: document.getElementById('v-sid').value, categories: [vocData.category], priority: vocData.priority, subject: document.getElementById('v-subject').value, detail: document.getElementById('v-detail').value, userNote: document.getElementById('v-note')?.value.trim() || '', fileUrl, username: currentUser ? currentUser.username : 'guest', turnstileToken: _turnstileToken || 'bypass-no-widget' });
     if (res.success) {
@@ -1037,6 +1092,9 @@ function _exposeGlobals() {
   G.addAdmin = addAdmin; G.handleNewsImageSelect = handleNewsImageSelect;
   G.clearNewsImg = clearNewsImg; G.clearExistingImg = clearExistingImg;
   G.toggleDropdown = toggleDropdown; G.dismissGuestBanner = dismissGuestBanner;
+  G.switchFileTab = switchFileTab;
+  G.handleFileUploadSelect = handleFileUploadSelect;
+  G.clearFileUpload = clearFileUpload;
   G.resetComplaintTypeSelection = () => { };
   G.mgmtSlide = (dir) => { if (window._mgmtGoTo) window._mgmtGoTo(dir); };
   // accessibility — ensure these are always exposed (also set by IIFE below)
