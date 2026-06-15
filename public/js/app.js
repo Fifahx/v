@@ -1605,3 +1605,60 @@ window.onload = function () {
   window.addEventListener('load', _updateFab);
   document.addEventListener('DOMContentLoaded', _updateFab);
 })();
+
+// ════════════════════════════════════════════════════
+//  PAGEVIEW COUNTER — โหลดสถิติและนับการเข้าชม
+// ════════════════════════════════════════════════════
+(function initPageViews() {
+  // นับแค่ครั้งแรกที่เปิดหน้า (ไม่นับซ้ำเวลา navigate ระหว่าง SPA pages)
+  const SESSION_KEY = 'voc_pv_counted';
+
+  function _fmt(n) {
+    if (n == null || isNaN(n)) return '—';
+    return Number(n).toLocaleString('th-TH');
+  }
+
+  function _fmtDate(iso) {
+    if (!iso) return '—';
+    try {
+      return new Date(iso).toLocaleString('th-TH', {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+        timeZone: 'Asia/Bangkok',
+      });
+    } catch { return '—'; }
+  }
+
+  function _render({ total, todayCount, updated }) {
+    const el = (id) => document.getElementById(id);
+    if (el('stat-total'))   el('stat-total').textContent   = _fmt(total);
+    if (el('stat-today'))   el('stat-today').textContent   = _fmt(todayCount);
+    if (el('stat-updated')) el('stat-updated').textContent = _fmtDate(updated);
+  }
+
+  async function _init() {
+    const alreadyCounted = sessionStorage.getItem(SESSION_KEY);
+    try {
+      let data;
+      if (alreadyCounted) {
+        // เคยนับแล้วในเซสชันนี้ → GET อย่างเดียว
+        const r = await fetch('/api/pageviews');
+        data = await r.json();
+      } else {
+        // นับครั้งแรก → POST
+        const r = await fetch('/api/pageviews', { method: 'POST' });
+        data = await r.json();
+        sessionStorage.setItem(SESSION_KEY, '1');
+      }
+      if (data && data.success !== false) _render(data);
+    } catch (e) {
+      console.warn('[pageviews] โหลดสถิติไม่สำเร็จ:', e.message);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _init);
+  } else {
+    _init();
+  }
+})();

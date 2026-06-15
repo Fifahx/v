@@ -5693,3 +5693,40 @@ body.font-xl {
     justify-content: center;
   }
 }
+/* ── FOOTER STATS BAR ── */
+.footer-stats {
+  max-width: 1100px;
+  margin: 24px auto 0;
+  padding: 14px 20px;
+  border-top: 1px solid rgba(255,255,255,.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 6px;
+  font-size: .82rem;
+  color: rgba(255,255,255,.65);
+}
+.footer-stats-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.footer-stats-item i {
+  color: var(--primary);
+  font-size: .78rem;
+}
+.footer-stats-item strong {
+  color: #fff;
+  font-weight: 600;
+  min-width: 28px;
+  text-align: center;
+}
+.footer-stats-sep {
+  opacity: .3;
+  user-select: none;
+}
+@media (max-width: 480px) {
+  .footer-stats { flex-direction: column; gap: 6px; }
+  .footer-stats-sep { display: none; }
+}
