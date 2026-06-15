@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,713 +35,765 @@
     }
   </script>
 </head>
+
 <body>
 
-<!-- ══ HEADER ══ -->
-<header>
-  <!-- ══ ACCESSIBILITY TOOLBAR ══ -->
-<div id="accessibility-bar" class="accessibility-bar">
-  <div class="a11y-inner">
-    <div class="a11y-group">
-      <span class="a11y-label"><i class="fas fa-text-height"></i> ขนาดตัวอักษร</span>
-      <button class="a11y-btn" id="font-decrease" onclick="changeFontSize(-1)" aria-label="ลดขนาดตัวอักษร" title="ลดขนาด">A<sup>-</sup></button>
-      <button class="a11y-btn a11y-reset" id="font-reset" onclick="changeFontSize(0)" aria-label="รีเซ็ตขนาดตัวอักษร" title="ค่าเริ่มต้น">A</button>
-      <button class="a11y-btn" id="font-increase" onclick="changeFontSize(1)" aria-label="เพิ่มขนาดตัวอักษร" title="เพิ่มขนาด">A<sup>+</sup></button>
-    </div>
-    <div class="a11y-divider"></div>
-    <div class="a11y-group">
-      <span class="a11y-label"><i class="fas fa-globe"></i> ภาษา</span>
-      <button class="a11y-btn lang-btn" id="btn-lang-th" onclick="switchLang('th')" aria-label="ภาษาไทย">🇹🇭 ไทย</button>
-      <button class="a11y-btn lang-btn" id="btn-lang-en" onclick="switchLang('en')" aria-label="English">🇬🇧 EN</button>
-    </div>
-  </div>
-</div>
-  <!-- Top bar: logos + title -->
-  <div class="header-top-bar">
-    <div class="header-top-inner">
-      <div class="header-logos">
-        <div class="logo-circle">
-          <a href="https://yru.ac.th/th/" target="_blank">
-          <img src="/img/yru_logo.png" alt="YRU"
-               onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'color:#fff;font-weight:700;font-size:.75rem;\'>YRU</span>'">
-          </a>
+  <!-- ══ HEADER ══ -->
+  <header>
+    <!-- ══ ACCESSIBILITY TOOLBAR ══ -->
+    <div id="accessibility-bar" class="accessibility-bar">
+      <div class="a11y-inner">
+        <div class="a11y-group">
+          <span class="a11y-label"><i class="fas fa-text-height"></i> ขนาดตัวอักษร</span>
+          <button class="a11y-btn" id="font-decrease" onclick="changeFontSize(-1)" aria-label="ลดขนาดตัวอักษร"
+            title="ลดขนาด">A<sup>-</sup></button>
+          <button class="a11y-btn a11y-reset" id="font-reset" onclick="changeFontSize(0)"
+            aria-label="รีเซ็ตขนาดตัวอักษร" title="ค่าเริ่มต้น">A</button>
+          <button class="a11y-btn" id="font-increase" onclick="changeFontSize(1)" aria-label="เพิ่มขนาดตัวอักษร"
+            title="เพิ่มขนาด">A<sup>+</sup></button>
         </div>
-        <div class="logo-circle">
-          <a href="https://science.yru.ac.th/th/" target="_blank">
-          <img src="/img/Logo faculty of sta_yru.png" alt="SCI"
-               onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'color:#fff;font-weight:700;font-size:.75rem;\'>SCI</span>'">
-          </a>
-        </div>
-        <div class="header-brand">
-          <div class="header-brand-title"><span class="brand-voc">VOC</span> System</div>
-          <div class="header-brand-sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</div>
+        <div class="a11y-divider"></div>
+        <div class="a11y-group">
+          <span class="a11y-label"><i class="fas fa-globe"></i> ภาษา</span>
+          <button class="a11y-btn lang-btn" id="btn-lang-th" onclick="switchLang('th')" aria-label="ภาษาไทย">🇹🇭
+            ไทย</button>
+          <button class="a11y-btn lang-btn" id="btn-lang-en" onclick="switchLang('en')" aria-label="English">🇬🇧
+            EN</button>
         </div>
       </div>
-      <div class="header-right-top" id="right-menu">
-        <!-- Desktop: full text buttons -->
-        <a onclick="navigateTo('login')" class="nav-menu header-auth-desktop" style="color:rgba(255,255,255,.85);font-size:.85rem;">เข้าสู่ระบบ</a>
-        <a onclick="navigateTo('register')" class="btn-nav-active nav-menu header-auth-desktop">ลงทะเบียน</a>
-        <!-- Mobile: icon only -->
-        <button class="header-auth-mobile" id="header-user-icon-btn" onclick="navigateTo('login')" aria-label="เข้าสู่ระบบ / โปรไฟล์">
-          <i class="fas fa-user-circle"></i>
+    </div>
+    <!-- Top bar: logos + title -->
+    <div class="header-top-bar">
+      <div class="header-top-inner">
+        <div class="header-logos">
+          <div class="logo-circle">
+            <a href="https://yru.ac.th/th/" target="_blank">
+              <img src="/img/yru_logo.png" alt="YRU"
+                onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'color:#fff;font-weight:700;font-size:.75rem;\'>YRU</span>'">
+            </a>
+          </div>
+          <div class="logo-circle">
+            <a href="https://science.yru.ac.th/th/" target="_blank">
+              <img src="/img/Logo faculty of sta_yru.png" alt="SCI"
+                onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'color:#fff;font-weight:700;font-size:.75rem;\'>SCI</span>'">
+            </a>
+          </div>
+          <div class="header-brand">
+            <div class="header-brand-title"><span class="brand-voc">VOC</span> System</div>
+            <div class="header-brand-sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</div>
+          </div>
+        </div>
+        <div class="header-right-top" id="right-menu">
+          <!-- Desktop: full text buttons -->
+          <a onclick="navigateTo('login')" class="nav-menu header-auth-desktop"
+            style="color:rgba(255,255,255,.85);font-size:.85rem;">เข้าสู่ระบบ</a>
+          <a onclick="navigateTo('register')" class="btn-nav-active nav-menu header-auth-desktop">ลงทะเบียน</a>
+          <!-- Mobile: icon only -->
+          <button class="header-auth-mobile" id="header-user-icon-btn" onclick="navigateTo('login')"
+            aria-label="เข้าสู่ระบบ / โปรไฟล์">
+            <i class="fas fa-user-circle"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Nav bar -->
+    <div class="header-nav-bar">
+      <div class="nav-inner">
+        <div class="nav-menu" id="main-nav">
+          <a onclick="navigateTo('home')" id="nav-home" class="active">หน้าหลัก</a>
+          <a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a>
+          <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
+          <a onclick="scrollToManual()" id="nav-manual">คู่มือ</a>
+          <a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>
+        </div>
+        <!-- Hamburger (mobile only) — ฝั่งขวา -->
+        <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="เมนู">
+          <span></span><span></span><span></span>
         </button>
       </div>
     </div>
-  </div>
-  <!-- Nav bar -->
-  <div class="header-nav-bar">
-    <div class="nav-inner">
-      <div class="nav-menu" id="main-nav">
-        <a onclick="navigateTo('home')" id="nav-home" class="active">หน้าหลัก</a>
-        <a onclick="navigateTo('portal')" id="nav-portal">แจ้งเรื่อง</a>
-        <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
-        <a onclick="scrollToManual()" id="nav-manual">คู่มือ</a>
-        <a onclick="navigateTo('faq')" id="nav-faq">คำถามที่พบบ่อย</a>
-      </div>
-      <!-- Hamburger (mobile only) — ฝั่งขวา -->
-      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="เมนู">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
-  </div>
-</header>
+  </header>
 
 
-<!-- ══ HERO ══ -->
-<div class="hero-section">
-  <div class="hero-overlay"></div>
+  <!-- ══ HERO ══ -->
+  <div class="hero-section">
+    <div class="hero-overlay"></div>
 
-  <div class="hero-content">
+    <div class="hero-content">
 
-    <!-- Left: text block -->
-    <div class="hero-text-block">
+      <!-- Left: text block -->
+      <div class="hero-text-block">
 
-      <!-- Title -->
-      <h1 class="hero-title">
-        <span class="hero-voc">VOC</span> System
-      </h1>
+        <!-- Title -->
+        <h1 class="hero-title">
+          <span class="hero-voc">VOC</span> System
+        </h1>
 
-      <!-- สโลแกน -->
-      <div class="hero-slogan-block">
-        <p class="hero-slogan-main">"ทุกเสียงมีความหมาย"</p>
-        <p class="hero-slogan-sub">ร่วมสร้างคณะวิทยาศาสตร์ที่ดียิ่งขึ้น<br>ผ่านข้อเสนอแนะและความคิดเห็นของคุณ</p>
-      </div>
-
-      <p class="hero-sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร &nbsp;·&nbsp; มหาวิทยาลัยราชภัฏยะลา</p>
-
-      <div class="hero-cta-row">
-        <button class="hero-btn primary" onclick="navigateTo('portal')">
-          <i class="fas fa-bullhorn"></i> แจ้งเรื่องร้องเรียน
-        </button>
-        <button class="hero-btn outline" onclick="navigateTo('tracking')">
-          <i class="fas fa-search"></i> ติดตามสถานะ
-        </button>
-      </div>
-    </div>
-
-    <!-- Right: ผู้บริหาร horizontal slider -->
-    <div class="hero-mgmt-panel">
-      <!-- Track หลัก — เลื่อนแนวนอน -->
-      <div class="mgmt-h-track-wrap">
-        <div class="mgmt-h-track" id="mgmt-h-track"></div>
-      </div>
-      <!-- ชื่อ + ตำแหน่ง ด้านล่างรูป -->
-      <div class="mgmt-h-info" id="mgmt-h-info">
-        <div class="mgmt-h-name" id="mgmt-h-name"></div>
-        <div class="mgmt-h-pos"  id="mgmt-h-pos"></div>
-      </div>
-      <!-- Dots -->
-      <div class="mgmt-dots" id="mgmt-dots"></div>
-    </div>
-
-  </div><!-- /hero-content -->
-
-  <!-- Decorative wave -->
-  <div class="hero-wave">
-    <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M0,30 C360,60 720,0 1080,30 C1260,45 1380,38 1440,30 L1440,60 L0,60 Z" fill="var(--white)"/>
-    </svg>
-  </div>
-</div><!-- /hero-section -->
-
-<!-- แยกส่วนด้านบนกับด้านล่างตรงนี้ -->
-
-<!-- ══ MAIN ══ -->
-<div class="container">
-
-  <!-- PAGE: HOME -->
-  <div id="page-home">
-
-    <!-- Quick action cards -->
-    <div class="home-action-row">
-      <div class="action-card-ticket" onclick="navigateTo('portal')">
-        <div class="action-icon-wrap blue"><i class="fas fa-bullhorn"></i></div>
-        <div class="action-text">
-          <div class="action-title">แจ้งเรื่องร้องเรียน</div>
-          <div class="action-desc">ส่งคำร้องและติดตามผล</div>
+        <!-- สโลแกน -->
+        <div class="hero-slogan-block">
+          <p class="hero-slogan-main">"ทุกเสียงมีความหมาย"</p>
+          <p class="hero-slogan-sub">ร่วมสร้างคณะวิทยาศาสตร์ที่ดียิ่งขึ้น<br>ผ่านข้อเสนอแนะและความคิดเห็นของคุณ</p>
         </div>
-      </div>
-      <div class="action-card-track" onclick="navigateTo('tracking')">
-        <div class="action-icon-wrap orange"><i class="fas fa-search"></i></div>
-        <div class="action-text">
-          <div class="action-title">ติดตามสถานะ</div>
-          <div class="action-desc">ตรวจสอบความคืบหน้า</div>
-        </div>
-      </div>
-    </div>
 
-    <!-- ข่าวสาร -->
-    <div id="news-strip-section" class="hidden"></div>
-    <!-- Pinned tickets -->
-    <div id="pinned-tickets-section" class="hidden"></div>
+        <p class="hero-sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร &nbsp;·&nbsp; มหาวิทยาลัยราชภัฏยะลา</p>
 
-    <!-- ══ SECTION: ฟีเจอร์เด่นของเว็บไซต์ ══ -->
-    <section class="home-section features-section" id="section-features">
-      <div class="home-section-header">
-        <div class="home-section-line"></div>
-        <h2 class="home-section-title" data-i18n="feat_title">เว็บไซต์ของเรา</h2>
-        <div class="home-section-line"></div>
-      </div>
-      <p class="home-section-sub" data-i18n="feat_sub">ระบบรับฟังเสียงลูกค้า (VOC) ออกแบบมาเพื่อให้นักศึกษาและบุคลากรสามารถสื่อสารกับคณะได้อย่างสะดวก โปร่งใส และรวดเร็ว</p>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#2d6a4f,#52b788)"><i class="fas fa-bullhorn"></i></div>
-          <h3 data-i18n="feat1_title">แจ้งเรื่องออนไลน์</h3>
-          <p data-i18n="feat1_desc">ส่งคำร้อง ข้อเสนอแนะ หรือข้อร้องเรียนได้ตลอด 24 ชั่วโมง ทั้งแบบระบุตัวตนและไม่ระบุ</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#1d6fa4,#48b4e0)"><i class="fas fa-search"></i></div>
-          <h3 data-i18n="feat2_title">ติดตามสถานะแบบ Real-time</h3>
-          <p data-i18n="feat2_desc">ตรวจสอบความคืบหน้าของเรื่องได้ทันทีด้วย Ticket ID โดยไม่ต้องรอนัดหมาย</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#b5451b,#e07a5f)"><i class="fas fa-bolt"></i></div>
-          <h3 data-i18n="feat3_title">ระดับความเร่งด่วน</h3>
-          <p data-i18n="feat3_desc">จัดลำดับความสำคัญ 3 ระดับ — ทั่วไป / ปานกลาง / เร่งด่วน เพื่อให้ทีมงานตอบสนองได้ตรงจุด</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#6a2d82,#c084fc)"><i class="fas fa-paperclip"></i></div>
-          <h3 data-i18n="feat4_title">แนบไฟล์หลักฐาน</h3>
-          <p data-i18n="feat4_desc">อัปโหลดภาพหรือเอกสารประกอบคำร้องได้โดยตรง ไฟล์ถูกจัดเก็บอย่างปลอดภัยใน Google Drive</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#a16207,#facc15)"><i class="fas fa-star"></i></div>
-          <h3 data-i18n="feat5_title">ให้คะแนนความพึงพอใจ</h3>
-          <p data-i18n="feat5_desc">ประเมินคุณภาพการให้บริการหลังปิดเรื่อง เพื่อช่วยคณะพัฒนาการทำงานอย่างต่อเนื่อง</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#0e7490,#22d3ee)"><i class="fas fa-shield-alt"></i></div>
-          <h3 data-i18n="feat6_title">ปลอดภัยและโปร่งใส</h3>
-          <p data-i18n="feat6_desc">ระบบ JWT Authentication, Rate Limiting และ Cloudflare Turnstile ป้องกันการใช้งานโดยไม่ได้รับอนุญาต</p>
-        </div>
-      </div>
-    </section>
-
-
-
-    <!-- ══ SECTION: ที่ตั้งคณะ ══ -->
-    <section class="home-section location-section" id="section-location">
-      <div class="home-section-header">
-        <div class="home-section-line"></div>
-        <h2 class="home-section-title" data-i18n="loc_title">ที่ตั้งคณะวิทยาศาสตร์ฯ</h2>
-        <div class="home-section-line"></div>
-      </div>
-      <p class="home-section-sub" data-i18n="loc_sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา ตั้งอยู่ในใจกลางเมืองยะลา</p>
-      <div class="location-wrap">
-        <div class="location-map-box">
-          <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d478.70075698111214!2d101.2894853942507!3d6.547284131587036!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31b374304e314be1%3A0x11968d5acbbaf7ca!2z4LiE4LiT4Liw4Lin4Li04LiX4Lii4Liy4Lio4Liy4Liq4LiV4Lij4LmM4LmA4LiX4LiE4LmC4LiZ4LmC4Lil4Lii4Li14LmB4Lil4Liw4LiB4Liy4Lij4LmA4LiB4Lip4LiV4Lij!5e1!3m2!1sen!2ssg!4v1781282044569!5m2!1sen!2ssg"
-            style="width:100%;height:340px;border:0;border-radius:12px;display:block;"
-            allowfullscreen=""
-            loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"
-            title="แผนที่คณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยราชภัฏยะลา"
-          ></iframe>
-        </div>
-        <div class="location-info-box">
-          <div class="loc-info-item">
-            <div class="loc-info-icon"><i class="fas fa-university"></i></div>
-            <div>
-              <div class="loc-info-label" data-i18n="loc_faculty">คณะ</div>
-              <div class="loc-info-val" data-i18n="loc_faculty_val">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร</div>
-            </div>
-          </div>
-          <div class="loc-info-item">
-            <div class="loc-info-icon"><i class="fas fa-landmark"></i></div>
-            <div>
-              <div class="loc-info-label" data-i18n="loc_univ">มหาวิทยาลัย</div>
-              <div class="loc-info-val" data-i18n="loc_univ_val">มหาวิทยาลัยราชภัฏยะลา</div>
-            </div>
-          </div>
-          <div class="loc-info-item">
-            <div class="loc-info-icon"><i class="fas fa-map-marker-alt"></i></div>
-            <div>
-              <div class="loc-info-label" data-i18n="loc_addr">ที่อยู่</div>
-              <div class="loc-info-val" data-i18n="loc_addr_val">133 ถ.เทศบาล 3 ต.สะเตง อ.เมือง จ.ยะลา 95000</div>
-            </div>
-          </div>
-          <div class="loc-info-item">
-            <div class="loc-info-icon"><i class="fas fa-phone"></i></div>
-            <div>
-              <div class="loc-info-label" data-i18n="loc_phone">โทรศัพท์</div>
-              <div class="loc-info-val">073-299-628</div>
-            </div>
-          </div>
-          <a href="https://maps.app.goo.gl/eFFqJp6kri52VVTP8" target="_blank" class="loc-direction-btn">
-            <i class="fas fa-directions"></i> <span data-i18n="loc_directions">เปิดใน Google Maps</span>
-          </a>
-        </div>
-      </div>
-    </section>
-    <!-- คู่มือการใช้งาน -->
-    <div class="manual-section-new">
-      <div class="manual-header">
-        <div class="manual-header-line"></div>
-        <h3>คู่มือการใช้งาน</h3>
-        <div class="manual-header-line"></div>
-      </div>
-      <div class="manual-grid-new" id="manual-grid-ID">
-        <div class="manual-card">
-          <div class="manual-icon-wrap"><i class="fas fa-play-circle"></i></div>
-          <div class="manual-card-title">วิดีโอแนะนำ</div>
-          <div class="manual-card-desc">ดูวิดีโอขั้นตอนการใช้งานระบบ</div>
-        </div>
-        <div class="manual-card">
-          <div class="manual-icon-wrap"><i class="fas fa-images"></i></div>
-          <div class="manual-card-title">Infographic</div>
-          <div class="manual-card-desc">ภาพสรุปขั้นตอนแบบง่าย</div>
-        </div>
-        <div class="manual-card">
-          <div class="manual-icon-wrap"><i class="fas fa-file-pdf"></i></div>
-          <div class="manual-card-title">เอกสาร PDF</div>
-          <div class="manual-card-desc">คู่มือฉบับเต็มสำหรับพิมพ์</div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- PAGE: LOGIN -->
-  <div id="page-login" class="hidden" style="padding-top:50px;">
-    <div class="auth-container">
-      <div class="auth-header">เข้าสู่ระบบ</div>
-      <div class="form-group">
-        <label>ชื่อผู้ใช้</label>
-        <input type="text" id="login-user" placeholder="Username" autocomplete="username">
-      </div>
-      <div class="form-group">
-        <label>รหัสผ่าน</label>
-        <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
-      </div>
-      <button class="btn-auth" id="btn-login" onclick="doLogin()">ยืนยัน</button>
-      <p style="margin-top:16px;font-size:.82rem;text-align:center;">ยังไม่มีบัญชี
-        <a onclick="navigateTo('register')" style="color:var(--primary);cursor:pointer;font-weight:700;"><i>ลงทะเบียน</i></a>
-      </p>
-    </div>
-  </div>
-
-  <!-- PAGE: REGISTER -->
-  <div id="page-register" class="hidden" style="padding-top:50px;">
-    <div class="auth-container" style="max-width:620px;">
-      <div class="auth-header">ลงทะเบียน</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <div class="form-group">
-          <label>ชื่อ <span style="color:#d00000;">*</span></label>
-          <input type="text" id="reg-firstname" placeholder="ชื่อจริง" autocomplete="given-name">
-        </div>
-        <div class="form-group">
-          <label>นามสกุล <span style="color:#d00000;">*</span></label>
-          <input type="text" id="reg-lastname" placeholder="นามสกุล" autocomplete="family-name">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>อีเมล <span style="color:#d00000;">*</span></label>
-        <input type="email" id="reg-email" placeholder="example@email.com" autocomplete="email">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <div class="form-group">
-          <label>ID Line</label>
-          <input type="text" id="reg-line" placeholder="Line ID (ไม่บังคับ)">
-        </div>
-        <div class="form-group">
-          <label>เบอร์โทรศัพท์</label>
-          <input type="tel" id="reg-phone" placeholder="0xxxxxxxxx" maxlength="10">
-          <small style="color:#aaa;font-size:.75rem;">ตัวเลข 9-10 หลักเท่านั้น</small>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>ชื่อผู้ใช้ <span style="color:#d00000;">*</span></label>
-        <input type="text" id="reg-username" placeholder="a-z, 0-9, _ อย่างน้อย 4 ตัว" autocomplete="username">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <div class="form-group">
-          <label>รหัสผ่าน <span style="color:#d00000;">*</span></label>
-          <input type="password" id="reg-pass" placeholder="อย่างน้อย 8 ตัว" autocomplete="new-password">
-          <div class="pw-strength-wrap">
-            <div class="pw-strength-bar"><div class="pw-strength-fill" id="pw-bar"></div></div>
-            <div class="pw-strength-label" id="pw-label"></div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>ยืนยันรหัสผ่าน <span style="color:#d00000;">*</span></label>
-          <input type="password" id="reg-pass2" placeholder="พิมพ์อีกครั้ง" autocomplete="new-password">
-        </div>
-      </div>
-      <p style="font-size:.77rem;color:#aaa;margin-bottom:14px;"><span style="color:#d00000;">*</span> จำเป็นต้องกรอก</p>
-      <button class="btn-auth" id="btn-register" onclick="doRegister()">ยืนยันการลงทะเบียน</button>
-      <p style="margin-top:14px;font-size:.82rem;text-align:center;">มีบัญชีอยู่แล้ว
-        <a onclick="navigateTo('login')" style="color:var(--dgreen);cursor:pointer;font-weight:700;">เข้าสู่ระบบ</a>
-      </p>
-    </div>
-  </div>
-
-  <!-- PAGE: PORTAL -->
-  <div id="page-portal" class="hidden">
-    <div id="portal-login-warning" class="login-required-banner hidden">
-      <i class="fas fa-exclamation-triangle"></i>
-      <span>ผู้ดูแลระบบไม่สามารถแจ้งเรื่องได้</span>
-    </div>
-    <div id="portal-form-content" class="hidden">
-      <div class="step-progress">
-        <div class="step-node active" id="node1">1<span>ระบุตัวตน</span></div>
-        <div class="step-node" id="node2">2<span>เรื่องที่แจ้ง</span></div>
-        <div class="step-node" id="node3">3<span>รายละเอียด</span></div>
-        <div class="step-node" id="node4">4<span>ยืนยัน</span></div>
-      </div>
-
-      <!-- Step 1 -->
-      <div id="step-content-1">
-        <div class="voc-panel">
-          <span class="voc-title">คุณคือ</span>
-          <div class="grid-options">
-            <div class="opt-btn selected" onclick="setOption(this,'cType','นักศึกษา')"> นักศึกษา</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','บัณฑิตศึกษา')"> บัณฑิตศึกษา</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','นักเรียน/ผู้สนใจ')"> นักเรียน/ผู้สนใจ</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ปกครอง')"> ผู้ปกครอง</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ศิษย์เก่า')"> ศิษย์เก่า</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้บัณฑิต/หน่วยงาน')"> ผู้ใช้บัณฑิต/หน่วยงาน</div>
-            <div class="opt-btn" onclick="setOption(this,'cType','อื่นๆ')">อื่น ๆ</div>          
-          </div>
-        </div>
-        <div class="voc-panel" id="identity-panel-step1">
-          <span class="voc-title">แสดงตัวตน</span>
-          <label><input type="checkbox" id="isAnon" onchange="toggleAnon()">แจ้งแบบนิรนาม</label>
-          <div id="identity-fields" class="identity-grid" style="margin-top:14px;">
-            <div><label class="voc-field-label">ชื่อ-นามสกุล</label><input type="text" id="v-name" class="voc-input" style="margin-top:6px;"></div>
-            <div><label class="voc-field-label">รหัสนักศึกษา/หน่วยงาน</label><input type="text" id="v-sid" class="voc-input" style="margin-top:6px;"></div>
-          </div>
-        </div>
-        <button class="btn-submit" onclick="changeStep(2)">ถัดไป - ระบุเรื่องที่แจ้ง →</button>
-      </div>
-
-      <!-- Step 2 -->
-      <div id="step-content-2" class="hidden">
-        <div class="voc-panel">
-          <span class="voc-title">ประเภทของเรื่อง</span>
-          <div class="grid-options" style="grid-template-columns:1fr 1fr;">
-            <div class="opt-btn selected" onclick="setOption(this,'category','ข้อเสนอแนะหลักสูตร')">ข้อเสนอแนะหลักสูตร</div>
-            <div class="opt-btn" onclick="setOption(this,'category','การเรียนการสอน')">การเรียนการสอน</div>
-            <div class="opt-btn" onclick="setOption(this,'category','สิ่งอำนวยความสะดวก')">สิ่งอำนวยความสะดวก</div>
-            <div class="opt-btn" onclick="setOption(this,'category','บริการนักศึกษา')">บริการนักศึกษา</div>
-            <div class="opt-btn" onclick="setOption(this,'category','อื่นๆ')">อื่นๆ</div>
-          </div>
-        </div>
-        <div class="voc-panel">
-          <span class="voc-title">ระดับความเร่งด่วน</span>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
-            <div class="opt-btn" onclick="setOption(this,'priority','low')">🟢 ทั่วไป<br><small style="color:inherit;opacity:.75;">ภายใน 7 วัน</small></div>
-            <div class="opt-btn selected" onclick="setOption(this,'priority','medium')">🟡 ปานกลาง<br><small style="color:inherit;opacity:.75;">ภายใน 3 วัน</small></div>
-            <div class="opt-btn" onclick="setOption(this,'priority','high')">🔴 เร่งด่วน<br><small style="color:inherit;opacity:.75;">ภายใน 24 ชม.</small></div>
-          </div>
-        </div>
-        <div style="display:flex;">
-          <button class="btn-back" onclick="changeStep(1)">← ย้อนกลับ</button>
-          <button class="btn-submit" onclick="changeStep(3)">ถัดไป - กรอกรายละเอียด →</button>
-        </div>
-      </div>
-
-      <!-- Step 3 -->
-      <div id="step-content-3" class="hidden">
-        <div class="voc-panel">
-          <span class="voc-title">รายละเอียดเรื่องที่ร้องเรียน</span>
-          <label style="font-size:.87rem;color:#555;font-weight:600;">หัวข้อ <span style="color:#d00000;">*</span></label>
-          <input type="text" id="v-subject" class="voc-input" style="margin-top:6px;" placeholder="ระบุหัวข้อเรื่องที่ต้องการร้องเรียน">
-          <label style="font-size:.87rem;color:#555;font-weight:600;">รายละเอียด <span style="color:#d00000;">*</span></label>
-          <textarea id="v-detail" class="voc-input" style="height:120px;resize:vertical;margin-top:6px;" placeholder="อธิบายรายละเอียดของเรื่องที่ต้องการร้องเรียน"></textarea>
-          <!-- หมายเหตุผู้ใช้ -->
-          <label style="font-size:.87rem;color:#555;font-weight:600;">หมายเหตุเพิ่มเติม (ถ้ามี)</label>
-          <input type="text" id="v-note" class="voc-input" style="margin-top:6px;" placeholder="ข้อมูลเพิ่มเติมที่ต้องการแจ้งผู้ดูแล">
-          <!-- แนบลิงก์ไฟล์ -->
-          <div class="file-link-wrap" style="margin-top:4px;">
-            <label style="font-size:.87rem;color:#555;font-weight:600;display:block;margin-bottom:6px;">
-              <i class="fas fa-link"></i>ลิงก์ไฟล์แนบ<span style="font-weight:400;color:#aaa;">(ไม่บังคับ)</span>
-            </label>
-              <input type="url" id="v-file-link" class="voc-input" placeholder="https://drive.google.com/...">
-            <div style="margin:12px 0;text-align:center;color:#999;">หรือ</div>
-            <label class="btn-submit" style="display:inline-block;cursor:pointer;"><i class="fas fa-upload"></i>อัปโหลดรูปภาพ / PDF
-              <input type="file" id="v-file-upload" accept="image/*,.pdf" hidden onchange="uploadAttachment(this)">
-            </label>
-            <div id="upload-status" style="margin-top:10px;font-size:.85rem;color:#666;"></div>
-          </div>
-        <div style="display:flex;">
-          <button class="btn-back" onclick="changeStep(2)">← ย้อนกลับ</button>
-          <button class="btn-submit" onclick="prepareReview()">ถัดไป - ตรวจสอบข้อมูล →</button>
-        </div>
-      </div>
-
-      <!-- Step 4 — Review Card -->
-      <div id="step-content-4" class="hidden">
-        <div id="review-area"></div>
-        <!-- Cloudflare Turnstile widget — แสดงก่อนกดยืนยัน -->
-        <div class="turnstile-wrap">
-          <div class="turnstile-label"><i class="fas fa-shield-alt"></i> ยืนยันว่าคุณไม่ใช่บอท</div>
-          <div class="cf-turnstile"
-               id="cf-turnstile-widget"
-               data-sitekey="0x4AAAAAADb5bG1wur6Ny2C-"
-               data-theme="light"
-               data-language="th"
-               data-callback="onTurnstileSuccess"
-               data-expired-callback="onTurnstileExpire"
-               data-error-callback="onTurnstileError"
-               data-response-field="true"
-               data-response-field-name="cf-turnstile-response">
-          </div>
-          <div id="turnstile-status" class="turnstile-status-msg"></div>
-        </div>
-        <div style="display:flex;margin-top:16px;">
-          <button class="btn-back" onclick="changeStep(3)">← ย้อนกลับ</button>
-          <button class="btn-submit" id="btn-final" onclick="finalSubmit()" disabled>
-            <i class="fas fa-shield-alt"></i> ยืนยันการส่งเรื่อง (รอการยืนยัน)
+        <div class="hero-cta-row">
+          <button class="hero-btn primary" onclick="navigateTo('portal')">
+            <i class="fas fa-bullhorn"></i> แจ้งเรื่องร้องเรียน
+          </button>
+          <button class="hero-btn outline" onclick="navigateTo('tracking')">
+            <i class="fas fa-search"></i> ติดตามสถานะ
           </button>
         </div>
       </div>
 
-      <!-- Success -->
-      <div id="success-area" class="hidden">
-        <div class="success-wrap">
-          <div class="success-icon"><i class="fas fa-check"></i></div>
-          <h2 style="color:var(--dgreen);">รับเรื่องแล้ว!</h2>
-          <p style="color:#777;margin-top:8px;">ทีมงานได้รับเรื่องของคุณเรียบร้อยแล้ว</p>
-          <div class="ticket-id-box" id="new-ticket-id">VOC-2568-0001</div>
-          <p style="font-size:.86rem;color:#aaa;margin-bottom:22px;">บันทึกหมายเลข Ticket ไว้เพื่อติดตามสถานะ</p>
-          <div class="success-btn-row">
-            <button class="btn-submit" style="padding:12px 32px;" onclick="navigateTo('tracking')">
-              <i class="fas fa-list-alt"></i> ติดตามสถานะ
+      <!-- Right: ผู้บริหาร horizontal slider -->
+      <div class="hero-mgmt-panel">
+        <!-- Track หลัก — เลื่อนแนวนอน -->
+        <div class="mgmt-h-track-wrap">
+          <div class="mgmt-h-track" id="mgmt-h-track"></div>
+        </div>
+        <!-- ชื่อ + ตำแหน่ง ด้านล่างรูป -->
+        <div class="mgmt-h-info" id="mgmt-h-info">
+          <div class="mgmt-h-name" id="mgmt-h-name"></div>
+          <div class="mgmt-h-pos" id="mgmt-h-pos"></div>
+        </div>
+        <!-- Dots -->
+        <div class="mgmt-dots" id="mgmt-dots"></div>
+      </div>
+
+    </div><!-- /hero-content -->
+
+    <!-- Decorative wave -->
+    <div class="hero-wave">
+      <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0,30 C360,60 720,0 1080,30 C1260,45 1380,38 1440,30 L1440,60 L0,60 Z" fill="var(--white)" />
+      </svg>
+    </div>
+  </div><!-- /hero-section -->
+
+  <!-- แยกส่วนด้านบนกับด้านล่างตรงนี้ -->
+
+  <!-- ══ MAIN ══ -->
+  <div class="container">
+
+    <!-- PAGE: HOME -->
+    <div id="page-home">
+
+      <!-- Quick action cards -->
+      <div class="home-action-row">
+        <div class="action-card-ticket" onclick="navigateTo('portal')">
+          <div class="action-icon-wrap blue"><i class="fas fa-bullhorn"></i></div>
+          <div class="action-text">
+            <div class="action-title">แจ้งเรื่องร้องเรียน</div>
+            <div class="action-desc">ส่งคำร้องและติดตามผล</div>
+          </div>
+        </div>
+        <div class="action-card-track" onclick="navigateTo('tracking')">
+          <div class="action-icon-wrap orange"><i class="fas fa-search"></i></div>
+          <div class="action-text">
+            <div class="action-title">ติดตามสถานะ</div>
+            <div class="action-desc">ตรวจสอบความคืบหน้า</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ข่าวสาร -->
+      <div id="news-strip-section" class="hidden"></div>
+      <!-- Pinned tickets -->
+      <div id="pinned-tickets-section" class="hidden"></div>
+
+      <!-- ══ SECTION: ฟีเจอร์เด่นของเว็บไซต์ ══ -->
+      <section class="home-section features-section" id="section-features">
+        <div class="home-section-header">
+          <div class="home-section-line"></div>
+          <h2 class="home-section-title" data-i18n="feat_title">เว็บไซต์ของเรา</h2>
+          <div class="home-section-line"></div>
+        </div>
+        <p class="home-section-sub" data-i18n="feat_sub">ระบบรับฟังเสียงลูกค้า (VOC)
+          ออกแบบมาเพื่อให้นักศึกษาและบุคลากรสามารถสื่อสารกับคณะได้อย่างสะดวก โปร่งใส และรวดเร็ว</p>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#2d6a4f,#52b788)"><i
+                class="fas fa-bullhorn"></i></div>
+            <h3 data-i18n="feat1_title">แจ้งเรื่องออนไลน์</h3>
+            <p data-i18n="feat1_desc">ส่งคำร้อง ข้อเสนอแนะ หรือข้อร้องเรียนได้ตลอด 24 ชั่วโมง ทั้งแบบระบุตัวตนและไม่ระบุ
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#1d6fa4,#48b4e0)"><i
+                class="fas fa-search"></i></div>
+            <h3 data-i18n="feat2_title">ติดตามสถานะแบบ Real-time</h3>
+            <p data-i18n="feat2_desc">ตรวจสอบความคืบหน้าของเรื่องได้ทันทีด้วย Ticket ID โดยไม่ต้องรอนัดหมาย</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#b5451b,#e07a5f)"><i
+                class="fas fa-bolt"></i></div>
+            <h3 data-i18n="feat3_title">ระดับความเร่งด่วน</h3>
+            <p data-i18n="feat3_desc">จัดลำดับความสำคัญ 3 ระดับ — ทั่วไป / ปานกลาง / เร่งด่วน
+              เพื่อให้ทีมงานตอบสนองได้ตรงจุด</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#6a2d82,#c084fc)"><i
+                class="fas fa-paperclip"></i></div>
+            <h3 data-i18n="feat4_title">แนบไฟล์หลักฐาน</h3>
+            <p data-i18n="feat4_desc">อัปโหลดภาพหรือเอกสารประกอบคำร้องได้โดยตรง ไฟล์ถูกจัดเก็บอย่างปลอดภัยใน Google
+              Drive</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#a16207,#facc15)"><i
+                class="fas fa-star"></i></div>
+            <h3 data-i18n="feat5_title">ให้คะแนนความพึงพอใจ</h3>
+            <p data-i18n="feat5_desc">ประเมินคุณภาพการให้บริการหลังปิดเรื่อง เพื่อช่วยคณะพัฒนาการทำงานอย่างต่อเนื่อง</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#0e7490,#22d3ee)"><i
+                class="fas fa-shield-alt"></i></div>
+            <h3 data-i18n="feat6_title">ปลอดภัยและโปร่งใส</h3>
+            <p data-i18n="feat6_desc">ระบบ JWT Authentication, Rate Limiting และ Cloudflare Turnstile
+              ป้องกันการใช้งานโดยไม่ได้รับอนุญาต</p>
+          </div>
+        </div>
+      </section>
+
+
+
+      <!-- ══ SECTION: ที่ตั้งคณะ ══ -->
+      <section class="home-section location-section" id="section-location">
+        <div class="home-section-header">
+          <div class="home-section-line"></div>
+          <h2 class="home-section-title" data-i18n="loc_title">ที่ตั้งคณะวิทยาศาสตร์ฯ</h2>
+          <div class="home-section-line"></div>
+        </div>
+        <p class="home-section-sub" data-i18n="loc_sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา
+          ตั้งอยู่ในใจกลางเมืองยะลา</p>
+        <div class="location-wrap">
+          <div class="location-map-box">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d478.70075698111214!2d101.2894853942507!3d6.547284131587036!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31b374304e314be1%3A0x11968d5acbbaf7ca!2z4LiE4LiT4Liw4Lin4Li04LiX4Lii4Liy4Lio4Liy4Liq4LiV4Lij4LmM4LmA4LiX4LiE4LmC4LiZ4LmC4Lil4Lii4Li14LmB4Lil4Liw4LiB4Liy4Lij4LmA4LiB4Lip4LiV4Lij!5e1!3m2!1sen!2ssg!4v1781282044569!5m2!1sen!2ssg"
+              style="width:100%;height:340px;border:0;border-radius:12px;display:block;" allowfullscreen=""
+              loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+              title="แผนที่คณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยราชภัฏยะลา"></iframe>
+          </div>
+          <div class="location-info-box">
+            <div class="loc-info-item">
+              <div class="loc-info-icon"><i class="fas fa-university"></i></div>
+              <div>
+                <div class="loc-info-label" data-i18n="loc_faculty">คณะ</div>
+                <div class="loc-info-val" data-i18n="loc_faculty_val">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร</div>
+              </div>
+            </div>
+            <div class="loc-info-item">
+              <div class="loc-info-icon"><i class="fas fa-landmark"></i></div>
+              <div>
+                <div class="loc-info-label" data-i18n="loc_univ">มหาวิทยาลัย</div>
+                <div class="loc-info-val" data-i18n="loc_univ_val">มหาวิทยาลัยราชภัฏยะลา</div>
+              </div>
+            </div>
+            <div class="loc-info-item">
+              <div class="loc-info-icon"><i class="fas fa-map-marker-alt"></i></div>
+              <div>
+                <div class="loc-info-label" data-i18n="loc_addr">ที่อยู่</div>
+                <div class="loc-info-val" data-i18n="loc_addr_val">133 ถ.เทศบาล 3 ต.สะเตง อ.เมือง จ.ยะลา 95000</div>
+              </div>
+            </div>
+            <div class="loc-info-item">
+              <div class="loc-info-icon"><i class="fas fa-phone"></i></div>
+              <div>
+                <div class="loc-info-label" data-i18n="loc_phone">โทรศัพท์</div>
+                <div class="loc-info-val">073-299-628</div>
+              </div>
+            </div>
+            <a href="https://maps.app.goo.gl/eFFqJp6kri52VVTP8" target="_blank" class="loc-direction-btn">
+              <i class="fas fa-directions"></i> <span data-i18n="loc_directions">เปิดใน Google Maps</span>
+            </a>
+          </div>
+        </div>
+      </section>
+      <!-- คู่มือการใช้งาน -->
+      <div class="manual-section-new">
+        <div class="manual-header">
+          <div class="manual-header-line"></div>
+          <h3>คู่มือการใช้งาน</h3>
+          <div class="manual-header-line"></div>
+        </div>
+        <div class="manual-grid-new" id="manual-grid-ID">
+          <div class="manual-card">
+            <div class="manual-icon-wrap"><i class="fas fa-play-circle"></i></div>
+            <div class="manual-card-title">วิดีโอแนะนำ</div>
+            <div class="manual-card-desc">ดูวิดีโอขั้นตอนการใช้งานระบบ</div>
+          </div>
+          <div class="manual-card">
+            <div class="manual-icon-wrap"><i class="fas fa-images"></i></div>
+            <div class="manual-card-title">Infographic</div>
+            <div class="manual-card-desc">ภาพสรุปขั้นตอนแบบง่าย</div>
+          </div>
+          <div class="manual-card">
+            <div class="manual-icon-wrap"><i class="fas fa-file-pdf"></i></div>
+            <div class="manual-card-title">เอกสาร PDF</div>
+            <div class="manual-card-desc">คู่มือฉบับเต็มสำหรับพิมพ์</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PAGE: LOGIN -->
+    <div id="page-login" class="hidden" style="padding-top:50px;">
+      <div class="auth-container">
+        <div class="auth-header">เข้าสู่ระบบ</div>
+        <div class="form-group">
+          <label>ชื่อผู้ใช้</label>
+          <input type="text" id="login-user" placeholder="Username" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>รหัสผ่าน</label>
+          <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
+        </div>
+        <button class="btn-auth" id="btn-login" onclick="doLogin()">ยืนยัน</button>
+        <p style="margin-top:16px;font-size:.82rem;text-align:center;">ยังไม่มีบัญชี
+          <a onclick="navigateTo('register')"
+            style="color:var(--primary);cursor:pointer;font-weight:700;"><i>ลงทะเบียน</i></a>
+        </p>
+      </div>
+    </div>
+
+    <!-- PAGE: REGISTER -->
+    <div id="page-register" class="hidden" style="padding-top:50px;">
+      <div class="auth-container" style="max-width:620px;">
+        <div class="auth-header">ลงทะเบียน</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="form-group">
+            <label>ชื่อ <span style="color:#d00000;">*</span></label>
+            <input type="text" id="reg-firstname" placeholder="ชื่อจริง" autocomplete="given-name">
+          </div>
+          <div class="form-group">
+            <label>นามสกุล <span style="color:#d00000;">*</span></label>
+            <input type="text" id="reg-lastname" placeholder="นามสกุล" autocomplete="family-name">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>อีเมล <span style="color:#d00000;">*</span></label>
+          <input type="email" id="reg-email" placeholder="example@email.com" autocomplete="email">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="form-group">
+            <label>ID Line</label>
+            <input type="text" id="reg-line" placeholder="Line ID (ไม่บังคับ)">
+          </div>
+          <div class="form-group">
+            <label>เบอร์โทรศัพท์</label>
+            <input type="tel" id="reg-phone" placeholder="0xxxxxxxxx" maxlength="10">
+            <small style="color:#aaa;font-size:.75rem;">ตัวเลข 9-10 หลักเท่านั้น</small>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>ชื่อผู้ใช้ <span style="color:#d00000;">*</span></label>
+          <input type="text" id="reg-username" placeholder="a-z, 0-9, _ อย่างน้อย 4 ตัว" autocomplete="username">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="form-group">
+            <label>รหัสผ่าน <span style="color:#d00000;">*</span></label>
+            <input type="password" id="reg-pass" placeholder="อย่างน้อย 8 ตัว" autocomplete="new-password">
+            <div class="pw-strength-wrap">
+              <div class="pw-strength-bar">
+                <div class="pw-strength-fill" id="pw-bar"></div>
+              </div>
+              <div class="pw-strength-label" id="pw-label"></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>ยืนยันรหัสผ่าน <span style="color:#d00000;">*</span></label>
+            <input type="password" id="reg-pass2" placeholder="พิมพ์อีกครั้ง" autocomplete="new-password">
+          </div>
+        </div>
+        <p style="font-size:.77rem;color:#aaa;margin-bottom:14px;"><span style="color:#d00000;">*</span> จำเป็นต้องกรอก
+        </p>
+        <button class="btn-auth" id="btn-register" onclick="doRegister()">ยืนยันการลงทะเบียน</button>
+        <p style="margin-top:14px;font-size:.82rem;text-align:center;">มีบัญชีอยู่แล้ว
+          <a onclick="navigateTo('login')" style="color:var(--dgreen);cursor:pointer;font-weight:700;">เข้าสู่ระบบ</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- PAGE: PORTAL -->
+    <div id="page-portal" class="hidden">
+      <div id="portal-login-warning" class="login-required-banner hidden">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>ผู้ดูแลระบบไม่สามารถแจ้งเรื่องได้</span>
+      </div>
+      <div id="portal-form-content" class="hidden">
+        <div class="step-progress">
+          <div class="step-node active" id="node1">1<span>ระบุตัวตน</span></div>
+          <div class="step-node" id="node2">2<span>เรื่องที่แจ้ง</span></div>
+          <div class="step-node" id="node3">3<span>รายละเอียด</span></div>
+          <div class="step-node" id="node4">4<span>ยืนยัน</span></div>
+        </div>
+
+        <!-- Step 1 -->
+        <div id="step-content-1">
+          <div class="voc-panel">
+            <span class="voc-title">คุณคือ</span>
+            <div class="grid-options">
+              <div class="opt-btn selected" onclick="setOption(this,'cType','นักศึกษา')"> นักศึกษา</div>
+              <div class="opt-btn" onclick="setOption(this,'cType','บัณฑิตศึกษา')"> บัณฑิตศึกษา</div>
+              <div class="opt-btn" onclick="setOption(this,'cType','นักเรียน/ผู้สนใจ')"> นักเรียน/ผู้สนใจ</div>
+              <div class="opt-btn" onclick="setOption(this,'cType','ผู้ปกครอง')"> ผู้ปกครอง</div>
+              <div class="opt-btn" onclick="setOption(this,'cType','ศิษย์เก่า')"> ศิษย์เก่า</div>
+              <div class="opt-btn" onclick="setOption(this,'cType','ผู้ใช้บัณฑิต/หน่วยงาน')"> ผู้ใช้บัณฑิต/หน่วยงาน
+              </div>
+              <div class="opt-btn" onclick="setOption(this,'cType','อื่นๆ')">อื่น ๆ</div>
+            </div>
+          </div>
+          <div class="voc-panel" id="identity-panel-step1">
+            <span class="voc-title">แสดงตัวตน</span>
+            <label><input type="checkbox" id="isAnon" onchange="toggleAnon()">แจ้งแบบนิรนาม</label>
+            <div id="identity-fields" class="identity-grid" style="margin-top:14px;">
+              <div><label class="voc-field-label">ชื่อ-นามสกุล</label><input type="text" id="v-name" class="voc-input"
+                  style="margin-top:6px;"></div>
+              <div><label class="voc-field-label">รหัสนักศึกษา/หน่วยงาน</label><input type="text" id="v-sid"
+                  class="voc-input" style="margin-top:6px;"></div>
+            </div>
+          </div>
+          <button class="btn-submit" onclick="changeStep(2)">ถัดไป - ระบุเรื่องที่แจ้ง →</button>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="step-content-2" class="hidden">
+          <div class="voc-panel">
+            <span class="voc-title">ประเภทของเรื่อง</span>
+            <div class="grid-options" style="grid-template-columns:1fr 1fr;">
+              <div class="opt-btn selected" onclick="setOption(this,'category','ข้อเสนอแนะหลักสูตร')">ข้อเสนอแนะหลักสูตร
+              </div>
+              <div class="opt-btn" onclick="setOption(this,'category','การเรียนการสอน')">การเรียนการสอน</div>
+              <div class="opt-btn" onclick="setOption(this,'category','สิ่งอำนวยความสะดวก')">สิ่งอำนวยความสะดวก</div>
+              <div class="opt-btn" onclick="setOption(this,'category','บริการนักศึกษา')">บริการนักศึกษา</div>
+              <div class="opt-btn" onclick="setOption(this,'category','อื่นๆ')">อื่นๆ</div>
+            </div>
+          </div>
+          <div class="voc-panel">
+            <span class="voc-title">ระดับความเร่งด่วน</span>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+              <div class="opt-btn" onclick="setOption(this,'priority','low')">🟢 ทั่วไป<br><small
+                  style="color:inherit;opacity:.75;">ภายใน 7 วัน</small></div>
+              <div class="opt-btn selected" onclick="setOption(this,'priority','medium')">🟡 ปานกลาง<br><small
+                  style="color:inherit;opacity:.75;">ภายใน 3 วัน</small></div>
+              <div class="opt-btn" onclick="setOption(this,'priority','high')">🔴 เร่งด่วน<br><small
+                  style="color:inherit;opacity:.75;">ภายใน 24 ชม.</small></div>
+            </div>
+          </div>
+          <div style="display:flex;">
+            <button class="btn-back" onclick="changeStep(1)">← ย้อนกลับ</button>
+            <button class="btn-submit" onclick="changeStep(3)">ถัดไป - กรอกรายละเอียด →</button>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div id="step-content-3" class="hidden">
+          <div class="voc-panel">
+            <span class="voc-title">รายละเอียดเรื่องที่ร้องเรียน</span>
+            <label style="font-size:.87rem;color:#555;font-weight:600;">หัวข้อ <span
+                style="color:#d00000;">*</span></label>
+            <input type="text" id="v-subject" class="voc-input" style="margin-top:6px;"
+              placeholder="ระบุหัวข้อเรื่องที่ต้องการร้องเรียน">
+            <label style="font-size:.87rem;color:#555;font-weight:600;">รายละเอียด <span
+                style="color:#d00000;">*</span></label>
+            <textarea id="v-detail" class="voc-input" style="height:120px;resize:vertical;margin-top:6px;"
+              placeholder="อธิบายรายละเอียดของเรื่องที่ต้องการร้องเรียน"></textarea>
+            <!-- หมายเหตุผู้ใช้ -->
+            <label style="font-size:.87rem;color:#555;font-weight:600;">หมายเหตุเพิ่มเติม (ถ้ามี)</label>
+            <input type="text" id="v-note" class="voc-input" style="margin-top:6px;"
+              placeholder="ข้อมูลเพิ่มเติมที่ต้องการแจ้งผู้ดูแล">
+            <!-- แนบลิงก์ไฟล์ -->
+            <div class="file-link-wrap" style="margin-top:4px;">
+              <label style="font-size:.87rem;color:#555;font-weight:600;display:block;margin-bottom:6px;">
+                <i class="fas fa-link"></i> ลิงก์ไฟล์แนบ <span style="font-weight:400;color:#aaa;">(ไม่บังคับ)</span>
+              </label>
+              <input type="url" id="v-file-link" class="voc-input"
+                placeholder="https://drive.google.com/... หรือลิงก์ไฟล์อื่นๆ">
+              <div style="margin-top:5px;font-size:.78rem;color:#aaa;"><i class="fas fa-info-circle"></i> วางลิงก์จาก
+                Google Drive, OneDrive, Dropbox หรือที่อื่นๆ</div>
+            </div>
+          </div>
+          <div style="display:flex;">
+            <button class="btn-back" onclick="changeStep(2)">← ย้อนกลับ</button>
+            <button class="btn-submit" onclick="prepareReview()">ถัดไป - ตรวจสอบข้อมูล →</button>
+          </div>
+        </div>
+
+        <!-- Step 4 — Review Card -->
+        <div id="step-content-4" class="hidden">
+          <div id="review-area"></div>
+          <!-- Cloudflare Turnstile widget — แสดงก่อนกดยืนยัน -->
+          <div class="turnstile-wrap">
+            <div class="turnstile-label"><i class="fas fa-shield-alt"></i> ยืนยันว่าคุณไม่ใช่บอท</div>
+            <div class="cf-turnstile" id="cf-turnstile-widget" data-sitekey="0x4AAAAAADb5bG1wur6Ny2C-"
+              data-theme="light" data-language="th" data-callback="onTurnstileSuccess"
+              data-expired-callback="onTurnstileExpire" data-error-callback="onTurnstileError"
+              data-response-field="true" data-response-field-name="cf-turnstile-response">
+            </div>
+            <div id="turnstile-status" class="turnstile-status-msg"></div>
+          </div>
+          <div style="display:flex;margin-top:16px;">
+            <button class="btn-back" onclick="changeStep(3)">← ย้อนกลับ</button>
+            <button class="btn-submit" id="btn-final" onclick="finalSubmit()" disabled>
+              <i class="fas fa-shield-alt"></i> ยืนยันการส่งเรื่อง (รอการยืนยัน)
             </button>
-            <button class="btn-back" onclick="navigateTo('home')">กลับหน้าหลัก</button>
+          </div>
+        </div>
+
+        <!-- Success -->
+        <div id="success-area" class="hidden">
+          <div class="success-wrap">
+            <div class="success-icon"><i class="fas fa-check"></i></div>
+            <h2 style="color:var(--dgreen);">รับเรื่องแล้ว!</h2>
+            <p style="color:#777;margin-top:8px;">ทีมงานได้รับเรื่องของคุณเรียบร้อยแล้ว</p>
+            <div class="ticket-id-box" id="new-ticket-id">VOC-2568-0001</div>
+            <p style="font-size:.86rem;color:#aaa;margin-bottom:22px;">บันทึกหมายเลข Ticket ไว้เพื่อติดตามสถานะ</p>
+            <div class="success-btn-row">
+              <button class="btn-submit" style="padding:12px 32px;" onclick="navigateTo('tracking')">
+                <i class="fas fa-list-alt"></i> ติดตามสถานะ
+              </button>
+              <button class="btn-back" onclick="navigateTo('home')">กลับหน้าหลัก</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- PAGE: TRACKING -->
-  <div id="page-tracking" class="hidden">
-    <div class="section-title">
-      <h2><i class="fas fa-list-alt"></i> ติดตามสถานะ</h2>
+    <!-- PAGE: TRACKING -->
+    <div id="page-tracking" class="hidden">
+      <div class="section-title">
+        <h2><i class="fas fa-list-alt"></i> ติดตามสถานะ</h2>
+      </div>
+      <div class="track-bar">
+        <input type="text" id="track-input" placeholder="กรอกรหัสติดตามสถานะที่นี่...">
+        <button onclick="doTrack()"><i class="fas fa-search"></i> ค้นหา</button>
+      </div>
+      <div id="track-result"></div>
     </div>
-    <div class="track-bar">
-      <input type="text" id="track-input" placeholder="กรอกรหัสติดตามสถานะที่นี่...">
-      <button onclick="doTrack()"><i class="fas fa-search"></i> ค้นหา</button>
-    </div>
-    <div id="track-result"></div>
-  </div>
 
-  <!-- PAGE: FAQ -->
-  <div id="page-faq" class="hidden">
-    <div class="section-title">
-      <h2><i class="fas fa-question-circle"></i> คำถามที่พบบ่อย (FAQ)</h2>
-    </div>
-    <div class="faq-search-bar">
-      <input type="text" id="faq-search" placeholder="ค้นหาคำถาม...">
-      <button onclick="searchFaq()" style="padding:11px 20px;background:var(--dgreen);color:#fff;border:none;border-radius:12px;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:700;">
-        <i class="fas fa-search"></i>
-      </button>
-    </div>
-    <div id="faq-content">
-      <div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>
-    </div>
-  </div>
-
-  <!-- PAGE: ADMIN DASHBOARD -->
-  <div id="page-admin-dashboard" class="hidden">
-    <div class="section-title">
-      <h2><i class="fas fa-chart-bar"></i> สรุปสถิติการร้องเรียน</h2>
-      <button onclick="loadDashboard()" style="margin-left:auto;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
-        <i class="fas fa-sync-alt"></i> รีเฟรช
-      </button>
-    </div>
-    <div id="dash-content"></div>
-  </div>
-
-  <!-- PAGE: ADMIN TICKETS -->
-  <div id="page-admin-tickets" class="hidden">
-    <div class="section-title">
-      <h2><i class="fas fa-inbox"></i> จัดการเรื่องร้องเรียน</h2>
-      <button onclick="loadAdminTickets('pending')" style="margin-left:auto;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
-        <i class="fas fa-sync-alt"></i> รีเฟรช
-      </button>
-    </div>
-    <div class="admin-filters">
-      <button class="filter-btn active" id="filter-pending" onclick="loadAdminTickets('pending');setFilter('pending')">รอดำเนินการ</button>
-      <button class="filter-btn" id="filter-inprogress" onclick="loadAdminTickets('กำลังดำเนินการ');setFilter('inprogress')">กำลังดำเนินการ</button>
-      <button class="filter-btn" id="filter-all" onclick="loadAdminTickets('all');setFilter('all')">ทั้งหมด</button>
-      <button class="filter-btn" id="filter-done" onclick="loadAdminTickets('เสร็จสิ้น');setFilter('done')">เสร็จสิ้น</button>
-    </div>
-    <div id="admin-ticket-list"></div>
-  </div>
-
-  <!-- PAGE: ADMIN REVIEWS -->
-  <div id="page-admin-reviews" class="hidden">
-    <div class="section-title">
-      <h2><i class="fas fa-star"></i> ผลการให้คะแนนและรีวิว</h2>
-      <button onclick="loadReviews()" style="margin-left:auto;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
-        <i class="fas fa-sync-alt"></i> รีเฟรช
-      </button>
-    </div>
-    <div id="review-content"></div>
-  </div>
-
-  <!-- PAGE: SUPERADMIN -->
-  <div id="page-superadmin" class="hidden">
-    <div class="section-title">
-      <h2><i class="fas fa-crown" style="color:#f0a500;"></i> จัดการระบบ (SuperAdmin)</h2>
-      <button onclick="loadSuperAdmin()" style="margin-left:auto;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
-        <i class="fas fa-sync-alt"></i> รีเฟรช
-      </button>
-    </div>
-    <div id="superadmin-content"></div>
-  </div>
-
-
-  <!-- PAGE: ADMIN REPORT -->
-  <div id="page-admin-report" class="hidden">
-    <div class="section-title">
-      <h2><i class="fas fa-file-chart-line"></i> รายงาน</h2>
-      <div style="margin-left:auto;display:flex;gap:8px;">
-        <button onclick="printReport()" style="padding:7px 16px;background:#3a86ff;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
-          <i class="fas fa-print"></i> พิมพ์/PDF
+    <!-- PAGE: FAQ -->
+    <div id="page-faq" class="hidden">
+      <div class="section-title">
+        <h2><i class="fas fa-question-circle"></i> คำถามที่พบบ่อย (FAQ)</h2>
+      </div>
+      <div class="faq-search-bar">
+        <input type="text" id="faq-search" placeholder="ค้นหาคำถาม...">
+        <button onclick="searchFaq()"
+          style="padding:11px 20px;background:var(--dgreen);color:#fff;border:none;border-radius:12px;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:700;">
+          <i class="fas fa-search"></i>
         </button>
-        <button onclick="loadReport(window._currentReportType||'service')" style="padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
+      </div>
+      <div id="faq-content">
+        <div class="loading-spinner"><i class="fas fa-circle-notch"></i>
+          <p style="margin-top:10px;">กำลังโหลด...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: ADMIN DASHBOARD -->
+    <div id="page-admin-dashboard" class="hidden">
+      <div class="section-title">
+        <h2><i class="fas fa-chart-bar"></i> สรุปสถิติการร้องเรียน</h2>
+        <button onclick="loadDashboard()"
+          style="margin-left:auto;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
           <i class="fas fa-sync-alt"></i> รีเฟรช
         </button>
       </div>
+      <div id="dash-content"></div>
     </div>
-    <div class="voc-dropdown-wrap" id="report-type-dropdown-wrap">
-      <button class="voc-dropdown-btn" id="report-type-dropdown-btn" onclick="toggleDropdown('report-type-dropdown')" type="button">
-        <i class="fas fa-clipboard-list" id="report-type-icon"></i>
-        <span id="report-type-label">สรุปการให้บริการ</span>
-        <i class="fas fa-chevron-down voc-dropdown-arrow" id="report-type-arrow"></i>
-      </button>
-      <div class="voc-dropdown-menu" id="report-type-dropdown">
-        <button class="voc-dropdown-item active" id="rtab-service" onclick="selectReportType('service','สรุปการให้บริการ','fas fa-clipboard-list',this)">
-          <i class="fas fa-clipboard-list"></i> สรุปการให้บริการ
-        </button>
-        <button class="voc-dropdown-item" id="rtab-users" onclick="selectReportType('users','ผู้ใช้บริการ','fas fa-users',this)">
-          <i class="fas fa-users"></i> ผู้ใช้บริการ
-        </button>
-        <button class="voc-dropdown-item" id="rtab-duration" onclick="selectReportType('duration','เวลาให้บริการ','fas fa-stopwatch',this)">
-          <i class="fas fa-stopwatch"></i> เวลาให้บริการ
-        </button>
-        <button class="voc-dropdown-item" id="rtab-monthly" onclick="selectReportType('monthly','รายเดือน','fas fa-calendar-alt',this)">
-          <i class="fas fa-calendar-alt"></i> รายเดือน
+
+    <!-- PAGE: ADMIN TICKETS -->
+    <div id="page-admin-tickets" class="hidden">
+      <div class="section-title">
+        <h2><i class="fas fa-inbox"></i> จัดการเรื่องร้องเรียน</h2>
+        <button onclick="loadAdminTickets('pending')"
+          style="margin-left:auto;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
+          <i class="fas fa-sync-alt"></i> รีเฟรช
         </button>
       </div>
+      <div class="admin-filters">
+        <button class="filter-btn active" id="filter-pending"
+          onclick="loadAdminTickets('pending');setFilter('pending')">รอดำเนินการ</button>
+        <button class="filter-btn" id="filter-inprogress"
+          onclick="loadAdminTickets('กำลังดำเนินการ');setFilter('inprogress')">กำลังดำเนินการ</button>
+        <button class="filter-btn" id="filter-all" onclick="loadAdminTickets('all');setFilter('all')">ทั้งหมด</button>
+        <button class="filter-btn" id="filter-done"
+          onclick="loadAdminTickets('เสร็จสิ้น');setFilter('done')">เสร็จสิ้น</button>
+      </div>
+      <div id="admin-ticket-list"></div>
     </div>
-    <div id="report-content"></div>
+
+    <!-- PAGE: ADMIN REVIEWS -->
+    <div id="page-admin-reviews" class="hidden">
+      <div class="section-title">
+        <h2><i class="fas fa-star"></i> ผลการให้คะแนนและรีวิว</h2>
+        <button onclick="loadReviews()"
+          style="margin-left:auto;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
+          <i class="fas fa-sync-alt"></i> รีเฟรช
+        </button>
+      </div>
+      <div id="review-content"></div>
+    </div>
+
+    <!-- PAGE: SUPERADMIN -->
+    <div id="page-superadmin" class="hidden">
+      <div class="section-title">
+        <h2><i class="fas fa-crown" style="color:#f0a500;"></i> จัดการระบบ (SuperAdmin)</h2>
+        <button onclick="loadSuperAdmin()"
+          style="margin-left:auto;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
+          <i class="fas fa-sync-alt"></i> รีเฟรช
+        </button>
+      </div>
+      <div id="superadmin-content"></div>
+    </div>
+
+
+    <!-- PAGE: ADMIN REPORT -->
+    <div id="page-admin-report" class="hidden">
+      <div class="section-title">
+        <h2><i class="fas fa-file-chart-line"></i> รายงาน</h2>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button onclick="printReport()"
+            style="padding:7px 16px;background:#3a86ff;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
+            <i class="fas fa-print"></i> พิมพ์/PDF
+          </button>
+          <button onclick="loadReport(window._currentReportType||'service')"
+            style="padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">
+            <i class="fas fa-sync-alt"></i> รีเฟรช
+          </button>
+        </div>
+      </div>
+      <div class="voc-dropdown-wrap" id="report-type-dropdown-wrap">
+        <button class="voc-dropdown-btn" id="report-type-dropdown-btn" onclick="toggleDropdown('report-type-dropdown')"
+          type="button">
+          <i class="fas fa-clipboard-list" id="report-type-icon"></i>
+          <span id="report-type-label">สรุปการให้บริการ</span>
+          <i class="fas fa-chevron-down voc-dropdown-arrow" id="report-type-arrow"></i>
+        </button>
+        <div class="voc-dropdown-menu" id="report-type-dropdown">
+          <button class="voc-dropdown-item active" id="rtab-service"
+            onclick="selectReportType('service','สรุปการให้บริการ','fas fa-clipboard-list',this)">
+            <i class="fas fa-clipboard-list"></i> สรุปการให้บริการ
+          </button>
+          <button class="voc-dropdown-item" id="rtab-users"
+            onclick="selectReportType('users','ผู้ใช้บริการ','fas fa-users',this)">
+            <i class="fas fa-users"></i> ผู้ใช้บริการ
+          </button>
+          <button class="voc-dropdown-item" id="rtab-duration"
+            onclick="selectReportType('duration','เวลาให้บริการ','fas fa-stopwatch',this)">
+            <i class="fas fa-stopwatch"></i> เวลาให้บริการ
+          </button>
+          <button class="voc-dropdown-item" id="rtab-monthly"
+            onclick="selectReportType('monthly','รายเดือน','fas fa-calendar-alt',this)">
+            <i class="fas fa-calendar-alt"></i> รายเดือน
+          </button>
+        </div>
+      </div>
+      <div id="report-content"></div>
+    </div>
+
+    <!-- PAGE: USER PERSONAL REPORT -->
+    <div id="page-user-report" class="hidden">
+      <div class="section-title" style="align-items:center;">
+        <button onclick="closeUserReport()"
+          style="background:none;border:none;color:var(--dgreen);font-size:1.1rem;cursor:pointer;padding:0 8px 0 0;"><i
+            class="fas fa-arrow-left"></i></button>
+        <h2><i class="fas fa-user-chart"></i> รายงานของฉัน</h2>
+      </div>
+      <div id="user-report-content"></div>
+    </div>
+  </div><!-- /container -->
+
+  <!-- ADMIN LOGIN MODAL — รองรับทั้ง Admin และ SuperAdmin -->
+  <div id="admin-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <button class="modal-close" onclick="hideAdminLoginModal()">✕</button>
+      <h3>สำหรับเจ้าหน้าที่</h3>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="admin-user">
+      </div>
+      <div class="form-group">
+        <label>รหัสผ่าน</label>
+        <input type="password" id="admin-pass">
+      </div>
+      <button class="btn-auth" id="btn-admin-login" onclick="doAdminLogin()">เข้าสู่ระบบ</button>
+    </div>
   </div>
 
-  <!-- PAGE: USER PERSONAL REPORT -->
-  <div id="page-user-report" class="hidden">
-    <div class="section-title" style="align-items:center;">
-      <button onclick="closeUserReport()" style="background:none;border:none;color:var(--dgreen);font-size:1.1rem;cursor:pointer;padding:0 8px 0 0;"><i class="fas fa-arrow-left"></i></button>
-      <h2><i class="fas fa-user-chart"></i> รายงานของฉัน</h2>
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-container">
+      <div class="footer-col">
+        <h3>เกี่ยวกับคณะ</h3>
+        <a href="https://science.yru.ac.th/th/">
+          <p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร</p>
+        </a>
+        <a href="https://yru.ac.th/th/">
+          <p>มหาวิทยาลัยราชภัฏยะลา</p>
+        </a>
+      </div>
+      <div class="footer-col">
+        <h3>ติดต่อเรา</h3>
+        <p class="footer-contact-item"><i class="fas fa-phone-alt"></i> <a href="tel:073299628">073-299-628</a></p>
+        <p class="footer-contact-item"><i class="fas fa-envelope"></i> <a
+            href="mailto:science@yru.ac.th">science@yru.ac.th</a></p>
+        <p class="footer-contact-item"><i class="fas fa-clock"></i> จ.–ศ. 08:30–16:00 น.</p>
+        <p class="footer-contact-item"><i class="fas fa-map-marker-alt"></i> 133 ถ.เทศบาล 3 ต.สะเตง อ.เมือง จ.ยะลา 95000
+        </p>
+      </div>
+      <div class="footer-col">
+        <h3>เมนู</h3>
+        <p>
+          <a onclick="navigateTo('home')">หน้าหลัก</a><br>
+          <a onclick="navigateTo('portal')">แจ้งเรื่อง</a><br>
+          <a onclick="navigateTo('tracking')">ติดตามสถานะ</a><br>
+          <a onclick="navigateTo('faq')">คำถามที่พบบ่อย</a>
+        </p>
+      </div>
+      <div class="footer-col">
+        <h3>ความช่วยเหลือ</h3>
+        <p class="footer-contact-item"><i class="fas fa-tools"></i> แจ้งปัญหาการใช้งานระบบ</p>
+        <p class="footer-contact-item"><i class="fas fa-envelope"></i> <a
+            href="mailto:voc-support@yru.ac.th">voc-support@yru.ac.th</a></p>
+        <p class="footer-contact-item"><i class="fas fa-phone-alt"></i> <a href="tel:073299614">073-299-614</a></p>
+        <p class="footer-contact-item"><i class="fas fa-clock"></i> จ.–ศ. 08:30–16:30 น.</p>
+      </div>
     </div>
-    <div id="user-report-content"></div>
-  </div>
-</div><!-- /container -->
+    <!-- ── STATS BAR ── -->
+    <div class="footer-stats" id="footer-stats" data-i18n-skip>
+      <span class="footer-stats-item">
+        <i class="fas fa-eye"></i>
+        <span>ผู้เข้าชมทั้งหมด</span>
+        <strong id="stat-total">—</strong>
+      </span>
+      <span class="footer-stats-sep">|</span>
+      <span class="footer-stats-item">
+        <i class="fas fa-calendar-day"></i>
+        <span>วันนี้</span>
+        <strong id="stat-today">—</strong>
+      </span>
+      <span class="footer-stats-sep">|</span>
+      <span class="footer-stats-item">
+        <i class="fas fa-sync-alt"></i>
+        <span>อัปเดตล่าสุด</span>
+        <strong id="stat-updated">—</strong>
+      </span>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 VOC System | คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</span>
+      <button id="admin-fab" class="admin-fab" onclick="showAdminLoginModal()" title="เข้าสู่ระบบสำหรับเจ้าหน้าที่"> <i
+          class="fas fa-shield-alt"></i><span></span>สำหรับเจ้าหน้าที่
+      </button>
+    </div>
+  </footer>
 
-<!-- ADMIN LOGIN MODAL — รองรับทั้ง Admin และ SuperAdmin -->
-<div id="admin-modal" class="modal-overlay hidden">
-  <div class="modal-box">
-    <button class="modal-close" onclick="hideAdminLoginModal()">✕</button>
-    <h3>สำหรับเจ้าหน้าที่</h3>
-    <div class="form-group">
-      <label>Username</label>
-      <input type="text" id="admin-user">
-    </div>
-    <div class="form-group">
-      <label>รหัสผ่าน</label>
-      <input type="password" id="admin-pass">
-    </div>
-    <button class="btn-auth" id="btn-admin-login" onclick="doAdminLogin()">เข้าสู่ระบบ</button>
-  </div>
-</div>
-
-<!-- FOOTER -->
-<footer>
-  <div class="footer-container">
-    <div class="footer-col">
-      <h3>เกี่ยวกับคณะ</h3>
-      <a href="https://science.yru.ac.th/th/"><p>คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร</p></a>
-      <a href="https://yru.ac.th/th/"><p>มหาวิทยาลัยราชภัฏยะลา</p></a>
-    </div>
-    <div class="footer-col">
-      <h3>ติดต่อเรา</h3>
-      <p class="footer-contact-item"><i class="fas fa-phone-alt"></i> <a href="tel:073299628">073-299-628</a></p>
-      <p class="footer-contact-item"><i class="fas fa-envelope"></i> <a href="mailto:science@yru.ac.th">science@yru.ac.th</a></p>
-      <p class="footer-contact-item"><i class="fas fa-clock"></i> จ.–ศ. 08:30–16:00 น.</p>
-      <p class="footer-contact-item"><i class="fas fa-map-marker-alt"></i> 133 ถ.เทศบาล 3 ต.สะเตง อ.เมือง จ.ยะลา 95000</p>
-    </div>
-    <div class="footer-col">
-      <h3>เมนู</h3>
-      <p>
-        <a onclick="navigateTo('home')">หน้าหลัก</a><br>
-        <a onclick="navigateTo('portal')">แจ้งเรื่อง</a><br>
-        <a onclick="navigateTo('tracking')">ติดตามสถานะ</a><br>
-        <a onclick="navigateTo('faq')">คำถามที่พบบ่อย</a>
-      </p>
-    </div>
-    <div class="footer-col">
-      <h3>ความช่วยเหลือ</h3>
-      <p class="footer-contact-item"><i class="fas fa-tools"></i> แจ้งปัญหาการใช้งานระบบ</p>
-      <p class="footer-contact-item"><i class="fas fa-envelope"></i> <a href="mailto:voc-support@yru.ac.th">voc-support@yru.ac.th</a></p>
-      <p class="footer-contact-item"><i class="fas fa-phone-alt"></i> <a href="tel:073299614">073-299-614</a></p>
-      <p class="footer-contact-item"><i class="fas fa-clock"></i> จ.–ศ. 08:30–16:30 น.</p>
-    </div>
-  </div>
-  <!-- ── STATS BAR ── -->
-  <div class="footer-stats" id="footer-stats" data-i18n-skip>
-    <span class="footer-stats-item">
-      <i class="fas fa-eye"></i>
-      <span>ผู้เข้าชมทั้งหมด</span>
-      <strong id="stat-total">—</strong>
-    </span>
-    <span class="footer-stats-sep">|</span>
-    <span class="footer-stats-item">
-      <i class="fas fa-calendar-day"></i>
-      <span>วันนี้</span>
-      <strong id="stat-today">—</strong>
-    </span>
-    <span class="footer-stats-sep">|</span>
-    <span class="footer-stats-item">
-      <i class="fas fa-sync-alt"></i>
-      <span>อัปเดตล่าสุด</span>
-      <strong id="stat-updated">—</strong>
-    </span>
-  </div>
-  <div class="footer-bottom">
-    <span>© 2026 VOC System | คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</span>
-    <button id="admin-fab" class="admin-fab" onclick="showAdminLoginModal()"
-    title="เข้าสู่ระบบสำหรับเจ้าหน้าที่"> <i class="fas fa-shield-alt"></i><span></span>สำหรับเจ้าหน้าที่
-    </button>
-  </div>
-</footer>
-
-<script>
-// Fallback สำหรับ location map เมื่อ Static Maps โหลดไม่ได้
-window._mapFallbackHTML = function() {
-  return `<a href="https://maps.google.com/?q=มหาวิทยาลัยราชภัฏยะลา+ยะลา" target="_blank" rel="noopener"
+  <script>
+    // Fallback สำหรับ location map เมื่อ Static Maps โหลดไม่ได้
+    window._mapFallbackHTML = function () {
+      return `<a href="https://maps.google.com/?q=มหาวิทยาลัยราชภัฏยะลา+ยะลา" target="_blank" rel="noopener"
     style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:340px;
            background:linear-gradient(135deg,#e8f5ed,#c8e6d4);border-radius:12px;text-decoration:none;gap:14px;">
     <i class="fas fa-map-marker-alt" style="font-size:3rem;color:#2d6a4f;"></i>
@@ -752,13 +805,15 @@ window._mapFallbackHTML = function() {
       </div>
     </div>
   </a>`;
-};
-</script>
-<script type="module" src="/js/app.js"></script>
-<!-- SCROLL FAB — เลื่อนขึ้นบน/ลงล่าง -->
-<button id="scroll-fab" class="scroll-fab" onclick="toggleScrollFab()" aria-label="เลื่อนหน้า" title="เลื่อนลงด้านล่าง">
-  <i class="fas fa-chevron-down" id="scroll-fab-icon"></i>
-</button>
+    };
+  </script>
+  <script type="module" src="/js/app.js"></script>
+  <!-- SCROLL FAB — เลื่อนขึ้นบน/ลงล่าง -->
+  <button id="scroll-fab" class="scroll-fab" onclick="toggleScrollFab()" aria-label="เลื่อนหน้า"
+    title="เลื่อนลงด้านล่าง">
+    <i class="fas fa-chevron-down" id="scroll-fab-icon"></i>
+  </button>
 
 </body>
+
 </html>
