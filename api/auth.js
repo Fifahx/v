@@ -1,20 +1,18 @@
-// api/auth.js v7 — unified admin+superadmin login + JWT
-// [แก้ไข v7] เพิ่ม JWT signing หลัง login สำเร็จ
-// token ถูก sign ด้วย JWT_SECRET (env var) และมีอายุ 8 ชั่วโมง
-// client เก็บ token ใน sessionStorage และส่งผ่าน Authorization: Bearer <token>
+// api/auth.js v8 — superadmin ใช้ AES encrypted password จาก sheet (ไม่มี default account)
 const {
   getSheetsClient, getSheetData, appendRow, withRetry,
   SHEET_USERS, SHEET_ADMINS, SPREADSHEET_ID,
-  hashPassword, formatDateThai, setCorsHeaders,
+  hashPassword, encryptPassword, decryptPassword,
+  formatDateThai, setCorsHeaders,
 } = require('./_sheets');
 const { createToken } = require('./_jwt');
 
 const SHEET_SUPERADMINS = 'VOC_SuperAdmins';
 
 async function ensureSuperAdminSheet(sheets) {
+  // สร้าง sheet และ header เท่านั้น — ไม่เพิ่ม default account
   try {
-    const d = await getSheetData(sheets, SHEET_SUPERADMINS);
-    if (!d.length || d.length <= 1) throw new Error('empty');
+    await getSheetData(sheets, SHEET_SUPERADMINS);
   } catch {
     await withRetry(() => sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
@@ -25,9 +23,6 @@ async function ensureSuperAdminSheet(sheets) {
       valueInputOption: 'RAW',
       requestBody: { values: [['Username','Password','ชื่อ-นามสกุล','อีเมล','สถานะ']] },
     }), 'auth:initSuperAdminHeader').catch(()=>{});
-    await appendRow(sheets, SHEET_SUPERADMINS,
-      ['superadmin', hashPassword(process.env.SUPERADMIN_DEFAULT_PASSWORD || ''), 'เจ้าหน้าที่ระดับสูง', 'superadmin@yru.ac.th', 'active'])
-      .catch(()=>{});
   }
 }
 
@@ -60,12 +55,15 @@ module.exports = async function handler(req, res) {
       const { username, password } = req.body;
       const h = hashPassword(password);
 
-      // ตรวจ SuperAdmins ก่อน
+      // ตรวจ SuperAdmins ก่อน (password เก็บแบบ AES encrypted)
       await ensureSuperAdminSheet(sheets);
       const saData = await getSheetData(sheets, SHEET_SUPERADMINS);
       for (let i = 1; i < saData.length; i++) {
-        if (String(saData[i][0]||'').toLowerCase() === String(username).toLowerCase()
-          && String(saData[i][1]) === h && String(saData[i][4]) === 'active') {
+        const rowUser   = String(saData[i][0]||'').toLowerCase();
+        const rowStatus = String(saData[i][4]||'');
+        if (rowUser !== String(username).toLowerCase() || rowStatus !== 'active') continue;
+        const decrypted = decryptPassword(String(saData[i][1]||''));
+        if (decrypted === password) {
           const token = createToken({ username: saData[i][0], role: 'superadmin' });
           return res.json({ success:true, role:'superadmin', token,
             username:saData[i][0], fullname:saData[i][2], email:saData[i][3] });
@@ -90,10 +88,12 @@ module.exports = async function handler(req, res) {
       const { username, password } = req.body;
       await ensureSuperAdminSheet(sheets);
       const data = await getSheetData(sheets, SHEET_SUPERADMINS);
-      const h    = hashPassword(password);
       for (let i = 1; i < data.length; i++) {
-        if (String(data[i][0]||'').toLowerCase() === String(username).toLowerCase()
-          && String(data[i][1]) === h && String(data[i][4]) === 'active') {
+        const rowUser   = String(data[i][0]||'').toLowerCase();
+        const rowStatus = String(data[i][4]||'');
+        if (rowUser !== String(username).toLowerCase() || rowStatus !== 'active') continue;
+        const decrypted = decryptPassword(String(data[i][1]||''));
+        if (decrypted === password) {
           const token = createToken({ username: data[i][0], role: 'superadmin' });
           return res.json({ success:true, role:'superadmin', token,
             username:data[i][0], fullname:data[i][2], email:data[i][3] });
@@ -144,6 +144,35 @@ module.exports = async function handler(req, res) {
         status:   String(r[4]||'active'),
       }));
       return res.json({ success:true, admins });
+    }
+
+    // ── ADD SUPERADMIN (เพิ่ม superadmin ใหม่ พร้อม AES encrypted password) ──
+    if (action === 'addSuperAdmin') {
+      const { username, password, fullname, email } = req.body;
+      if (!username || !password) return res.json({ success:false, message:'ข้อมูลไม่ครบ (username และ password จำเป็น)' });
+      await ensureSuperAdminSheet(sheets);
+      const data = await getSheetData(sheets, SHEET_SUPERADMINS);
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]||'').toLowerCase() === username.toLowerCase())
+          return res.json({ success:false, message:'Username นี้มีอยู่แล้ว' });
+      }
+      await appendRow(sheets, SHEET_SUPERADMINS, [
+        username, encryptPassword(password), fullname||username, email||'', 'active'
+      ]);
+      return res.json({ success:true, message:`เพิ่ม SuperAdmin "${username}" สำเร็จ` });
+    }
+
+    // ── LIST SUPERADMINS ──
+    if (action === 'listSuperAdmins') {
+      await ensureSuperAdminSheet(sheets);
+      const data = await getSheetData(sheets, SHEET_SUPERADMINS);
+      const list = data.slice(1).filter(r=>r[0]).map(r=>({
+        username: String(r[0]||''),
+        fullname: String(r[2]||''),
+        email:    String(r[3]||''),
+        status:   String(r[4]||'active'),
+      }));
+      return res.json({ success:true, superadmins: list });
     }
 
     res.status(400).json({ error: 'Unknown action' });

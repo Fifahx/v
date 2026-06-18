@@ -279,6 +279,38 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
+// ── AES-256-CBC encrypt/decrypt สำหรับรหัสผ่าน SuperAdmin ──
+// key ดึงจาก AES_SECRET_KEY (env var) — ต้องยาว >= 32 ตัวอักษร
+function getAesKey() {
+  const raw = process.env.AES_SECRET_KEY || '';
+  if (!raw) throw new Error('AES_SECRET_KEY is not set in environment variables');
+  return crypto.createHash('sha256').update(raw).digest(); // 32 bytes
+}
+
+function encryptPassword(plainText) {
+  const key = getAesKey();
+  const iv  = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+  const encrypted = Buffer.concat([cipher.update(plainText, 'utf8'), cipher.final()]);
+  // เก็บเป็น iv:ciphertext (hex) เพื่อให้อ่านใน sheet ง่าย
+  return iv.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+function decryptPassword(cipherText) {
+  try {
+    const [ivHex, encHex] = cipherText.split(':');
+    if (!ivHex || !encHex) return null;
+    const key       = getAesKey();
+    const iv        = Buffer.from(ivHex, 'hex');
+    const encrypted = Buffer.from(encHex, 'hex');
+    const decipher  = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+    return decrypted.toString('utf8');
+  } catch {
+    return null;
+  }
+}
+
 function calcDueDate(fromDate, priority) {
   const d = new Date(fromDate);
   if      (priority === 'high')   d.setHours(d.getHours() + 24);
@@ -314,5 +346,5 @@ module.exports = {
   getSheetsClient, getSheetData, appendRow, batchUpdate,
   withRetry,      // export ไว้ให้ไฟล์อื่นใช้ครอบ API call โดยตรงได้
   alertDiscord,   // export ไว้ให้ alert เพิ่มเติมจากภายนอกได้
-  hashPassword, calcDueDate, formatDateThai, setCorsHeaders,
+  hashPassword, encryptPassword, decryptPassword, calcDueDate, formatDateThai, setCorsHeaders,
 };
