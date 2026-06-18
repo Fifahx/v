@@ -26,7 +26,7 @@ async function ensureSuperAdminSheet(sheets) {
       requestBody: { values: [['Username','Password','ชื่อ-นามสกุล','อีเมล','สถานะ']] },
     }), 'auth:initSuperAdminHeader').catch(()=>{});
     await appendRow(sheets, SHEET_SUPERADMINS,
-      ['superadmin', hashPassword('super1234'), 'เจ้าหน้าที่ระดับสูง', 'superadmin@yru.ac.th', 'active'])
+      ['superadmin', hashPassword(process.env.SUPERADMIN_DEFAULT_PASSWORD || ''), 'เจ้าหน้าที่ระดับสูง', 'superadmin@yru.ac.th', 'active'])
       .catch(()=>{});
   }
 }
@@ -73,12 +73,7 @@ module.exports = async function handler(req, res) {
       }
 
       // ตรวจ Admins ปกติ
-      let aData = await getSheetData(sheets, SHEET_ADMINS);
-      if (aData.length <= 1) {
-        await appendRow(sheets, SHEET_ADMINS,
-          ['admin', hashPassword('admin1234'), 'เจ้าหน้าที่', 'admin@yru.ac.th', 'active']);
-        aData = await getSheetData(sheets, SHEET_ADMINS);
-      }
+      const aData = await getSheetData(sheets, SHEET_ADMINS);
       for (let i = 1; i < aData.length; i++) {
         if (String(aData[i][0]||'').toLowerCase() === String(username).toLowerCase()
           && String(aData[i][1]) === h && String(aData[i][4]) === 'active') {
