@@ -26,7 +26,7 @@ async function ensureSuperAdminSheet(sheets) {
       requestBody: { values: [['Username','Password','ชื่อ-นามสกุล','อีเมล','สถานะ']] },
     }), 'auth:initSuperAdminHeader').catch(()=>{});
     await appendRow(sheets, SHEET_SUPERADMINS,
-      ['superadmin', hashPassword('super1234'), 'ผู้ดูแลระดับสูง', 'superadmin@yru.ac.th', 'active'])
+      ['superadmin', hashPassword('super1234'), 'เจ้าหน้าที่ระดับสูง', 'superadmin@yru.ac.th', 'active'])
       .catch(()=>{});
   }
 }
@@ -76,7 +76,7 @@ module.exports = async function handler(req, res) {
       let aData = await getSheetData(sheets, SHEET_ADMINS);
       if (aData.length <= 1) {
         await appendRow(sheets, SHEET_ADMINS,
-          ['admin', hashPassword('admin1234'), 'ผู้ดูแลระบบ', 'admin@yru.ac.th', 'active']);
+          ['admin', hashPassword('admin1234'), 'เจ้าหน้าที่', 'admin@yru.ac.th', 'active']);
         aData = await getSheetData(sheets, SHEET_ADMINS);
       }
       for (let i = 1; i < aData.length; i++) {
@@ -136,7 +136,7 @@ module.exports = async function handler(req, res) {
       await appendRow(sheets, SHEET_ADMINS, [
         username, hashPassword(password), fullname||username, email||'', 'active'
       ]);
-      return res.json({ success:true, message:`เพิ่ม Admin "${username}" สำเร็จ` });
+      return res.json({ success:true, message:`เพิ่ม เจ้าหน้าที่ "${username}" สำเร็จ` });
     }
 
     // ── LIST ADMINS (superadmin ดูรายชื่อ) ──
