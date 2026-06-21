@@ -510,7 +510,7 @@
               <label style="font-size:.87rem;color:#555;font-weight:600;display:block;margin-bottom:6px;">
                 <i class="fas fa-paperclip"></i> แนบไฟล์ <span style="font-weight:400;color:#aaa;">(ไม่บังคับ)</span>
               </label>
-            
+
               <!-- Tab สลับ: ลิงก์ / อัพโหลด -->
               <div style="display:flex;gap:8px;margin-bottom:10px;">
                 <button type="button" id="tab-link" class="file-tab-btn active" onclick="switchFileTab('link')">
@@ -520,15 +520,16 @@
                   <i class="fas fa-upload"></i> อัพโหลดไฟล์
                 </button>
               </div>
-            
+
               <!-- Panel: ลิงก์ -->
               <div id="file-panel-link">
-                <input type="url" id="v-file-link" class="voc-input" placeholder="https://drive.google.com/... หรือลิงก์ไฟล์อื่นๆ">
+                <input type="url" id="v-file-link" class="voc-input"
+                  placeholder="https://drive.google.com/... หรือลิงก์ไฟล์อื่นๆ">
                 <div style="margin-top:5px;font-size:.78rem;color:#aaa;">
                   <i class="fas fa-info-circle"></i> วางลิงก์จาก Google Drive, OneDrive, Dropbox
                 </div>
               </div>
-            
+
               <!-- Panel: อัพโหลด -->
               <div id="file-panel-upload" style="display:none;">
                 <input type="file" id="v-file-input" accept="image/*,.pdf" style="display:none"
@@ -653,10 +654,12 @@
         <button class="filter-btn active" id="filter-pending"
           onclick="loadAdminTickets('pending');setFilter('pending')">รอดำเนินการ</button>
         <button class="filter-btn" id="filter-inprogress"
-          onclick="loadAdminTickets('กำลังดำเนินการ');setFilter('inprogress')">กำลังดำเนินการ</button>
+          onclick="loadAdminTickets('inprogress');setFilter('inprogress')">กำลังดำเนินการ</button>
+        <button class="filter-btn" id="filter-review"
+          onclick="loadAdminTickets('review');setFilter('review')">รอตรวจสอบ</button>
         <button class="filter-btn" id="filter-all" onclick="loadAdminTickets('all');setFilter('all')">ทั้งหมด</button>
         <button class="filter-btn" id="filter-done"
-          onclick="loadAdminTickets('เสร็จสิ้น');setFilter('done')">เสร็จสิ้น</button>
+          onclick="loadAdminTickets('done');setFilter('done')">เสร็จสิ้น</button>
       </div>
       <div id="admin-ticket-list"></div>
     </div>
@@ -792,9 +795,11 @@
       <div class="footer-col">
         <h3>ความช่วยเหลือ</h3>
         <p class="footer-contact-item"><i class="fas fa-tools"></i>
-        <a href="https://forms.gle/K3gySdqAybPcH4qL9">แจ้งปัญหาการใช้งานระบบ</a></p>
-        <p class="footer-contact-item"><i class="fas fa-envelope"></i> 
-          <a href="mailto:voc-support@yru.ac.th">voc-support@yru.ac.th</a></p>
+          <a href="https://forms.gle/K3gySdqAybPcH4qL9">แจ้งปัญหาการใช้งานระบบ</a>
+        </p>
+        <p class="footer-contact-item"><i class="fas fa-envelope"></i>
+          <a href="mailto:voc-support@yru.ac.th">voc-support@yru.ac.th</a>
+        </p>
         <p class="footer-contact-item"><i class="fas fa-phone-alt"></i> <a href="tel:073299614">073-299-614</a></p>
         <p class="footer-contact-item"><i class="fas fa-clock"></i> จ.–ศ. 08:30–16:30 น.</p>
       </div>
