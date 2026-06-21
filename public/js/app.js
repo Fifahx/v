@@ -797,8 +797,22 @@ function closeUserReport() { if (currentUser && (currentUser.role === 'admin' ||
 function renderUserReport(r, box) { const scClass = { 'รอดำเนินการ': 'status-pending', 'กำลังดำเนินการ': 'status-inprogress', 'เสร็จสิ้น': 'status-done', 'ปฏิเสธ': 'status-rejected' }; const catEntries = Object.entries(r.byCategory || {}).sort((a, b) => b[1] - a[1]); const maxCat = Math.max(...catEntries.map(e => e[1]), 1); const catBars = catEntries.map(([k, v]) => `<div class="rpt-bar-row"><span class="rpt-bar-label">${k}</span><div class="rpt-bar-track"><div class="rpt-bar-fill" style="width:${Math.round(v / maxCat * 100)}%"></div></div><span class="rpt-bar-count">${v}</span></div>`).join(''); const ticketRows = (r.recentTickets || []).map(t => `<tr><td style="font-size:.78rem;color:#2d6a4f;font-weight:700;">${t.ticketId}</td><td style="font-size:.83rem;">${t.subject}</td><td><span class="status ${scClass[t.status] || 'status-pending'}" style="font-size:.72rem;">${t.status}</span></td><td style="font-size:.78rem;color:#888;">${t.date}</td></tr>`).join(''); box.innerHTML = `<div class="rpt-kpi-grid"><div class="rpt-kpi"><div class="rpt-kpi-num">${r.total}</div><div class="rpt-kpi-label">📋 รวมทั้งหมด</div></div><div class="rpt-kpi green"><div class="rpt-kpi-num" style="color:#2d6a4f;">${r.done}</div><div class="rpt-kpi-label">✅ เสร็จสิ้น</div></div><div class="rpt-kpi orange"><div class="rpt-kpi-num" style="color:#f77f00;">${r.pending}</div><div class="rpt-kpi-label">⏳ รอดำเนินการ</div></div><div class="rpt-kpi red"><div class="rpt-kpi-num" style="color:#d00000;">${r.rejected}</div><div class="rpt-kpi-label">❌ ปฏิเสธ</div></div></div><div class="rpt-success-bar-wrap"><div style="display:flex;justify-content:space-between;font-size:.84rem;color:#888;margin-bottom:6px;"><span>อัตราความสำเร็จ</span><span style="font-weight:700;color:#2d6a4f;font-size:1.1rem;">${r.successRate}%</span></div><div class="rpt-bar-track big"><div class="rpt-bar-fill" style="width:${r.successRate}%"></div></div></div><div class="rpt-card"><div class="rpt-card-title"><i class="fas fa-tags"></i> ประเภทเรื่องที่แจ้ง</div>${catBars || '<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div><div class="rpt-card" style="overflow-x:auto;"><div class="rpt-card-title"><i class="fas fa-history"></i> ประวัติคำร้องล่าสุด</div><table class="rpt-table"><tr><th>Ticket ID</th><th>หัวข้อ</th><th>สถานะ</th><th>วันที่</th></tr>${ticketRows || '<tr><td colspan="4" style="color:#bbb;">ยังไม่มีข้อมูล</td></tr>'}</table></div>`; }
 
 // ════ ADMIN DASHBOARD ════
-async function loadDashboard() { document.getElementById('dash-content').innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>'; try { const [dr, sr] = await Promise.all([api.get('/api/dashboard'), api.get('/api/ratings?action=summary')]); if (dr.success) renderDashboard(dr.stats, sr.summary || { avg: 0, total: 0 }); else document.getElementById('dash-content').innerHTML = '<p style="color:red;">โหลดไม่สำเร็จ</p>'; } catch (e) { document.getElementById('dash-content').innerHTML = `<p style="color:red;">${e.message}</p>`; } }
-function _drawDonut(canvasId, data, colors) {
+async function loadDashboard() {
+  document.getElementById('dash-content').innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>';
+  try {
+    const [dr, sr] = await Promise.all([api.get('/api/dashboard'), api.get('/api/ratings?action=summary')]);
+    if (dr.success) {
+      window._dashStats = dr.stats; // เก็บไว้ใช้ตอน drill-down
+      renderDashboard(dr.stats, sr.summary || { avg: 0, total: 0 });
+    } else {
+      document.getElementById('dash-content').innerHTML = '<p style="color:red;">โหลดไม่สำเร็จ</p>';
+    }
+  } catch (e) {
+    document.getElementById('dash-content').innerHTML = `<p style="color:red;">${e.message}</p>`;
+  }
+}
+
+function _drawDonut(canvasId, data, colors, opts) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -806,15 +820,106 @@ function _drawDonut(canvasId, data, colors) {
   const total = data.reduce((a, b) => a + b.value, 0);
   if (!total) { ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); return; }
   let angle = -Math.PI / 2;
+  const segs = []; // เก็บ start/end angle ของแต่ละชิ้น เพื่อใช้ตรวจ click
   data.forEach((d, i) => {
     const slice = (d.value / total) * Math.PI * 2;
     ctx.beginPath(); ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, r, angle, angle + slice);
     ctx.closePath(); ctx.fillStyle = colors[i % colors.length]; ctx.fill();
+    segs.push({ start: angle, end: angle + slice, index: i, value: d.value });
     angle += slice;
   });
   ctx.beginPath(); ctx.arc(cx, cy, ri, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+
+  // ── ทำให้ donut คลิกได้: หา segment ตาม mouse angle ──
+  if (opts && opts.onClick) {
+    canvas.style.cursor = 'pointer';
+    canvas.onclick = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+      const mx = (e.clientX - rect.left) * scaleX, my = (e.clientY - rect.top) * scaleY;
+      const dx = mx - cx, dy = my - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < ri || dist > r) return; // คลิกนอกวง donut
+      let a = Math.atan2(dy, dx);
+      if (a < -Math.PI / 2) a += Math.PI * 2;
+      const seg = segs.find(s => a >= s.start && a <= s.end);
+      if (seg && seg.value > 0) opts.onClick(seg.index);
+    };
+  }
 }
+
+// ── ฟิลเตอร์ ticket ฝั่ง client ตาม field/value แล้วเปิด drill-down panel ──
+function _dashFilterTickets(predicate) {
+  const all = (window._dashStats && window._dashStats.urgentTickets) || [];
+  return all; // fallback เผื่อไม่มี allTickets cache (ดูฟังก์ชัน _dashDrilldown ด้านล่าง — ใช้ API จริงแทน)
+}
+
+// ── เปิด panel แสดงรายการ ticket ของหมวดที่กด พร้อมหัวข้อ/จำนวน ──
+async function _dashDrilldown(title, filterFn, queryHint) {
+  // ปิด panel เดิมถ้ามี
+  const existing = document.getElementById('dash-drilldown-overlay');
+  if (existing) document.body.removeChild(existing);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'dash-drilldown-overlay';
+  overlay.id = 'dash-drilldown-overlay';
+  overlay.innerHTML = `<div class="dash-drilldown-panel">
+    <div class="dash-drilldown-head">
+      <h3>${title}</h3>
+      <span class="dd-count" id="dd-count">...</span>
+      <button class="dash-drilldown-close" id="dd-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="dash-drilldown-body" id="dd-body">
+      <div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>
+    </div>
+    <div class="dash-drilldown-foot">
+      <button id="dd-goto"><i class="fas fa-inbox"></i> ไปที่หน้าจัดการเรื่องร้องเรียน</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+
+  const close = () => { if (document.body.contains(overlay)) document.body.removeChild(overlay); };
+  document.getElementById('dd-close').onclick = close;
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  document.getElementById('dd-goto').onclick = () => {
+    close();
+    navigateTo('admin-tickets');
+    setTimeout(() => loadAdminTickets(queryHint || 'all'), 150);
+  };
+
+  // โหลด ticket ทั้งหมดมา filter ฝั่ง client (ใช้ endpoint เดิมที่มีอยู่)
+  try {
+    const tr = await api.get('/api/tickets?action=all&filter=all');
+    const tickets = (tr.tickets || []).filter(filterFn);
+    document.getElementById('dd-count').textContent = `${tickets.length} เรื่อง`;
+    const body = document.getElementById('dd-body');
+    if (!tickets.length) {
+      body.innerHTML = '<div class="dd-empty"><i class="fas fa-inbox" style="font-size:2rem;color:#ddd;display:block;margin-bottom:10px;"></i>ไม่มีข้อมูลในหมวดนี้</div>';
+      return;
+    }
+    const pLabel = { high: '🔴 เร่งด่วน', medium: '🟡 ปานกลาง', low: '🟢 ทั่วไป' };
+    body.innerHTML = tickets.slice(0, 50).map(t => `
+      <div class="dd-ticket-item">
+        <div class="dd-ticket-top">
+          <span class="dd-ticket-id">${t['Ticket ID'] || ''}</span>
+          <span class="status status-${{'รอดำเนินการ':'pending','กำลังดำเนินการ':'inprogress','เสร็จสิ้น':'success','ปฏิเสธ':'reject'}[t['สถานะ']] || 'pending'}" style="font-size:.68rem;padding:2px 9px;">${t['สถานะ'] || ''}</span>
+        </div>
+        <div class="dd-ticket-subject">${(t['หัวข้อ'] || '').slice(0, 90)}</div>
+        <div class="dd-ticket-meta">
+          <span><i class="fas fa-tag"></i> ${t['ประเภทเรื่อง'] || '—'}</span>
+          <span>${pLabel[String(t['ความเร่งด่วน'] || '').toLowerCase()] || ''}</span>
+          <span><i class="far fa-calendar"></i> ${(t['วันที่แจ้ง'] || '').split(' ')[0] || '—'}</span>
+        </div>
+      </div>`).join('');
+    if (tickets.length > 50) {
+      body.innerHTML += `<div style="text-align:center;color:#aaa;font-size:.8rem;padding:10px;">...และอีก ${tickets.length - 50} เรื่อง</div>`;
+    }
+  } catch (e) {
+    document.getElementById('dd-body').innerHTML = `<p style="color:red;text-align:center;">${e.message}</p>`;
+  }
+}
+
 function renderDashboard(s, rs) {
   const mxC = Math.max(...Object.values(s.byCategory || { 0: 1 }), 1);
   const mxU = Math.max(...Object.values(s.byCustomer || { 0: 1 }), 1);
@@ -822,12 +927,16 @@ function renderDashboard(s, rs) {
   const successRate = s.total ? Math.round(s.done / s.total * 100) : 0;
   const inprogress = s.inprogress || 0;
 
+  // ── แถบประเภทเรื่อง: คลิกได้ ──
   Object.entries(s.byCategory || {}).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => {
     const pct = Math.round(v / mxC * 100);
-    catB += `<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><span class="bar-count">${v}</span></div>`;
+    const safeKey = k.replace(/'/g, "\\'");
+    catB += `<div class="bar-row clickable" onclick="_dashDrilldown('ประเภท: ${k}', t => t['ประเภทเรื่อง']==='${safeKey}', 'all')"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><span class="bar-count">${v}</span></div>`;
   });
+  // ── แถบประเภทผู้แจ้ง: คลิกได้ ──
   Object.entries(s.byCustomer || {}).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => {
-    cusB += `<div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill orange" style="width:${Math.round(v / mxU * 100)}%"></div></div><span class="bar-count">${v}</span></div>`;
+    const safeKey = k.replace(/'/g, "\\'");
+    cusB += `<div class="bar-row clickable" onclick="_dashDrilldown('ผู้แจ้ง: ${k}', t => t['ประเภทผู้แจ้ง']==='${safeKey}', 'all')"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill orange" style="width:${Math.round(v / mxU * 100)}%"></div></div><span class="bar-count">${v}</span></div>`;
   });
   if (s.urgentTickets?.length) urgH = `<div class="urgent-banner"><h4><i class="fas fa-exclamation-triangle"></i> ⚠️ ${s.urgentTickets.length} เรื่องเร่งด่วนยังไม่เสร็จ</h4>${s.urgentTickets.map(t => `<div class="urgent-item"><span class="priority-badge p-high">🔴 เร่งด่วน</span><strong>${t.ticketId}</strong><span style="flex:1;">${t.subject}</span></div>`).join('')}</div>`;
 
@@ -839,80 +948,136 @@ function renderDashboard(s, rs) {
   const starFull = Math.round(rs.avg || 0);
   const stars = [1, 2, 3, 4, 5].map(i => `<i class="${i <= starFull ? 'fas' : 'far'} fa-star" style="color:#f0a500;font-size:1.1rem;"></i>`).join('');
 
+  // ── Headline ring (success rate) — วาดด้วย conic-gradient (CSS ล้วน) ──
+  const ringDeg = Math.round(successRate * 3.6);
+
   document.getElementById('dash-content').innerHTML = `
 ${urgH}
-<div class="dash-grid-5">
-  <div class="stat-card"><div class="stat-icon" style="background:#e8f5e9;"><i class="fas fa-inbox" style="color:#2d6a4f;"></i></div><div class="stat-num">${s.total}</div><div class="stat-label">ทั้งหมด</div></div>
-  <div class="stat-card"><div class="stat-icon" style="background:#fff8e1;"><i class="fas fa-hourglass-half" style="color:#f77f00;"></i></div><div class="stat-num" style="color:#f77f00;">${s.pending}</div><div class="stat-label">รอดำเนินการ</div></div>
-  <div class="stat-card"><div class="stat-icon" style="background:#e3f2fd;"><i class="fas fa-cog" style="color:#3a86ff;"></i></div><div class="stat-num" style="color:#3a86ff;">${inprogress}</div><div class="stat-label">กำลังดำเนินการ</div></div>
-  <div class="stat-card"><div class="stat-icon" style="background:#e8f5e9;"><i class="fas fa-check-circle" style="color:#2d6a4f;"></i></div><div class="stat-num" style="color:#2d6a4f;">${s.done}</div><div class="stat-label">เสร็จสิ้น</div></div>
-  <div class="stat-card"><div class="stat-icon" style="background:#fde8e8;"><i class="fas fa-times-circle" style="color:#d00000;"></i></div><div class="stat-num" style="color:#d00000;">${s.rejected || 0}</div><div class="stat-label">ปฏิเสธ</div></div>
+
+<!-- ══ HEADLINE: สรุปภาพรวมแบบ Google Forms responses tab ══ -->
+<div class="dash-headline">
+  <div class="dash-headline-ring-wrap">
+    <svg width="96" height="96" viewBox="0 0 96 96">
+      <circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="9"/>
+      <circle cx="48" cy="48" r="40" fill="none" stroke="#fff" stroke-width="9"
+        stroke-dasharray="${2 * Math.PI * 40}" stroke-dashoffset="${2 * Math.PI * 40 * (1 - successRate / 100)}"
+        stroke-linecap="round" transform="rotate(-90 48 48)" style="transition:stroke-dashoffset 1s ease;"/>
+    </svg>
+    <div class="dash-headline-ring-num"><span>${successRate}%</span><span>สำเร็จ</span></div>
+  </div>
+  <div class="dash-headline-mid">
+    <h3><i class="fas fa-chart-line"></i> ภาพรวมระบบรับฟังเสียงลูกค้า</h3>
+    <p>จากทั้งหมด ${s.total} เรื่อง ดำเนินการเสร็จสิ้นแล้ว ${s.done} เรื่อง
+    ${inprogress > 0 ? `กำลังดำเนินการ ${inprogress} เรื่อง` : ''}
+    ${s.pending > 0 ? ` และรอดำเนินการอีก ${s.pending} เรื่อง` : ''}</p>
+  </div>
+  <div class="dash-headline-mini">
+    <div class="dash-headline-mini-item"><b>${rs.avg || '-'}</b><span><i class="fas fa-star" style="color:#ffd700;"></i> คะแนนเฉลี่ย</span></div>
+    <div class="dash-headline-mini-item"><b>${s.byPriority?.high || 0}</b><span>🔴 เร่งด่วน</span></div>
+    <div class="dash-headline-mini-item"><b>${Object.keys(s.byCategory || {}).length}</b><span>ประเภทเรื่อง</span></div>
+  </div>
 </div>
 
-<div class="dash-charts-grid">
-  <div class="chart-card">
-    <h4><i class="fas fa-chart-pie"></i> สัดส่วนสถานะ</h4>
+<!-- ══ STAT CARDS: คลิกดูรายละเอียดแต่ละสถานะ ══ -->
+<div class="dash-grid-5">
+  <div class="stat-card clickable" onclick="_dashDrilldown('Ticket ทั้งหมด', t => true, 'all')"><div class="stat-icon" style="background:#e8f5e9;"><i class="fas fa-inbox" style="color:#2d6a4f;"></i></div><div class="stat-num">${s.total}</div><div class="stat-label">ทั้งหมด</div></div>
+  <div class="stat-card clickable orange" onclick="_dashDrilldown('รอดำเนินการ', t => t['สถานะ']==='รอดำเนินการ', 'pending')"><div class="stat-icon" style="background:#fff8e1;"><i class="fas fa-hourglass-half" style="color:#f77f00;"></i></div><div class="stat-num" style="color:#f77f00;">${s.pending}</div><div class="stat-label">รอดำเนินการ</div></div>
+  <div class="stat-card clickable blue" onclick="_dashDrilldown('กำลังดำเนินการ', t => t['สถานะ']==='กำลังดำเนินการ', 'กำลังดำเนินการ')"><div class="stat-icon" style="background:#e3f2fd;"><i class="fas fa-cog" style="color:#3a86ff;"></i></div><div class="stat-num" style="color:#3a86ff;">${inprogress}</div><div class="stat-label">กำลังดำเนินการ</div></div>
+  <div class="stat-card clickable" onclick="_dashDrilldown('เสร็จสิ้น', t => t['สถานะ']==='เสร็จสิ้น', 'เสร็จสิ้น')"><div class="stat-icon" style="background:#e8f5e9;"><i class="fas fa-check-circle" style="color:#2d6a4f;"></i></div><div class="stat-num" style="color:#2d6a4f;">${s.done}</div><div class="stat-label">เสร็จสิ้น</div></div>
+  <div class="stat-card clickable red" onclick="_dashDrilldown('ปฏิเสธ', t => t['สถานะ']==='ปฏิเสธ', 'all')"><div class="stat-icon" style="background:#fde8e8;"><i class="fas fa-times-circle" style="color:#d00000;"></i></div><div class="stat-num" style="color:#d00000;">${s.rejected || 0}</div><div class="stat-label">ปฏิเสธ</div></div>
+</div>
+
+<!-- ══ SECTION 1: สถานะ + ความเร่งด่วน (สมดุล 2 คอลัมน์) ══ -->
+<div class="dash-section-2col">
+  <div class="chart-card clickable-chart">
+    <h4><i class="fas fa-chart-pie"></i> สัดส่วนสถานะ <span class="dash-tip">คลิกที่ชิ้น/รายการเพื่อดูรายละเอียด</span></h4>
     <div class="donut-wrap">
       <canvas id="donut-status" width="160" height="160"></canvas>
       <div class="donut-legend">
-        <div class="dl-item"><span class="dl-dot" style="background:#f77f00;"></span>รอดำเนินการ <b>${s.pending}</b></div>
-        <div class="dl-item"><span class="dl-dot" style="background:#3a86ff;"></span>กำลังดำเนินการ <b>${inprogress}</b></div>
-        <div class="dl-item"><span class="dl-dot" style="background:#2d6a4f;"></span>เสร็จสิ้น <b>${s.done}</b></div>
-        <div class="dl-item"><span class="dl-dot" style="background:#d00000;"></span>ปฏิเสธ <b>${s.rejected || 0}</b></div>
+        <div class="dl-item clickable" onclick="_dashDrilldown('รอดำเนินการ', t => t['สถานะ']==='รอดำเนินการ', 'pending')"><span class="dl-dot" style="background:#f77f00;"></span>รอดำเนินการ <b>${s.pending}</b></div>
+        <div class="dl-item clickable" onclick="_dashDrilldown('กำลังดำเนินการ', t => t['สถานะ']==='กำลังดำเนินการ', 'กำลังดำเนินการ')"><span class="dl-dot" style="background:#3a86ff;"></span>กำลังดำเนินการ <b>${inprogress}</b></div>
+        <div class="dl-item clickable" onclick="_dashDrilldown('เสร็จสิ้น', t => t['สถานะ']==='เสร็จสิ้น', 'เสร็จสิ้น')"><span class="dl-dot" style="background:#2d6a4f;"></span>เสร็จสิ้น <b>${s.done}</b></div>
+        <div class="dl-item clickable" onclick="_dashDrilldown('ปฏิเสธ', t => t['สถานะ']==='ปฏิเสธ', 'all')"><span class="dl-dot" style="background:#d00000;"></span>ปฏิเสธ <b>${s.rejected || 0}</b></div>
       </div>
     </div>
   </div>
-  <div class="chart-card">
-    <h4><i class="fas fa-chart-pie"></i> สัดส่วนความเร่งด่วน</h4>
+  <div class="chart-card clickable-chart">
+    <h4><i class="fas fa-chart-pie"></i> สัดส่วนความเร่งด่วน <span class="dash-tip">คลิกที่ชิ้น/รายการเพื่อดูรายละเอียด</span></h4>
     <div class="donut-wrap">
       <canvas id="donut-priority" width="160" height="160"></canvas>
       <div class="donut-legend">
-        <div class="dl-item"><span class="dl-dot" style="background:#d00000;"></span>เร่งด่วน <b>${s.byPriority?.high || 0}</b></div>
-        <div class="dl-item"><span class="dl-dot" style="background:#f77f00;"></span>ปานกลาง <b>${s.byPriority?.medium || 0}</b></div>
-        <div class="dl-item"><span class="dl-dot" style="background:#2d6a4f;"></span>ทั่วไป <b>${s.byPriority?.low || 0}</b></div>
+        <div class="dl-item clickable" onclick="_dashDrilldown('เร่งด่วน', t => String(t['ความเร่งด่วน']||'').toLowerCase()==='high', 'all')"><span class="dl-dot" style="background:#d00000;"></span>เร่งด่วน <b>${s.byPriority?.high || 0}</b></div>
+        <div class="dl-item clickable" onclick="_dashDrilldown('ปานกลาง', t => String(t['ความเร่งด่วน']||'').toLowerCase()==='medium', 'all')"><span class="dl-dot" style="background:#f77f00;"></span>ปานกลาง <b>${s.byPriority?.medium || 0}</b></div>
+        <div class="dl-item clickable" onclick="_dashDrilldown('ทั่วไป', t => String(t['ความเร่งด่วน']||'').toLowerCase()==='low', 'all')"><span class="dl-dot" style="background:#2d6a4f;"></span>ทั่วไป <b>${s.byPriority?.low || 0}</b></div>
       </div>
     </div>
   </div>
-  <div class="chart-card">
-    <h4><i class="fas fa-tags"></i> ประเภทเรื่อง</h4>
+</div>
+
+<!-- ══ SECTION 2: ประเภทเรื่อง + ประเภทผู้แจ้ง (สมดุล 2 คอลัมน์) ══ -->
+<div class="dash-section-2col">
+  <div class="chart-card clickable-chart">
+    <h4><i class="fas fa-tags"></i> ประเภทเรื่อง <span class="dash-tip">คลิกแถบเพื่อดูรายละเอียด</span></h4>
     ${catB || '<p style="color:#bbb;padding:20px 0;">ยังไม่มีข้อมูล</p>'}
   </div>
-  <div class="chart-card">
-    <h4><i class="fas fa-users"></i> ประเภทผู้แจ้ง</h4>
+  <div class="chart-card clickable-chart">
+    <h4><i class="fas fa-users"></i> ประเภทผู้แจ้ง <span class="dash-tip">คลิกแถบเพื่อดูรายละเอียด</span></h4>
     ${cusB || '<p style="color:#bbb;padding:20px 0;">ยังไม่มีข้อมูล</p>'}
   </div>
+</div>
+
+<!-- ══ SECTION 3: timeline เต็มความกว้าง + satisfaction sidebar ══ -->
+<div class="dash-section-2col" style="grid-template-columns: 2fr 1fr;">
   <div class="chart-card">
     <h4><i class="fas fa-chart-bar"></i> Ticket รายเดือน (6 เดือนล่าสุด)</h4>
     <div class="dash-mini-bars">${monthBars || '<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div>
   </div>
   <div class="chart-card" style="text-align:center;">
-    <h4><i class="fas fa-star"></i> ความพึงพอใจ</h4>
+    <h4 style="justify-content:center;"><i class="fas fa-star"></i> ความพึงพอใจ</h4>
     <div style="font-size:2.8rem;font-weight:800;color:var(--dgreen);line-height:1.2;">${rs.avg || '-'}</div>
     <div style="margin:6px 0;">${stars}</div>
     <div style="font-size:.83rem;color:#888;margin-bottom:12px;">${rs.total || 0} รีวิว</div>
     <div class="donut-wrap" style="justify-content:center;">
       <canvas id="donut-rating" width="120" height="120"></canvas>
     </div>
-    <button onclick="navigateTo('admin-reviews')" style="margin-top:12px;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">ดูรีวิว</button>
+    <button onclick="navigateTo('admin-reviews')" style="margin-top:12px;padding:7px 16px;background:var(--dgreen);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.85rem;">ดูรีวิวทั้งหมด</button>
   </div>
 </div>`;
 
-  // วาด donut หลังจาก DOM render เสร็จ (rAF ป้องกัน canvas null)
+  // วาด donut หลังจาก DOM render เสร็จ (rAF ป้องกัน canvas null) — พร้อม onClick แต่ละชิ้น
   requestAnimationFrame(function () {
     _drawDonut('donut-status',
       [{ value: s.pending }, { value: inprogress }, { value: s.done }, { value: s.rejected || 0 }],
-      ['#f77f00', '#3a86ff', '#2d6a4f', '#d00000']);
+      ['#f77f00', '#3a86ff', '#2d6a4f', '#d00000'],
+      { onClick: (i) => {
+          const map = [
+            ['รอดำเนินการ', t => t['สถานะ']==='รอดำเนินการ', 'pending'],
+            ['กำลังดำเนินการ', t => t['สถานะ']==='กำลังดำเนินการ', 'กำลังดำเนินการ'],
+            ['เสร็จสิ้น', t => t['สถานะ']==='เสร็จสิ้น', 'เสร็จสิ้น'],
+            ['ปฏิเสธ', t => t['สถานะ']==='ปฏิเสธ', 'all'],
+          ][i];
+          if (map) _dashDrilldown(map[0], map[1], map[2]);
+        }});
     _drawDonut('donut-priority',
       [{ value: s.byPriority ? s.byPriority.high || 0 : 0 },
       { value: s.byPriority ? s.byPriority.medium || 0 : 0 },
       { value: s.byPriority ? s.byPriority.low || 0 : 0 }],
-      ['#d00000', '#f77f00', '#2d6a4f']);
+      ['#d00000', '#f77f00', '#2d6a4f'],
+      { onClick: (i) => {
+          const map = [
+            ['เร่งด่วน', t => String(t['ความเร่งด่วน']||'').toLowerCase()==='high'],
+            ['ปานกลาง', t => String(t['ความเร่งด่วน']||'').toLowerCase()==='medium'],
+            ['ทั่วไป', t => String(t['ความเร่งด่วน']||'').toLowerCase()==='low'],
+          ][i];
+          if (map) _dashDrilldown(map[0], map[1], 'all');
+        }});
     var dist = rs.dist || {};
     _drawDonut('donut-rating',
       [5, 4, 3, 2, 1].map(function (i) { return { value: dist[i] || 0 }; }),
       ['#2d6a4f', '#40916c', '#f0a500', '#f77f00', '#d00000']);
   });
 }
+
 
 // ════ ADMIN TICKETS ════
 function setFilter(id) { document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); const e = document.getElementById('filter-' + id); if (e) e.classList.add('active'); }
@@ -1085,6 +1250,7 @@ function _exposeGlobals() {
   G.loadFaq = loadFaq; G.searchFaq = searchFaq; G.toggleFaq = toggleFaq;
   G.loadAdminTickets = loadAdminTickets; G.addComment = addComment; G.togglePin = togglePin;
   G.submitUpdate = submitUpdate; G.deleteTicket = deleteTicket; G.onStatusSelectChange = onStatusSelectChange;
+  G._dashDrilldown = _dashDrilldown; G.loadDashboard = loadDashboard;
   G.filterByCategory = filterByCategory; G.expandAdminDetail = expandAdminDetail;
   G.selectTicketFilter = selectTicketFilter; G.setFilter = setFilter;
   G.loadReport = loadReport; G.selectReportType = selectReportType;
