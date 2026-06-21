@@ -647,7 +647,7 @@ function searchFaq() { const q = document.getElementById('faq-search')?.value.tr
 
 // ════ REPORT ════
 function printReport() {
-  if (!window._lastReportData) { showAlert('⚠️', 'รายงานยังไม่โหลด', 'กรุณาเลือกประเภทรายงานและรอข้อมูลโหลดก่อนพิมพ์'); return; }
+  if (!window._lastReportData) { showAlert('รายงานยังไม่โหลด', 'กรุณาเลือกประเภทรายงานและรอข้อมูลโหลดก่อนพิมพ์'); return; }
   const rptNames = { service: 'สรุปการให้บริการ', users: 'ผู้ใช้บริการ', duration: 'เวลาให้บริการ', monthly: 'สรุปรายเดือน' };
   const now = new Date().toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const r = window._lastReportData;
@@ -1723,3 +1723,37 @@ window.onload = function () {
     _init();
   }
 })();
+// ════════════════════════════════════════════════════════════════
+//  GLOBAL KEYBOARD SUPPORT — สำหรับ custom modal/overlay ทั้งหมด
+//  (showAlert/showConfirm มี handler ของตัวเองอยู่แล้วใน ui.js)
+//  ครอบคลุม: editNews, editFaq, complaint-type, profile, news-detail
+//
+//  - Escape → ปิด overlay บนสุดที่เปิดอยู่ (เหมือนกดปุ่มยกเลิก/ปิด)
+//  - Enter  → กดปุ่ม .voc-btn-ok ของ overlay บนสุด ถ้าโฟกัสไม่ได้อยู่ใน
+//             textarea (เพื่อไม่ขัดจังหวะการพิมพ์ขึ้นบรรทัดใหม่)
+// ════════════════════════════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== 'Escape') return;
+
+  const overlays = document.querySelectorAll('.voc-overlay');
+  if (!overlays.length) return;
+  const topOverlay = overlays[overlays.length - 1];
+
+  // ui.js (showAlert/showConfirm) จัดการ keyboard ของตัวเองอยู่แล้ว — ข้าม
+  if (topOverlay.dataset.vocManagedByUi === '1') return;
+
+  if (e.key === 'Escape') {
+    const cancelBtn = topOverlay.querySelector('.voc-btn-cancel, .modal-close');
+    if (cancelBtn) cancelBtn.click();
+    else if (document.body.contains(topOverlay)) document.body.removeChild(topOverlay);
+    e.preventDefault();
+    return;
+  }
+
+  if (e.key === 'Enter') {
+    // ไม่ trigger ถ้ากำลังพิมพ์ใน textarea (ต้องขึ้นบรรทัดใหม่ได้ตามปกติ)
+    if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') return;
+    const okBtn = topOverlay.querySelector('.voc-btn-ok');
+    if (okBtn) { okBtn.click(); e.preventDefault(); }
+  }
+});

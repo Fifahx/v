@@ -2185,6 +2185,89 @@ label {
   margin-bottom: 10px;
 }
 
+/* ══════════════════════════════════════════════════════
+   Animated SVG icons สำหรับ voc-modal (success/danger/warning/info)
+═══════════════════════════════════════════════════════ */
+.voc-modal-icon-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.voc-icon { overflow: visible; }
+
+/* วงกลม: วาดเส้นรอบเข้ามา */
+.voc-icon-circle {
+  stroke-dasharray: 176;
+  stroke-dashoffset: 176;
+  animation: voc-circle-draw .45s ease-out forwards;
+}
+@keyframes voc-circle-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* success: ติ๊กถูก วาดเส้นเข้ามาหลังวงกลม */
+.voc-icon-check {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: voc-check-draw .35s ease-out .4s forwards;
+}
+@keyframes voc-check-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* danger: กากบาท วาดเข้ามาแล้วสั่นเบาๆ */
+.voc-icon-x {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: voc-x-draw .35s ease-out .4s forwards, voc-shake .4s ease-in-out .8s;
+}
+@keyframes voc-x-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes voc-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-3px); }
+  40%, 80% { transform: translateX(3px); }
+}
+
+/* warning: เครื่องหมายตกใจ เด้งเข้ามา */
+.voc-icon-bang-line, .voc-icon-bang-dot {
+  opacity: 0;
+  animation: voc-bang-in .3s ease-out .4s forwards;
+}
+@keyframes voc-bang-in {
+  0%   { opacity: 0; transform: scale(.4) translateY(-6px); }
+  60%  { opacity: 1; transform: scale(1.15) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* info: ตัว i เฟดเข้ามาแบบนุ่มนวล */
+.voc-icon-info-dot, .voc-icon-info-line {
+  opacity: 0;
+  animation: voc-info-fade .35s ease-out .4s forwards;
+}
+@keyframes voc-info-fade {
+  from { opacity: 0; transform: scale(.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* เมื่อผู้ใช้กดยืนยัน — ไอคอน "เด้งฉลอง" (ขยับติ๊ก ตามที่ขอ) */
+.voc-icon-pop {
+  animation: voc-icon-celebrate .22s ease-out;
+}
+@keyframes voc-icon-celebrate {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
+/* ปุ่มที่ถูก focus (เช่นตอนเปิด modal หรือกด Tab) ให้เห็นชัดว่า Enter จะกดอันไหน */
+.voc-btn-ok:focus-visible,
+.voc-btn-cancel:focus-visible {
+  outline: 3px solid #94d3a2;
+  outline-offset: 2px;
+}
+
 .voc-modal-title {
   font-size: 1.1rem;
   font-weight: 700;
