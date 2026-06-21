@@ -39,11 +39,17 @@ const ICONS = {
 };
 
 // ── auto-detect type จากเนื้อหา title (ถ้าไม่ได้ระบุ type ชัดเจน) ──
+// ⚠️ ต้องตรวจ danger/warning ก่อน success เสมอ
+//    เพราะ title เช่น "เข้าสู่ระบบไม่สำเร็จ" มีคำว่า "สำเร็จ" อยู่ด้วย
+//    ถ้าตรวจ success ก่อนจะ match ผิด → แสดงไอคอน ✓ แทน ✕
 function _detectType(title) {
   const t = title || '';
-  if (/สำเร็จ|เรียบร้อย|เพิ่ม.*สำเร็จ|แก้ไขสำเร็จ|บันทึกสำเร็จ|ขอบคุณ/.test(t)) return 'success';
+  // 1. danger ก่อน — ครอบ "ไม่สำเร็จ", "ผิดพลาด", "error", "ล้มเหลว"
   if (/ลบ|danger|อันตราย|ไม่สามารถเรียกคืน/.test(t)) return 'danger';
   if (/ไม่สำเร็จ|ผิดพลาด|error|ล้มเหลว/i.test(t)) return 'danger';
+  // 2. success — เฉพาะคำที่ชัดเจนว่าสำเร็จจริงๆ
+  if (/^(ลงทะเบียน|บันทึก|ส่ง|เพิ่ม|แก้ไข|อัปเดต|ขอบคุณ).*สำเร็จ|สำเร็จแล้ว|เรียบร้อยแล้ว/.test(t)) return 'success';
+  // 3. warning — ยืนยัน / แจ้งเตือน
   if (/ยืนยัน|ต้องการ|warning|แน่ใจ/.test(t)) return 'warning';
   return 'info';
 }
@@ -138,4 +144,4 @@ export function showConfirm(title, msg, type) {
     cancelBtn.onclick = () => cleanup(false);
     okBtn.onclick = confirmAction;
   });
-}
+} 

@@ -433,7 +433,7 @@ function prepareReview() {
   const _rl = document.getElementById('v-file-link')?.value.trim() || '';
   const _fileLinkHtml = _rl && _rl.startsWith('http') ? `<div class="review-section"><div class="review-section-title">・ลิงก์ไฟล์แนบ</div><div style="padding:10px 14px;background:#f5f5f5;border-radius:8px;"><a href="${_rl}" target="_blank" style="color:#2d6a4f;word-break:break-all;font-size:.87rem;"><i class="fas fa-external-link-alt"></i> ${_rl}</a></div></div>` : '';
   const _fileObjUrl = attachedFile ? URL.createObjectURL(attachedFile) : '';
-  const _fileUploadHtml = attachedFile ? `<div class="review-section"><div class="review-section-title">・ไฟล์แนบ</div><div style="padding:10px 14px;background:#f5f5f5;border-radius:8px;display:flex;align-items:center;gap:10px;"><i class="fas fa-file-alt" style="color:#2d6a4f;font-size:1.1rem;"></i><div><a href="${_fileObjUrl}" target="_blank" rel="noopener" style="font-size:.87rem;font-weight:600;color:#2d6a4f;word-break:break-all;text-decoration:none;">${attachedFile.name} <i class="fas fa-external-link-alt" style="font-size:.75rem;"></i></a><div style="font-size:.78rem;color:#888;margin-top:2px;">${(attachedFile.size/1024/1024).toFixed(2)} MB</div></div></div></div>` : '';
+  const _fileUploadHtml = attachedFile ? `<div class="review-section"><div class="review-section-title">・ไฟล์แนบ</div><div style="padding:10px 14px;background:#f5f5f5;border-radius:8px;display:flex;align-items:center;gap:10px;"><i class="fas fa-file-alt" style="color:#2d6a4f;font-size:1.1rem;"></i><div><a href="${_fileObjUrl}" target="_blank" rel="noopener" style="font-size:.87rem;font-weight:600;color:#2d6a4f;word-break:break-all;text-decoration:none;">${attachedFile.name} <i class="fas fa-external-link-alt" style="font-size:.75rem;"></i></a><div style="font-size:.78rem;color:#888;margin-top:2px;">${(attachedFile.size / 1024 / 1024).toFixed(2)} MB</div></div></div></div>` : '';
   document.getElementById('review-area').innerHTML = `<div class="review-card"><div class="review-card-header"><h3>ตรวจสอบข้อมูลก่อนส่ง</h3></div><div class="review-section"><div class="review-section-title">👤 ข้อมูลผู้แจ้ง</div><div class="review-row"><span class="ri">・</span><span class="rl">ประเภท</span><span class="rv">${vocData.cType}</span></div><div class="review-row"><span class="ri">・</span><span class="rl">ชื่อ-นามสกุล</span><span class="rv">${name}</span></div><div class="review-row"><span class="ri">・</span><span class="rl">รหัส/หน่วยงาน</span><span class="rv">${sid}</span></div></div><div class="review-section"><div class="review-section-title">📂 รายละเอียดเรื่อง</div><div class="review-row"><span class="ri">・</span><span class="rl">ประเภทเรื่อง</span><span class="rv">${vocData.category}</span></div><div class="review-row"><span class="ri">・</span><span class="rl">ความเร่งด่วน</span><span class="rv"><span class="priority-pill ${pInfo.cls}">${pInfo.label}</span><small style="color:#999;margin-left:6px;">${pInfo.sub}</small></span></div><div class="review-row"><span class="ri">・</span><span class="rl">หัวข้อ</span><span class="rv" style="font-weight:700;">${subject}</span></div></div><div class="review-section"><div class="review-section-title">・ รายละเอียด</div><div style="background:#f8faf9;border-radius:10px;padding:14px;font-size:.9rem;color:#444;line-height:1.75;border-left:3px solid var(--dgreen);">${detailHtml}</div></div>${note ? `<div class="review-section"><div class="review-section-title">・ หมายเหตุ</div><div style="background:#fffbf0;border-radius:10px;padding:12px 14px;font-size:.88rem;color:#555;border-left:3px solid #f77f00;">${note}</div></div>` : ''}${_fileLinkHtml}${_fileUploadHtml}<div style="background:#e8f5e9;border-radius:10px;padding:12px 16px;margin:16px 24px;font-size:.82rem;color:#2d6a4f;"><i class="fas fa-info-circle"></i> ข้อมูลที่ส่งไปแล้วไม่สามารถแก้ไขได้</div></div>`;
   changeStep(4);
 }
@@ -903,7 +903,7 @@ async function _dashDrilldown(title, filterFn, queryHint) {
       <div class="dd-ticket-item">
         <div class="dd-ticket-top">
           <span class="dd-ticket-id">${t['Ticket ID'] || ''}</span>
-          <span class="status status-${{'รอดำเนินการ':'pending','กำลังดำเนินการ':'inprogress','เสร็จสิ้น':'success','ปฏิเสธ':'reject'}[t['สถานะ']] || 'pending'}" style="font-size:.68rem;padding:2px 9px;">${t['สถานะ'] || ''}</span>
+          <span class="status status-${{ 'รอดำเนินการ': 'pending', 'กำลังดำเนินการ': 'inprogress', 'เสร็จสิ้น': 'success', 'ปฏิเสธ': 'reject' }[t['สถานะ']] || 'pending'}" style="font-size:.68rem;padding:2px 9px;">${t['สถานะ'] || ''}</span>
         </div>
         <div class="dd-ticket-subject">${(t['หัวข้อ'] || '').slice(0, 90)}</div>
         <div class="dd-ticket-meta">
@@ -1049,28 +1049,32 @@ ${urgH}
     _drawDonut('donut-status',
       [{ value: s.pending }, { value: inprogress }, { value: s.done }, { value: s.rejected || 0 }],
       ['#f77f00', '#3a86ff', '#2d6a4f', '#d00000'],
-      { onClick: (i) => {
+      {
+        onClick: (i) => {
           const map = [
-            ['รอดำเนินการ', t => t['สถานะ']==='รอดำเนินการ', 'pending'],
-            ['กำลังดำเนินการ', t => t['สถานะ']==='กำลังดำเนินการ', 'กำลังดำเนินการ'],
-            ['เสร็จสิ้น', t => t['สถานะ']==='เสร็จสิ้น', 'เสร็จสิ้น'],
-            ['ปฏิเสธ', t => t['สถานะ']==='ปฏิเสธ', 'all'],
+            ['รอดำเนินการ', t => t['สถานะ'] === 'รอดำเนินการ', 'pending'],
+            ['กำลังดำเนินการ', t => t['สถานะ'] === 'กำลังดำเนินการ', 'กำลังดำเนินการ'],
+            ['เสร็จสิ้น', t => t['สถานะ'] === 'เสร็จสิ้น', 'เสร็จสิ้น'],
+            ['ปฏิเสธ', t => t['สถานะ'] === 'ปฏิเสธ', 'all'],
           ][i];
           if (map) _dashDrilldown(map[0], map[1], map[2]);
-        }});
+        }
+      });
     _drawDonut('donut-priority',
       [{ value: s.byPriority ? s.byPriority.high || 0 : 0 },
       { value: s.byPriority ? s.byPriority.medium || 0 : 0 },
       { value: s.byPriority ? s.byPriority.low || 0 : 0 }],
       ['#d00000', '#f77f00', '#2d6a4f'],
-      { onClick: (i) => {
+      {
+        onClick: (i) => {
           const map = [
-            ['เร่งด่วน', t => String(t['ความเร่งด่วน']||'').toLowerCase()==='high'],
-            ['ปานกลาง', t => String(t['ความเร่งด่วน']||'').toLowerCase()==='medium'],
-            ['ทั่วไป', t => String(t['ความเร่งด่วน']||'').toLowerCase()==='low'],
+            ['เร่งด่วน', t => String(t['ความเร่งด่วน'] || '').toLowerCase() === 'high'],
+            ['ปานกลาง', t => String(t['ความเร่งด่วน'] || '').toLowerCase() === 'medium'],
+            ['ทั่วไป', t => String(t['ความเร่งด่วน'] || '').toLowerCase() === 'low'],
           ][i];
           if (map) _dashDrilldown(map[0], map[1], 'all');
-        }});
+        }
+      });
     var dist = rs.dist || {};
     _drawDonut('donut-rating',
       [5, 4, 3, 2, 1].map(function (i) { return { value: dist[i] || 0 }; }),
@@ -1157,7 +1161,21 @@ async function submitUpdate(tid, skipConfirm) {
     if (res.success) {
       if (selectEl) selectEl.dataset.prev = ns;
       const card = document.getElementById('card-' + tid);
-      if (card) { card.style.transition = 'background .4s'; card.style.background = '#d4edda'; setTimeout(() => { card.style.background = ''; }, 1500); }
+      if (card) {
+        // อัปเดต badge สถานะมุมขวาบน
+        const scTag = { 'รอดำเนินการ': 'status-pending', 'กำลังดำเนินการ': 'status-inprogress', 'รอตรวจสอบ': 'status-review', 'เสร็จสิ้น': 'status-done', 'ปฏิเสธ': 'status-rejected' };
+        const badge = card.querySelector('.admin-card-top .status');
+        if (badge) { badge.textContent = ns; badge.className = `status ${scTag[ns] || 'status-pending'}`; }
+        // อัปเดต ผู้รับผิดชอบ ใน footer ของ card (ถ้ามี)
+        if (as) {
+          const assigneeEl = card.querySelector('.card-assignee');
+          if (assigneeEl) assigneeEl.textContent = as;
+        }
+        // flash เขียวสั้นๆ แจ้งว่าสำเร็จ
+        card.style.transition = 'background .4s';
+        card.style.background = '#d4edda';
+        setTimeout(() => { card.style.background = ''; }, 1500);
+      }
     } else {
       // ถ้า 401 → token หมดอายุ ให้แจ้งเตือนชัดเจน
       const msg = (res.message || '').includes('กรุณาเข้าสู่ระบบ') || (res.message || '').includes('token')
