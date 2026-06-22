@@ -32,7 +32,7 @@ export function registerRouterCallbacks(callbacks) {
 
 export function toggleMobileNav() {
   const menu = document.getElementById('main-nav');
-  const btn  = document.getElementById('hamburger-btn');
+  const btn = document.getElementById('hamburger-btn');
   if (!menu || !btn) return;
   menu.classList.toggle('open');
   btn.classList.toggle('open');
@@ -40,9 +40,9 @@ export function toggleMobileNav() {
 
 export function closeMobileNav() {
   const menu = document.getElementById('main-nav');
-  const btn  = document.getElementById('hamburger-btn');
+  const btn = document.getElementById('hamburger-btn');
   if (menu) menu.classList.remove('open');
-  if (btn)  btn.classList.remove('open');
+  if (btn) btn.classList.remove('open');
 }
 
 function _isTokenExpiredLocal(token) {
@@ -94,20 +94,21 @@ export function _doNavigate(pageId) {
       if (cb.changeStep) cb.changeStep(1);
     }
   }
-  if (pageId === 'admin-dashboard') { if (cb.loadDashboard)   cb.loadDashboard(); }
-  if (pageId === 'admin-report')    { if (cb.loadReport)      cb.loadReport(); }
-  if (pageId === 'admin-tickets')   { if (cb.loadAdminTickets) cb.loadAdminTickets('pending'); }
-  if (pageId === 'admin-reviews')   { if (cb.loadReviews)     cb.loadReviews(); }
-  if (pageId === 'superadmin')      { if (cb.loadSuperAdmin)  cb.loadSuperAdmin(); }
-  if (pageId === 'faq')             { if (cb.loadFaq)         cb.loadFaq(); }
+  if (pageId === 'admin-dashboard') { if (cb.loadDashboard) cb.loadDashboard(); }
+  if (pageId === 'admin-report') { if (cb.loadReport) cb.loadReport(); }
+  if (pageId === 'admin-tickets') { if (cb.loadAdminTickets) cb.loadAdminTickets('pending'); }
+  if (pageId === 'admin-reviews') { if (cb.loadReviews) cb.loadReviews(); }
+  if (pageId === 'superadmin') { if (cb.loadSuperAdmin) cb.loadSuperAdmin(); }
+  if (pageId === 'faq') { if (cb.loadFaq) cb.loadFaq(); }
   if (pageId === 'tracking') {
     document.getElementById('track-result').innerHTML = '';
     document.getElementById('track-input').value = '';
-    if (cb.currentUser && cb.currentUser.role === 'user' && cb.loadMyTickets) cb.loadMyTickets();
+    // โหลด my tickets เสมอ (ทั้ง guest และ user) — loadMyTickets จัดการ state เอง
+    if (cb.loadMyTickets) cb.loadMyTickets();
   }
   if (pageId === 'home') {
     if (cb.loadPinnedTickets) cb.loadPinnedTickets();
-    if (cb.loadNewsStrip)     cb.loadNewsStrip();
+    if (cb.loadNewsStrip) cb.loadNewsStrip();
   }
   // ── Scroll past hero ────────────────────────────────────────────────────
   // หน้า home → scroll ขึ้นบนสุด (hero ควรเห็น)

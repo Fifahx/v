@@ -668,6 +668,20 @@ async function loadPinnedTickets() {
 // ════ TRACKING ════
 async function loadMyTickets() {
   const resDiv = document.getElementById('track-result');
+  if (!resDiv) return;
+
+  // ถ้ายังไม่ login → แสดง empty state พร้อมปุ่มแจ้งเรื่อง
+  if (!currentUser || currentUser.role === 'admin' || currentUser.role === 'superadmin') {
+    resDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#aaa;">
+      <i class="fas fa-inbox" style="font-size:2.5rem;color:#ddd;display:block;margin-bottom:12px;"></i>
+      <p style="margin-bottom:16px;">คุณยังไม่มีประวัติการร้องเรียน</p>
+      <button onclick="navigateTo('portal')" style="padding:10px 24px;background:var(--dgreen);color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:700;">
+        <i class="fas fa-bullhorn"></i> แจ้งเรื่องใหม่
+      </button>
+    </div>`;
+    return;
+  }
+
   resDiv.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch"></i><p style="margin-top:10px;">กำลังโหลด...</p></div>';
   try { const res = await api.get(`/api/tickets?action=byUsername&username=${encodeURIComponent(currentUser.username)}`); if (res.success && res.tickets && res.tickets.length > 0) await renderTicketCards(res.tickets, true); else resDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#aaa;"><i class="fas fa-inbox" style="font-size:2.5rem;color:#ddd;display:block;margin-bottom:12px;"></i><p style="margin-bottom:16px;">คุณยังไม่มีประวัติการร้องเรียน</p><button onclick="navigateTo('portal')" style="padding:10px 24px;background:var(--dgreen);color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:'Sarabun',sans-serif;font-weight:700;"><i class="fas fa-bullhorn"></i> แจ้งเรื่องใหม่</button></div>`; }
   catch (e) { resDiv.innerHTML = `<p style="color:red;">${e.message}</p>`; }
