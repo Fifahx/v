@@ -3500,88 +3500,98 @@ header {
 .home-action-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-top: 28px;
+  gap: 14px;
+  margin-top: 20px;
   width: 100%;
 }
 
 .action-card-ticket {
-  background: linear-gradient(135deg, #3a86ff, #00b4d8);
+  background: #ffffff;
+  border-left: 4px solid #3a86ff;
 }
 
 .action-card-track {
-  background: linear-gradient(135deg, #ff6b6b, #f77f00);
+  background: #ffffff;
+  border-left: 4px solid #f77f00;
 }
 
 .action-card-ticket,
 .action-card-track {
   border-radius: 14px;
-  box-shadow: var(--shadow);
-  padding: 5px 0 15px 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .07);
+  padding: 18px 20px;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  justify-content: flex-start;
+  text-align: left;
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  transition: .3s;
-  border: 1.5px solid #edf0ee;
+  flex-direction: row;
+  gap: 14px;
+  transition: .25s;
   cursor: pointer;
 }
 
 .action-card-ticket:hover,
 .action-card-track:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, .1);
-  border-color: #b7dfcb;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .11);
 }
 
 .action-icon-wrap {
-  width: 52px;
-  height: 52px;
-  min-width: 52px;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
-  color: #fff;
+  font-size: 1.4rem;
   flex-shrink: 0;
 }
 
-.action-icon-wrap.blue,
-.action-icon-wrap.orange {
-  color: #ffffffe8;
+.action-icon-wrap.blue {
+  background: #e8f0ff;
+  color: #3a86ff;
 }
 
-.action-card-ticket:hover .action-icon-wrap.blue,
-.action-card-track:hover .action-icon-wrap.orange,
+.action-icon-wrap.orange {
+  background: #fff3e0;
+  color: #f77f00;
+}
+
 .action-card-ticket:hover .action-title,
 .action-card-track:hover .action-title {
-  color: #ffffff;
-  text-shadow: 0 0 30px rgb(255 255 255 / 40%);
-}
-
-.action-card-ticket:hover .action-desc,
-.action-card-track:hover .action-desc {
-  color: #f8ff00;
-  text-shadow: 0 0 30px rgb(255 255 255 / 40%);
+  color: #2d6a4f;
 }
 
 .action-text {
   flex: 1;
+  min-width: 0;
+}
+
+.action-arrow {
+  color: #ccc;
+  font-size: .85rem;
+  flex-shrink: 0;
+  transition: transform .2s, color .2s;
+}
+
+.action-card-ticket:hover .action-arrow,
+.action-card-track:hover .action-arrow {
+  color: #2d6a4f;
+  transform: translateX(4px);
 }
 
 .action-title {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 3px;
+  color: #1b4332;
+  margin-bottom: 2px;
 }
 
 .action-desc {
   font-size: .78rem;
-  color: #d2f957;
+  color: #666;
+  line-height: 1.4;
 }
 
 .action-card-tiket:hover .action-arrow,
@@ -3906,6 +3916,13 @@ header {
   }
 }
 
+/* hero CTA row แสดงเฉพาะ desktop ≥ 901px */
+@media(min-width:901px) {
+  .hero-cta-row {
+    display: flex;
+  }
+}
+
 /* ════ HERO responsive (merge) ════ */
 @media(max-width:1024px) {
   .hero-content {
@@ -3952,7 +3969,12 @@ header {
   }
 
   .home-action-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* ซ่อน hero buttons บน mobile — action cards ทำหน้าที่แทนแล้ว */
+  .hero-cta-row {
+    display: none;
   }
 }
 
@@ -3968,10 +3990,6 @@ header {
 
   .hero-title {
     font-size: 1.8rem;
-  }
-
-  .hero-cta-row {
-    flex-direction: column;
   }
 
   .hero-btn {
@@ -6275,6 +6293,43 @@ body.font-xl {
   }
 
   .footer-stats-sep {
+    display: none;
+  }
+}
+
+/* ════ ACTION CARDS — mobile fine-tune ════ */
+@media(max-width:480px) {
+  .home-action-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .action-card-ticket,
+  .action-card-track {
+    padding: 14px 12px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .action-icon-wrap {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    font-size: 1.2rem;
+  }
+
+  .action-title {
+    font-size: .9rem;
+  }
+
+  .action-desc {
+    font-size: .72rem;
+  }
+
+  .action-arrow {
     display: none;
   }
 }
