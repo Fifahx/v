@@ -3917,10 +3917,33 @@ header {
 @media(max-width:900px) {
   .hero-content {
     grid-template-columns: 1fr;
+    gap: 24px;
   }
 
+  /* แสดง slider รูปผู้บริหารใต้ข้อความบน mobile */
   .hero-mgmt-panel {
-    display: none;
+    display: block;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  /* ปรับขนาด track ให้พอดีหน้าจอมือถือ */
+  .mgmt-h-track-wrap {
+    height: 260px;
+  }
+
+  .mgmt-h-img {
+    width: 100%;
+    max-width: 240px;
+    height: 260px;
+  }
+
+  .mgmt-h-name {
+    font-size: 1rem;
+  }
+
+  .mgmt-h-pos {
+    font-size: .78rem;
   }
 
   /* ซ่อนบน mobile เพราะ hero แคบ */
