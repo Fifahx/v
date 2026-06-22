@@ -218,8 +218,8 @@ function showComplaintTypeModal(callback) {
     document.getElementById('ctype-oneway').classList.toggle('selected', type === 'oneway');
     document.getElementById('ctype-track').classList.toggle('selected', type === 'track');
     const area = document.getElementById('ctype-confirm-area'); const msg = document.getElementById('ctype-confirm-msg'); const btn = document.getElementById('ctype-confirm-btn');
-    if (type === 'oneway') { msg.innerHTML = `<div class="ctype-confirm-warn">⚠️ <strong>จะไม่สามารถติดตามสถานะได้</strong></div>`; btn.textContent = 'ยืนยัน - แจ้งเรื่องโดยไม่ Login'; btn.onclick = () => { document.body.removeChild(o); callback('oneway'); }; }
-    else { msg.innerHTML = `<div class="ctype-confirm-ok">✅ <strong>จะถูกนำไปยังหน้าเข้าสู่ระบบก่อน</strong></div>`; btn.textContent = 'ยืนยัน - ไปเข้าสู่ระบบ'; btn.onclick = () => { document.body.removeChild(o); callback('track'); }; }
+    if (type === 'oneway') { msg.innerHTML = `<div class="ctype-confirm-warn"><i class="fas fa-exclamation-triangle"></i> <strong>จะไม่สามารถติดตามสถานะได้</strong></div>`; btn.textContent = 'ยืนยัน - แจ้งเรื่องโดยไม่ Login'; btn.onclick = () => { document.body.removeChild(o); callback('oneway'); }; }
+    else { msg.innerHTML = `<div class="ctype-confirm-ok"><i class="fas fa-check-circle"></i> <strong>จะถูกนำไปยังหน้าเข้าสู่ระบบก่อน</strong></div>`; btn.textContent = 'ยืนยัน - ไปเข้าสู่ระบบ'; btn.onclick = () => { document.body.removeChild(o); callback('track'); }; }
     area.style.display = 'block';
   }
   window.resetComplaintTypeSelection = function () { document.getElementById('ctype-oneway').classList.remove('selected'); document.getElementById('ctype-track').classList.remove('selected'); document.getElementById('ctype-confirm-area').style.display = 'none'; };

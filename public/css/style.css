@@ -4694,6 +4694,15 @@ html {
   border-radius: 10px;
   padding: 12px 14px;
   color: #7c5a00;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ctype-confirm-warn i {
+  font-size: 1rem;
+  color: #d97706;
+  flex-shrink: 0;
 }
 
 .ctype-confirm-ok {
@@ -4702,6 +4711,15 @@ html {
   border-radius: 10px;
   padding: 12px 14px;
   color: #1b5e20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ctype-confirm-ok i {
+  font-size: 1rem;
+  color: #2d6a4f;
+  flex-shrink: 0;
 }
 
 /* ════════════════════════════════════════════════
