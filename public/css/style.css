@@ -3952,7 +3952,7 @@ header {
   }
 
   .home-action-row {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: none;
   }
 
   .hero-cta-row {
