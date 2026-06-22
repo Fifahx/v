@@ -1669,9 +1669,10 @@ window.onload = function () {
     th.classList.toggle('active', lang === 'th');
     en.classList.toggle('active', lang === 'en');
     if (busy) {
-      en.innerHTML = '⏳ EN'; en.disabled = true; th.disabled = true;
+      en.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:.8em;"></i> EN';
+      en.disabled = true; th.disabled = true;
     } else {
-      en.innerHTML = '🇬🇧 EN'; en.disabled = false; th.disabled = false;
+      en.innerHTML = 'EN'; en.disabled = false; th.disabled = false;
     }
   }
 
