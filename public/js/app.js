@@ -509,8 +509,8 @@ function prepareReview() {
 
 function notManual() {
   showAlert('อยู่ระหว่างการจัดทำ', '');
-  window.notManual = notManual;
 }
+window.notManual = notManual;
 
 async function finalSubmit() {
   if (!currentUser && isClientRateLimited()) { await showAlert('กรุณารอสักครู่', `กรุณารออีก ${clientCooldownRemaining()} นาที`); return; }
