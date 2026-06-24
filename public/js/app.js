@@ -508,7 +508,7 @@ function prepareReview() {
 }
 
 function notManual() {
-  showAlert('อยู่ระหว่างการจัดทำ', '');
+  showAlert('คู่มืออยู่ระหว่างการจัดทำ', 'ปัจจุบันมีคู่มือแค่ไฟล์ PDF เท่านั้น');
 }
 window.notManual = notManual;
 
