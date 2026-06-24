@@ -507,6 +507,11 @@ function prepareReview() {
   changeStep(4);
 }
 
+function notManual() {
+  showAlert('อยู่ระหว่างการจัดทำ', '');
+  window.notManual = notManual;
+}
+
 async function finalSubmit() {
   if (!currentUser && isClientRateLimited()) { await showAlert('กรุณารอสักครู่', `กรุณารออีก ${clientCooldownRemaining()} นาที`); return; }
   // ถ้า onTurnstileSuccess ถูกเรียกแล้วแต่ _turnstileReady ยัง false (race condition)
