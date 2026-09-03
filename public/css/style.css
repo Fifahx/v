@@ -6291,16 +6291,23 @@ body.font-xl {
    ════════════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
 
-  /* ── 0. บังคับ layout hero-content บนมือถือเป็น flex column ไม่มีช่องว่าง
-         ใช้ !important กันชนกับ rule อื่นที่อาจ override ทับ ── */
+  /* ── 0. บังคับ layout hero-content บนมือถือเป็นแนวนอน (ข้อความซ้าย / รูปขวา)
+         ตาม wireframe ที่ต้องการ ── */
   .hero-content {
     display: flex !important;
-    flex-direction: column !important;
-    gap: 0 !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .hero-text-block {
+    flex: 0 0 42% !important;
+    max-width: 42% !important;
+    min-width: 0;
   }
 
   .hero-section {
-    padding: 2.5rem 16px 5rem !important;
+    padding: 2.5rem 12px 5rem !important;
   }
 
   /* ── 1. ตัดคำซ้ำกับ Header: ซ่อน "VOC System" h1 เดิม
@@ -6319,25 +6326,26 @@ body.font-xl {
   }
 
   .hero-slogan-main {
-    font-size: 17px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
     color: var(--primary);
-    line-height: 1.35;
+    line-height: 1.3;
     margin-bottom: 4px;
     text-shadow: none;
     letter-spacing: normal;
   }
 
   .hero-slogan-sub {
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 400;
     color: rgba(255, 255, 255, .9);
-    line-height: 1.5;
+    line-height: 1.45;
   }
 
   .hero-sub {
-    font-size: 10px;
+    font-size: 8px;
     margin-bottom: 0 !important;
+    line-height: 1.4;
   }
 
   /* ── ซ่อนปุ่ม CTA ในหัว hero บนมือถือ
@@ -6365,17 +6373,19 @@ body.font-xl {
   /* ── 3.1 ทำให้รูปผู้บริหารเด่นขึ้นแบบเวอร์ชัน PC:
          ขยายกรอบรูปให้ใหญ่ขึ้น ชิดกึ่งกลาง และดันขึ้นมาใกล้ข้อความ ── */
   .hero-mgmt-panel {
-    max-width: 100% !important;
-    margin: 0 auto !important;
+    flex: 0 0 55% !important;
+    max-width: 55% !important;
+    margin: 0 !important;
   }
 
   .mgmt-h-track-wrap {
-    height: 360px !important;
+    height: 230px !important;
   }
 
   .mgmt-h-img {
-    max-width: 320px !important;
-    height: 360px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 230px !important;
   }
 
   /* ── 3. แถบชื่อ-ตำแหน่งผู้บริหาร: ติดขอบล่างสุดของกรอบรูป
@@ -6387,7 +6397,7 @@ body.font-xl {
   }
 
   .mgmt-h-name {
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 500;
     color: #fff;
     margin-bottom: 2px;
@@ -6395,7 +6405,7 @@ body.font-xl {
   }
 
   .mgmt-h-pos {
-    font-size: 8px;
+    font-size: 7px;
     font-weight: 400;
     color: rgba(255, 255, 255, .75);
     background: none;
@@ -6415,11 +6425,18 @@ body.font-xl {
 /* จอเล็กมาก: ลดขนาดรูปผู้บริหารลงอีกนิด ไม่ให้ล้นจอ แต่ยังคงเด่นกว่าเดิม */
 @media (max-width: 400px) {
   .mgmt-h-track-wrap {
-    height: 320px;
+    height: 195px !important;
   }
 
   .mgmt-h-img {
-    max-width: 280px;
-    height: 320px;
+    height: 195px !important;
+  }
+
+  .hero-slogan-main {
+    font-size: 12px !important;
+  }
+
+  .hero-slogan-sub {
+    font-size: 8px !important;
   }
 }
