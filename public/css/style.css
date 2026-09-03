@@ -6387,12 +6387,22 @@ body.font-xl {
     display: block;
   }
 
-  /* ── 4/5. ปุ่ม CTA เดิมใน hero-content ยังคงถูกซ่อนบน mobile
-         (การ์ด "แจ้งเรื่องร้องเรียน" / "ติดตามสถานะ" ใน .home-action-row
-         ที่อยู่ถัดจาก hero ทำหน้าที่เป็น CTA หลักบนมือถือแทน
-         เพื่อไม่ให้ซ้ำซ้อนกัน) ── */
+  /* ── 4/5. แสดงปุ่ม CTA ในหัว hero บนมือถือเหมือนเวอร์ชัน PC
+         (เดิมถูกซ่อนไว้ ตอนนี้เปิดกลับมาและย่อขนาดให้พอดีจอ) ── */
   .hero-cta-row {
-    display: none;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 10px;
+    margin: 4px 0 18px;
+  }
+
+  .hero-cta-row .hero-btn {
+    flex: 1 1 0;
+    justify-content: center;
+    padding: 11px 10px;
+    font-size: 12.5px;
+    white-space: nowrap;
   }
 
   /* ── 6. dots indicator ของ slider — คงไว้ตามที่ขอ แต่ปรับให้เข้ากับแถบชื่อพื้นทึบ ── */
