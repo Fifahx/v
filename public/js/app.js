@@ -730,7 +730,10 @@ async function loadPinnedTickets() {
 }
 
 // ════ TRACKING ════
+// จำว่าหน้าติดตามกำลังแสดงรายการของฉัน ('my') หรือค้นด้วย Ticket ID ('single')
+let _trackRenderMode = 'my';
 async function loadMyTickets() {
+  _trackRenderMode = 'my';
   const resDiv = document.getElementById('track-result');
   if (!resDiv) return;
 
@@ -751,6 +754,7 @@ async function loadMyTickets() {
   catch (e) { resDiv.innerHTML = `<p style="color:red;">${e.message}</p>`; }
 }
 async function doTrack() {
+  _trackRenderMode = 'single';
   const val = document.getElementById('track-input').value.trim();
   if (!val) { await showAlert('กรุณากรอก Ticket ID', 'ตัวอย่าง: VOC-2568-XXXXXXXX'); return; }
   if (!val.toUpperCase().startsWith('VOC-')) { await showAlert('รูปแบบไม่ถูกต้อง', 'กรุณากรอก Ticket ID ที่ขึ้นต้นด้วย VOC-'); return; }
@@ -773,7 +777,7 @@ function toggleTicketCard(head) {
 }
 
 // ════ TICKET CARD ════
-function buildTicketCard(t, showRating = false) {
+function buildTicketCard(t, showRating = false, isRated = false) {
   const sc = { 'รอดำเนินการ': 'status-pending', 'กำลังดำเนินการ': 'status-inprogress', 'เสร็จสิ้น': 'status-success', 'ปฏิเสธ': 'status-reject', 'รอตรวจสอบ': 'status-review' };
   const pLabel = { 'high': '🔴 เร่งด่วน', 'medium': '🟡 ปานกลาง', 'low': '🟢 ทั่วไป' };
   const pChipCls = { 'high': 'red', 'medium': 'orange', 'low': 'green' };
@@ -783,12 +787,13 @@ function buildTicketCard(t, showRating = false) {
   const tid = t['Ticket ID'] || '-';
   const chipsHtml = `${t['ประเภทเรื่อง'] ? `<span class="chip blue"><i class="fas fa-tag"></i>${t['ประเภทเรื่อง']}</span>` : ''}${t['ความเร่งด่วน'] ? `<span class="chip ${pChipCls[t['ความเร่งด่วน']] || 'gray'}">${pLabel[t['ความเร่งด่วน']] || t['ความเร่งด่วน']}</span>` : ''}${t['ประเภทผู้แจ้ง'] ? `<span class="chip gray"><i class="fas fa-user"></i>${t['ประเภทผู้แจ้ง']}</span>` : ''}`;
   const commentsHtml = commentEntries.length ? `<div class="ticket-card-section"><div class="ticket-card-section-label"><i class="fas fa-comment-dots"></i> ความคิดเห็น (${commentEntries.length} รายการ)</div><div class="comments-log">${commentEntries.map((c, idx) => { const mm = c.match(/^\[(.*?)\]\s*(.*?):/); const timestamp = mm ? mm[1] : '', author = mm ? mm[2] : ''; const text = c.replace(/^\[.*?\].*?:\s*/, '').trim(); const isLatest = idx === commentEntries.length - 1; return `<div class="comment-entry ${isLatest ? 'comment-latest' : ''}"><div class="comment-meta">${isLatest ? '<span class="comment-new-badge">ใหม่</span>' : ''}${author ? `<strong style="color:#2d6a4f;">${author}</strong> · ` : ''}<i class="fas fa-clock" style="font-size:.65rem;"></i> ${timestamp || 'ไม่ระบุเวลา'}</div><div class="comment-text">${text}</div></div>`; }).join('')}</div></div>` : '';
-  return `<div class="ticket-card ticket-collapsible" data-tid="${tid}">
+  return `<div class="ticket-card ticket-collapsible ${showRating ? 'needs-rating' : ''}" data-tid="${tid}">
     <div class="ticket-card-head" onclick="toggleTicketCard(this)" role="button" tabindex="0" aria-expanded="false"
       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTicketCard(this);}">
+      ${showRating ? `<div class="rate-callout"><i class="fas fa-star rate-callout-icon"></i><div><div class="rate-callout-title">ให้คะแนนความพึงพอใจ</div><div class="rate-callout-sub">เรื่องนี้ดำเนินการเสร็จแล้ว — แตะเพื่อเปิดและให้คะแนน</div></div></div>` : ''}
       <div class="ticket-card-header">
         <div><div class="ticket-id"><i class="fas fa-ticket-alt" style="font-size:.75rem;margin-right:4px;"></i>${tid}</div><div class="ticket-subject" style="margin-top:4px;">${t['หัวข้อ'] || '-'}</div></div>
-        <span class="status ${sc[t['สถานะ']] || 'status-pending'}">${statusLabel(t['สถานะ'])}</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;"><span class="status ${sc[t['สถานะ']] || 'status-pending'}">${statusLabel(t['สถานะ'])}</span>${isRated ? '<span class="rated-chip"><i class="fas fa-check-circle"></i> ให้คะแนนแล้ว</span>' : ''}</div>
       </div>
       <div class="ticket-card-brief">
         <div class="ticket-card-section-label"><i class="fas fa-info-circle"></i> ข้อมูลการแจ้ง</div>
@@ -806,16 +811,41 @@ async function renderTicketCards(tickets, showRating = false) {
   const resDiv = document.getElementById('track-result'); let ratedSet = new Set();
   if (showRating && currentUser) { try { const ratedRes = await Promise.all(tickets.filter(t => t['สถานะ'] === 'เสร็จสิ้น').map(t => api.get(`/api/ratings?action=byTicket&id=${encodeURIComponent(t['Ticket ID'] || '')}`))); ratedRes.forEach((res, idx) => { if (res.success && res.ratings && res.ratings.length > 0) { const tid = tickets.filter(t => t['สถานะ'] === 'เสร็จสิ้น')[idx]['Ticket ID']; if (res.ratings.some(r => String(r.username || '').toLowerCase() === String(currentUser.username || '').toLowerCase())) ratedSet.add(tid); } }); } catch (e) { } }
   let html = `<p style="color:#888;margin-bottom:16px;font-size:.88rem;">พบ ${tickets.length} รายการ</p>`;
-  // เรียงตามลำดับสถานะ: รออนุมัติ → อนุมัติ → กำลังดำเนินการ → ดำเนินการเสร็จสิ้น → ปฏิเสธ
-  const sorted = [...tickets].sort((a, b) => statusRank(a['สถานะ']) - statusRank(b['สถานะ']));
-  sorted.forEach(t => { const canRate = showRating && t['สถานะ'] === 'เสร็จสิ้น' && !ratedSet.has(t['Ticket ID']); html += buildTicketCard(t, canRate); });
+  const needsRating = t => showRating && t['สถานะ'] === 'เสร็จสิ้น' && !ratedSet.has(t['Ticket ID']);
+  // เรื่องที่รอให้คะแนนขึ้นบนสุดก่อน จากนั้นเรียงตามลำดับสถานะ
+  // (รออนุมัติ → อนุมัติ → กำลังดำเนินการ → ดำเนินการเสร็จสิ้น → ปฏิเสธ)
+  const sorted = [...tickets].sort((a, b) =>
+    (needsRating(b) - needsRating(a)) || (statusRank(a['สถานะ']) - statusRank(b['สถานะ'])));
+  const pendingRate = sorted.filter(needsRating).length;
+  if (pendingRate > 0) html = `<div class="rate-reminder-bar"><i class="fas fa-star"></i> มี ${pendingRate} เรื่องที่รอให้คะแนนความพึงพอใจ</div>` + html;
+  sorted.forEach(t => { html += buildTicketCard(t, needsRating(t), ratedSet.has(t['Ticket ID'])); });
   resDiv.innerHTML = html;
 }
 
 // ════ RATING ════
 function buildRatingBox(ticketId) { return `<div class="rating-box" id="rbox-${ticketId}"><h4>ให้คะแนนการบริการ</h4><div class="star-row" id="stars-${ticketId}">${[1, 2, 3, 4, 5].map(i => `<button class="star-btn dim" onclick="selectStar('${ticketId}',${i})">⭐</button>`).join('')}</div><textarea class="rating-comment" id="rc-${ticketId}" rows="2" placeholder="ความคิดเห็น (ไม่บังคับ)"></textarea><button class="btn-rate" onclick="submitRating('${ticketId}')"><i class="fas fa-paper-plane"></i> ส่งคะแนน</button></div>`; }
 function selectStar(tid, score) { ratingSelection = score; const row = document.getElementById('stars-' + tid); if (!row) return; row.querySelectorAll('.star-btn').forEach((b, i) => { b.classList.toggle('lit', i < score); b.classList.toggle('dim', i >= score); b.style.transform = i < score ? 'scale(1.1)' : 'scale(1)'; }); }
-async function submitRating(ticketId) { if (!ratingSelection) { await showAlert('กรุณาเลือกคะแนน', ''); return; } const comment = document.getElementById('rc-' + ticketId)?.value.trim(); try { const res = await api.post('/api/ratings', { ticketId, username: currentUser?.username || '', score: ratingSelection, comment }); if (res.success) { const box = document.getElementById('rbox-' + ticketId); if (box) box.innerHTML = `<div style="text-align:center;padding:16px;color:#2d6a4f;font-weight:700;">✅ ขอบคุณสำหรับ ${'⭐'.repeat(ratingSelection)} คะแนน</div>`; ratingSelection = 0; } else await showAlert('แจ้งเตือน', res.message); } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); } }
+async function submitRating(ticketId) {
+  if (!ratingSelection) { await showAlert('กรุณาเลือกคะแนน', ''); return; } const comment = document.getElementById('rc-' + ticketId)?.value.trim(); try {
+    const res = await api.post('/api/ratings', { ticketId, username: currentUser?.username || '', score: ratingSelection, comment }); if (res.success) {
+      const box = document.getElementById('rbox-' + ticketId);
+      if (box) box.innerHTML = `<div style="text-align:center;padding:16px;color:#2d6a4f;font-weight:700;">✅ ขอบคุณสำหรับ ${'⭐'.repeat(ratingSelection)} คะแนน</div>`;
+      // เอาสถานะ "รอให้คะแนน" ออกจากการ์ดทันที แล้วติดป้ายว่าให้คะแนนแล้ว
+      const card = document.querySelector(`.ticket-card[data-tid="${ticketId}"]`);
+      if (card) {
+        card.classList.remove('needs-rating');
+        card.querySelector('.rate-callout')?.remove();
+        const statusWrap = card.querySelector('.ticket-card-header .status')?.parentElement;
+        if (statusWrap && !statusWrap.querySelector('.rated-chip')) {
+          statusWrap.insertAdjacentHTML('beforeend', '<span class="rated-chip"><i class="fas fa-check-circle"></i> ให้คะแนนแล้ว</span>');
+        }
+      }
+      ratingSelection = 0;
+      // โหลดรายการใหม่เพื่อให้การ์ดกลับไปอยู่ตำแหน่งตามลำดับสถานะ
+      if (_trackRenderMode === 'my') setTimeout(() => loadMyTickets(), 1500);
+    } else await showAlert('แจ้งเตือน', res.message);
+  } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
+}
 
 // ════ FAQ ════
 async function loadFaq() { const container = document.getElementById('faq-content'); if (!container) return; container.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>'; try { const res = await api.get('/api/faq'); if (res.success) renderFaq(res.faqs || []); else container.innerHTML = '<p style="color:red;">โหลด FAQ ไม่สำเร็จ</p>'; } catch (e) { container.innerHTML = `<p style="color:red;">${e.message}</p>`; } }
