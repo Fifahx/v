@@ -550,6 +550,93 @@ function notManual() {
 }
 window.notManual = notManual;
 
+// ════ MANUAL VIEWER ════
+// เปิดคู่มือในหน้าต่างกลางจอ — โหลดรูปก่อน ถ้าไม่มีไฟล์จะ fallback ไป notManual()
+let _manualZoomed = false;
+function _openManualModal(title, downloadUrl) {
+  document.getElementById('manual-modal-name').textContent = title || 'คู่มือการใช้งาน';
+  const dl = document.getElementById('manual-download');
+  if (dl) {
+    if (downloadUrl) { dl.href = downloadUrl; dl.style.display = ''; }
+    else { dl.style.display = 'none'; }
+  }
+  document.getElementById('manual-modal-body').scrollTop = 0;
+  document.getElementById('manual-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+// รูปภาพ (Infographic) — โหลดรูปก่อน ถ้าไม่มีไฟล์จะ fallback ไป notManual()
+function openManual(src, title) {
+  const modal = document.getElementById('manual-modal');
+  const img = document.getElementById('manual-modal-img');
+  const frame = document.getElementById('manual-modal-frame');
+  if (!modal || !img) { notManual(); return; }
+  const url = encodeURI(src);
+  const probe = new Image();
+  probe.onload = () => {
+    if (frame) { frame.src = 'about:blank'; frame.style.display = 'none'; }
+    img.src = url;
+    img.style.display = '';
+    const dl = document.getElementById('manual-download');
+    if (dl) dl.setAttribute('download', '');
+    _manualZoomed = false;
+    _applyManualZoom();
+    document.getElementById('manual-zoom-btn').style.display = '';
+    _openManualModal(title, url);
+  };
+  probe.onerror = () => notManual(); // ยังไม่มีไฟล์คู่มือ → แจ้งเตือนเหมือนเดิม
+  probe.src = url;
+}
+
+// เอกสาร PDF — ฝัง preview ไว้ในหน้าต่างเดียวกัน ไม่ต้องเปิดแท็บใหม่
+function openManualPdf(previewUrl, title, openUrl) {
+  const modal = document.getElementById('manual-modal');
+  const frame = document.getElementById('manual-modal-frame');
+  const img = document.getElementById('manual-modal-img');
+  if (!modal || !frame) { if (openUrl) window.open(openUrl, '_blank'); else notManual(); return; }
+  if (img) { img.removeAttribute('src'); img.style.display = 'none'; }
+  frame.src = previewUrl;
+  frame.style.display = '';
+  _manualZoomed = false;
+  _applyManualZoom();
+  const zb = document.getElementById('manual-zoom-btn');
+  if (zb) zb.style.display = 'none'; // PDF มีปุ่มซูมของตัวเองอยู่แล้ว
+  const dl = document.getElementById('manual-download');
+  if (dl) dl.removeAttribute('download');   // ลิงก์ภายนอก ให้เปิดแทนดาวน์โหลดตรง
+  _openManualModal(title, openUrl);
+}
+
+function closeManual() {
+  const modal = document.getElementById('manual-modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  document.body.style.overflow = '';
+  const frame = document.getElementById('manual-modal-frame');
+  if (frame) { frame.src = 'about:blank'; }  // หยุดโหลด PDF ตอนปิด
+}
+
+function toggleManualZoom() {
+  _manualZoomed = !_manualZoomed;
+  _applyManualZoom();
+}
+
+function _applyManualZoom() {
+  const body = document.getElementById('manual-modal-body');
+  const btn = document.getElementById('manual-zoom-btn');
+  if (!body) return;
+  body.classList.toggle('zoomed', _manualZoomed);
+  if (btn) btn.innerHTML = `<i class="fas fa-search-${_manualZoomed ? 'minus' : 'plus'}"></i>`;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !document.getElementById('manual-modal')?.classList.contains('hidden')) closeManual();
+});
+
+window.openManual = openManual;
+window.openManualPdf = openManualPdf;
+window.closeManual = closeManual;
+window.toggleManualZoom = toggleManualZoom;
+
 async function finalSubmit() {
   if (!currentUser && isClientRateLimited()) { await showAlert('กรุณารอสักครู่', `กรุณารออีก ${clientCooldownRemaining()} นาที`); return; }
   // ถ้า onTurnstileSuccess ถูกเรียกแล้วแต่ _turnstileReady ยัง false (race condition)
