@@ -6337,10 +6337,26 @@ body.font-xl {
 
   .hero-overlay {
     background: linear-gradient(180deg,
-        rgba(10, 15, 10, .6) 0%,
-        rgba(10, 15, 10, .1) 35%,
-        rgba(10, 15, 10, .1) 55%,
+        rgba(10, 15, 10, .68) 0%,
+        rgba(10, 15, 10, .38) 35%,
+        rgba(10, 15, 10, .30) 60%,
         rgba(8, 13, 8, .9) 100%);
+  }
+
+  /* ── 3.1 ทำให้รูปผู้บริหารเด่นขึ้นแบบเวอร์ชัน PC:
+         ขยายกรอบรูปให้ใหญ่ขึ้น ชิดกึ่งกลาง และดันขึ้นมาใกล้ข้อความ ── */
+  .hero-mgmt-panel {
+    max-width: 100%;
+    margin: -4px auto 0;
+  }
+
+  .mgmt-h-track-wrap {
+    height: 340px;
+  }
+
+  .mgmt-h-img {
+    max-width: 300px;
+    height: 340px;
   }
 
   /* ── 3. แถบชื่อ-ตำแหน่งผู้บริหาร: ติดขอบล่างสุดของกรอบรูป
@@ -6382,5 +6398,17 @@ body.font-xl {
   /* ── 6. dots indicator ของ slider — คงไว้ตามที่ขอ แต่ปรับให้เข้ากับแถบชื่อพื้นทึบ ── */
   .mgmt-dots {
     margin-top: 8px;
+  }
+}
+
+/* จอเล็กมาก: ลดขนาดรูปผู้บริหารลงอีกนิด ไม่ให้ล้นจอ แต่ยังคงเด่นกว่าเดิม */
+@media (max-width: 400px) {
+  .mgmt-h-track-wrap {
+    height: 300px;
+  }
+
+  .mgmt-h-img {
+    max-width: 260px;
+    height: 300px;
   }
 }
