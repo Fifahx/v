@@ -1315,6 +1315,7 @@ function _resetMenuToGuest() {
     <a onclick="navigateTo('home')"     id="nav-home">หน้าหลัก</a>
     <a onclick="navigateTo('portal')"   id="nav-portal">แจ้งเรื่อง</a>
     <a onclick="navigateTo('tracking')" id="nav-tracking">ติดตามสถานะ</a>
+    <a onclick="scrollToManual()"       id="nav-manual">คู่มือ</a>
     <a onclick="navigateTo('faq')"      id="nav-faq">คำถามที่พบบ่อย</a>`;
   if (right) right.innerHTML = `
     <a onclick="navigateTo('login')"    class="nav-menu header-auth-desktop" style="color:rgba(255,255,255,.85);font-size:.85rem;"> เข้าสู่ระบบ</a>
