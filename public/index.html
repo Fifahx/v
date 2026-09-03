@@ -78,7 +78,9 @@
                 onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'color:#fff;font-weight:700;font-size:.75rem;\'>SCI</span>'">
             </a>
           </div>
-          <div class="header-brand">
+          <div class="header-brand" id="header-brand" onclick="navigateTo('home')" role="link" tabindex="0"
+            title="กลับหน้าหลัก"
+            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateTo('home');}">
             <div class="header-brand-title"><span class="brand-voc">VOC</span> System</div>
             <div class="header-brand-sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</div>
           </div>
