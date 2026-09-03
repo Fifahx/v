@@ -6291,13 +6291,16 @@ body.font-xl {
    ════════════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
 
-  /* ── 0. ลด gap ของ grid hero-content บนมือถือ ให้รูปขยับขึ้นมาชิดข้อความจริง ── */
+  /* ── 0. บังคับ layout hero-content บนมือถือเป็น flex column ไม่มีช่องว่าง
+         ใช้ !important กันชนกับ rule อื่นที่อาจ override ทับ ── */
   .hero-content {
-    gap: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
   }
 
   .hero-section {
-    padding: 2.5rem 16px 5rem;
+    padding: 2.5rem 16px 5rem !important;
   }
 
   /* ── 1. ตัดคำซ้ำกับ Header: ซ่อน "VOC System" h1 เดิม
@@ -6334,7 +6337,7 @@ body.font-xl {
 
   .hero-sub {
     font-size: 10px;
-    margin-bottom: 4px;
+    margin-bottom: 0 !important;
   }
 
   /* ── ซ่อนปุ่ม CTA ในหัว hero บนมือถือ
@@ -6362,17 +6365,17 @@ body.font-xl {
   /* ── 3.1 ทำให้รูปผู้บริหารเด่นขึ้นแบบเวอร์ชัน PC:
          ขยายกรอบรูปให้ใหญ่ขึ้น ชิดกึ่งกลาง และดันขึ้นมาใกล้ข้อความ ── */
   .hero-mgmt-panel {
-    max-width: 100%;
-    margin: -28px auto 0;
+    max-width: 100% !important;
+    margin: 0 auto !important;
   }
 
   .mgmt-h-track-wrap {
-    height: 360px;
+    height: 360px !important;
   }
 
   .mgmt-h-img {
-    max-width: 320px;
-    height: 360px;
+    max-width: 320px !important;
+    height: 360px !important;
   }
 
   /* ── 3. แถบชื่อ-ตำแหน่งผู้บริหาร: ติดขอบล่างสุดของกรอบรูป
