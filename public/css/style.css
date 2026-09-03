@@ -6311,7 +6311,8 @@ body.font-xl {
   }
 
   .hero-section {
-    padding: 2.5rem 12px 3rem !important;
+    padding: 2.5rem 12px 1.25rem !important;
+    min-height: 0 !important;
   }
 
   /* ── 1. ตัดคำซ้ำกับ Header: ซ่อน "VOC System" h1 เดิม
@@ -6356,13 +6357,19 @@ body.font-xl {
     display: block;
     position: relative;
     z-index: 2;
+    width: max-content;
+    max-width: calc(100% - 24px);
     text-align: center;
-    font-size: 13px;
-    line-height: 1.5;
-    color: rgba(255, 255, 255, .88);
-    text-shadow: 0 1px 6px rgba(0, 0, 0, .5);
-    margin: 14px 0 0;
-    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.6;
+    color: #fff;
+    text-shadow: none;
+    background: rgba(5, 20, 12, .62);
+    backdrop-filter: blur(3px);
+    border-radius: 20px;
+    margin: 14px auto 0;
+    padding: 6px 14px;
   }
 
   /* ── ซ่อนปุ่ม CTA ในหัว hero บนมือถือ
