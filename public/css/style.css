@@ -4049,6 +4049,15 @@ html {
   }
 }
 
+/* ════════════════════════════════════════════════════════
+   Mobile-only CTA section (ย้ายออกจาก hero image ตาม fix)
+   ซ่อนไว้เป็นค่าเริ่มต้นเสมอ — จะถูกเปิดใน @media(max-width:767px) เท่านั้น
+   จึงไม่กระทบ desktop layout
+   ════════════════════════════════════════════════════════ */
+.hero-mobile-cta-section {
+  display: none;
+}
+
 /* ════ FIX #4 — admin category filter ════ */
 .admin-cat-filter {
   display: flex;
@@ -6279,6 +6288,144 @@ body.font-xl {
   }
 
   .footer-stats-sep {
+    display: none;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HERO — MOBILE FIX (< 768px)
+   แก้เฉพาะ mobile breakpoint ตาม hero-mobile-fix-prompt.md
+   ไม่แตะ CSS ของ desktop breakpoint ใด ๆ ทั้งสิ้น
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+  /* ── 1. ตัดคำซ้ำกับ Header: ซ่อน "VOC System" h1 เดิม
+         แล้วใช้ quote "ทุกเสียงมีความหมาย" เป็นหัวข้อหลักแทน ── */
+  .hero-title {
+    display: none;
+  }
+
+  .hero-slogan-block {
+    background: none;
+    border-left: none;
+    backdrop-filter: none;
+    padding: 0;
+    margin: 0 0 6px;
+    max-width: 100%;
+  }
+
+  .hero-slogan-main {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--primary);
+    line-height: 1.35;
+    margin-bottom: 4px;
+    text-shadow: none;
+    letter-spacing: normal;
+  }
+
+  .hero-slogan-sub {
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, .9);
+    line-height: 1.5;
+  }
+
+  .hero-sub {
+    font-size: 10px;
+    margin-bottom: 16px;
+  }
+
+  /* ── 2. Dark gradient overlay (scrim) 2 โซน ทับรูปพื้นหลัง
+         โซนบน (h1+คำโปรย): เข้ม 60% ไล่ลงเหลือ 10% ที่ 35% ของความสูง
+         โซนล่าง (ชื่อ-ตำแหน่ง): เข้มขึ้นอีกครั้งจาก 55% ถึง 90% ที่ล่างสุด ── */
+  .hero-section {
+    background: url('https://i.postimg.cc/q7mcB4Dh/khnaw-thy-mry.png') center / cover no-repeat;
+  }
+
+  .hero-overlay {
+    background: linear-gradient(180deg,
+        rgba(10, 15, 10, .6) 0%,
+        rgba(10, 15, 10, .1) 35%,
+        rgba(10, 15, 10, .1) 55%,
+        rgba(8, 13, 8, .9) 100%);
+  }
+
+  /* ── 3. แถบชื่อ-ตำแหน่งผู้บริหาร: ติดขอบล่างสุดของกรอบรูป
+         พื้นทึบเข้ม ไม่ใช่ลอยบนรูปเปล่า ๆ แบบเดิม ── */
+  .mgmt-h-info {
+    background: rgba(6, 10, 6, .85);
+    padding: 6px 14px;
+    min-height: auto;
+    border-radius: 0 0 10px 10px;
+  }
+
+  .mgmt-h-name {
+    font-size: 11px;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 2px;
+    text-shadow: none;
+  }
+
+  .mgmt-h-pos {
+    font-size: 8px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, .75);
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    backdrop-filter: none;
+    text-shadow: none;
+    display: block;
+  }
+
+  /* ── 4/5. ย้ายปุ่ม CTA ออกจากรูป → static section ด้านล่าง hero
+         (เห็นทันทีต่อ scroll ปกติ ไม่ต้องพึ่ง slider) ── */
+  .hero-cta-row {
+    display: none;
+  }
+
+  .hero-mobile-cta-section {
+    display: block;
+    background: var(--white);
+    padding: 14px 16px 18px;
+  }
+
+  .hero-mobile-cta-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .hero-mobile-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 8px;
+    border-radius: 30px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: .82rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .hero-mobile-btn.primary {
+    background: var(--primary);
+    color: #2d6a4f;
+  }
+
+  .hero-mobile-btn.outline {
+    background: #fff;
+    color: #2d6a4f;
+    border: 1.5px solid rgba(45, 106, 79, .35);
+  }
+
+  /* ── 6. ลบ dots indicator ของ slider ── */
+  .mgmt-dots {
     display: none;
   }
 }
