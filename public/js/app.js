@@ -741,6 +741,16 @@ async function doTrack() {
 function expandPinDetail(ticketId, btn) { const el = document.getElementById('pin-detail-' + ticketId); if (!el) return; api.get('/api/tickets?action=byId&id=' + encodeURIComponent(ticketId)).then(res => { if (res.success && res.ticket) { el.innerHTML = (res.ticket['รายละเอียด'] || '').replace(/\n/g, '<br>'); if (btn) btn.style.display = 'none'; } }); }
 function expandDetail(ticketId, encodedText) { const el = document.getElementById('detail-' + ticketId); if (!el) return; el.innerText = decodeURIComponent(encodedText); const btn = el.nextElementSibling; if (btn && btn.classList.contains('btn-expand')) btn.style.display = 'none'; }
 
+// ── Accordion: เปิด/ปิดรายละเอียดเต็มของการ์ดติดตามสถานะ ──────────────────
+function toggleTicketCard(head) {
+  const card = head.closest('.ticket-collapsible');
+  if (!card) return;
+  const open = card.classList.toggle('open');
+  head.setAttribute('aria-expanded', open ? 'true' : 'false');
+  const hint = head.querySelector('.tc-hint-text');
+  if (hint) hint.textContent = open ? 'ย่อรายละเอียด' : 'ดูรายละเอียด';
+}
+
 // ════ TICKET CARD ════
 function buildTicketCard(t, showRating = false) {
   const sc = { 'รอดำเนินการ': 'status-pending', 'กำลังดำเนินการ': 'status-inprogress', 'เสร็จสิ้น': 'status-success', 'ปฏิเสธ': 'status-reject', 'รอตรวจสอบ': 'status-review' };
@@ -749,7 +759,26 @@ function buildTicketCard(t, showRating = false) {
   const isDone = t['สถานะ'] === 'เสร็จสิ้น'; const comments = t['Comments'] || ''; const commentEntries = comments ? comments.split('\n---\n').filter(c => c.trim()) : [];
   const userNote = t['หมายเหตุผู้ใช้'] || ''; const fileInfo = t['FileURL'] || '';
   const detailFull = t['รายละเอียด'] || ''; const detailShort = detailFull.length > 150 ? detailFull.substring(0, 150) + '...' : detailFull; const needExpand = detailFull.length > 150;
-  return `<div class="ticket-card"><div class="ticket-card-header"><div><div class="ticket-id"><i class="fas fa-ticket-alt" style="font-size:.75rem;margin-right:4px;"></i>${t['Ticket ID'] || '-'}</div><div class="ticket-subject" style="margin-top:4px;">${t['หัวข้อ'] || '-'}</div></div><span class="status ${sc[t['สถานะ']] || 'status-pending'}">${t['สถานะ'] || '-'}</span></div><div class="ticket-card-body"><div class="ticket-card-section"><div class="ticket-card-section-label"><i class="fas fa-info-circle"></i> ข้อมูลการแจ้ง</div><div class="ticket-meta-chips">${t['ประเภทเรื่อง'] ? `<span class="chip blue"><i class="fas fa-tag"></i>${t['ประเภทเรื่อง']}</span>` : ''}${t['ความเร่งด่วน'] ? `<span class="chip ${pChipCls[t['ความเร่งด่วน']] || 'gray'}">${pLabel[t['ความเร่งด่วน']] || t['ความเร่งด่วน']}</span>` : ''}${t['ประเภทผู้แจ้ง'] ? `<span class="chip gray"><i class="fas fa-user"></i>${t['ประเภทผู้แจ้ง']}</span>` : ''}</div></div><div class="ticket-card-section"><div class="ticket-card-section-label"><i class="fas fa-align-left"></i> รายละเอียด</div><div class="ticket-detail-text" id="detail-${t['Ticket ID']}">${needExpand ? detailShort : detailFull}</div>${needExpand ? `<button class="btn-expand" onclick="expandDetail('${t['Ticket ID']}','${encodeURIComponent(detailFull)}')">ดูเพิ่มเติม ▼</button>` : ''}</div>${userNote ? `<div class="ticket-card-section"><div class="ticket-card-section-label"><i class="fas fa-sticky-note"></i> หมายเหตุจากผู้แจ้ง</div><div class="user-note-box" style="white-space:pre-wrap;line-height:1.75;">${userNote}</div></div>` : ''} ${fileInfo ? `<div class="ticket-card-section"><div class="ticket-card-section-label"><i class="fas fa-paperclip"></i> ไฟล์แนบ</div><div class="file-attach-display">${fileInfo.startsWith('https://') ? `<a href="${fileInfo}" target="_blank" rel="noopener" style="color:var(--dgreen);font-weight:700;text-decoration:none;"><i class="fas fa-external-link-alt"></i> ${fileInfo} </a>` : `<i class="fas fa-file-alt" style="color:var(--dgreen);"></i><span style="font-size:.9rem;color:#555;">${fileInfo}</span>`}</div></div>` : ''}<div class="ticket-card-section"><div class="ticket-card-section-label"><i class="fas fa-tasks"></i> ความคืบหน้า</div>${buildProgressBar(t['สถานะ'])}</div>${commentEntries.length ? `<div class="ticket-card-section"><div class="ticket-card-section-label"><i class="fas fa-comment-dots"></i> ความคิดเห็น (${commentEntries.length} รายการ)</div><div class="comments-log">${commentEntries.map((c, idx) => { const mm = c.match(/^\[(.*?)\]\s*(.*?):/); const timestamp = mm ? mm[1] : '', author = mm ? mm[2] : ''; const text = c.replace(/^\[.*?\].*?:\s*/, '').trim(); const isLatest = idx === commentEntries.length - 1; return `<div class="comment-entry ${isLatest ? 'comment-latest' : ''}"><div class="comment-meta">${isLatest ? '<span class="comment-new-badge">ใหม่</span>' : ''}${author ? `<strong style="color:#2d6a4f;">${author}</strong> · ` : ''}<i class="fas fa-clock" style="font-size:.65rem;"></i> ${timestamp || 'ไม่ระบุเวลา'}</div><div class="comment-text">${text}</div></div>`; }).join('')}</div></div>` : ''} ${showRating && isDone ? buildRatingBox(t['Ticket ID']) : ''}</div><div class="ticket-card-footer"><span><i class="fas fa-calendar-alt"></i>${t['วันที่แจ้ง'] || '-'}</span><span><i class="fas fa-clock"></i>กำหนด: ${t['กำหนดตอบกลับ'] || '-'}</span><span><i class="fas fa-user-tie"></i>${t['ผู้รับผิดชอบ'] || 'รอมอบหมาย'}</span></div></div>`;
+  const tid = t['Ticket ID'] || '-';
+  const chipsHtml = `${t['ประเภทเรื่อง'] ? `<span class="chip blue"><i class="fas fa-tag"></i>${t['ประเภทเรื่อง']}</span>` : ''}${t['ความเร่งด่วน'] ? `<span class="chip ${pChipCls[t['ความเร่งด่วน']] || 'gray'}">${pLabel[t['ความเร่งด่วน']] || t['ความเร่งด่วน']}</span>` : ''}${t['ประเภทผู้แจ้ง'] ? `<span class="chip gray"><i class="fas fa-user"></i>${t['ประเภทผู้แจ้ง']}</span>` : ''}`;
+  const commentsHtml = commentEntries.length ? `<div class="ticket-card-section"><div class="ticket-card-section-label"><i class="fas fa-comment-dots"></i> ความคิดเห็น (${commentEntries.length} รายการ)</div><div class="comments-log">${commentEntries.map((c, idx) => { const mm = c.match(/^\[(.*?)\]\s*(.*?):/); const timestamp = mm ? mm[1] : '', author = mm ? mm[2] : ''; const text = c.replace(/^\[.*?\].*?:\s*/, '').trim(); const isLatest = idx === commentEntries.length - 1; return `<div class="comment-entry ${isLatest ? 'comment-latest' : ''}"><div class="comment-meta">${isLatest ? '<span class="comment-new-badge">ใหม่</span>' : ''}${author ? `<strong style="color:#2d6a4f;">${author}</strong> · ` : ''}<i class="fas fa-clock" style="font-size:.65rem;"></i> ${timestamp || 'ไม่ระบุเวลา'}</div><div class="comment-text">${text}</div></div>`; }).join('')}</div></div>` : '';
+  return `<div class="ticket-card ticket-collapsible" data-tid="${tid}">
+    <div class="ticket-card-head" onclick="toggleTicketCard(this)" role="button" tabindex="0" aria-expanded="false"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTicketCard(this);}">
+      <div class="ticket-card-header">
+        <div><div class="ticket-id"><i class="fas fa-ticket-alt" style="font-size:.75rem;margin-right:4px;"></i>${tid}</div><div class="ticket-subject" style="margin-top:4px;">${t['หัวข้อ'] || '-'}</div></div>
+        <span class="status ${sc[t['สถานะ']] || 'status-pending'}">${t['สถานะ'] || '-'}</span>
+      </div>
+      <div class="ticket-card-brief">
+        <div class="ticket-card-section-label"><i class="fas fa-info-circle"></i> ข้อมูลการแจ้ง</div>
+        <div class="ticket-meta-chips">${chipsHtml || '<span class="chip gray">ไม่ระบุ</span>'}</div>
+        <div class="ticket-brief-date"><i class="fas fa-calendar-alt"></i> แจ้งเมื่อ ${t['วันที่แจ้ง'] || '-'}</div>
+      </div>
+      <div class="tc-toggle-hint"><span class="tc-hint-text">ดูรายละเอียด</span><i class="fas fa-chevron-down tc-chevron"></i></div>
+    </div>
+    <div class="ticket-card-body"><div class="ticket-card-section"><div class="ticket-card-section-label"><i class="fas fa-align-left"></i> รายละเอียด</div><div class="ticket-detail-text" id="detail-${tid}">${needExpand ? detailShort : detailFull}</div>${needExpand ? `<button class="btn-expand" onclick="event.stopPropagation();expandDetail('${tid}','${encodeURIComponent(detailFull)}')">ดูเพิ่มเติม ▼</button>` : ''}</div>${userNote ? `<div class="ticket-card-section"><div class="ticket-card-section-label"><i class="fas fa-sticky-note"></i> หมายเหตุจากผู้แจ้ง</div><div class="user-note-box" style="white-space:pre-wrap;line-height:1.75;">${userNote}</div></div>` : ''}${fileInfo ? `<div class="ticket-card-section"><div class="ticket-card-section-label"><i class="fas fa-paperclip"></i> ไฟล์แนบ</div><div class="file-attach-display">${fileInfo.startsWith('https://') ? `<a href="${fileInfo}" target="_blank" rel="noopener" style="color:var(--dgreen);font-weight:700;text-decoration:none;"><i class="fas fa-external-link-alt"></i> ${fileInfo} </a>` : `<i class="fas fa-file-alt" style="color:var(--dgreen);"></i><span style="font-size:.9rem;color:#555;">${fileInfo}</span>`}</div></div>` : ''}<div class="ticket-card-section"><div class="ticket-card-section-label"><i class="fas fa-tasks"></i> ความคืบหน้า</div>${buildProgressBar(t['สถานะ'])}</div>${commentsHtml}${showRating && isDone ? buildRatingBox(tid) : ''}</div>
+    <div class="ticket-card-footer"><span><i class="fas fa-calendar-alt"></i>${t['วันที่แจ้ง'] || '-'}</span><span><i class="fas fa-clock"></i>กำหนด: ${t['กำหนดตอบกลับ'] || '-'}</span><span><i class="fas fa-user-tie"></i>${t['ผู้รับผิดชอบ'] || 'รอมอบหมาย'}</span></div>
+  </div>`;
 }
 
 async function renderTicketCards(tickets, showRating = false) {
@@ -1222,7 +1251,15 @@ function renderAdminTickets(tickets) {
   const pClass = { 'high': 'p-high', 'medium': 'p-medium', 'low': 'p-low' };
   const categories = [...new Set(tickets.map(t => t['ประเภทเรื่อง']).filter(Boolean))].sort();
   let html = '';
+  // ── แถบเครื่องมือ: ช่องค้นหา + ตัวกรองประเภท ──────────────────────────────
+  html += `<div class="admin-toolbar">
+    <div class="admin-search-wrap">
+      <i class="fas fa-search admin-search-icon"></i>
+      <input type="text" id="admin-ticket-search" class="admin-search-input" placeholder="ค้นหา Ticket ID / ชื่อผู้ใช้ / ชื่อ-นามสกุล" autocomplete="off" oninput="onAdminSearch(this.value)">
+      <button type="button" class="admin-search-clear" id="admin-search-clear" onclick="clearAdminSearch()" title="ล้างคำค้นหา" style="display:none;"><i class="fas fa-times"></i></button>
+    </div>`;
   if (categories.length) { html += `<div class="voc-dropdown-wrap" id="admin-cat-filter"><button class="voc-dropdown-btn" onclick="toggleDropdown('admin-cat-dd')" type="button"><i class="fas fa-filter"></i><span id="admin-cat-label">ทั้งหมด</span><i class="fas fa-chevron-down voc-dropdown-arrow"></i></button><div class="voc-dropdown-menu" id="admin-cat-dd"><button class="voc-dropdown-item active" data-cat="all" onclick="filterByCategory('all',this)"><i class="fas fa-list" style="font-size:.75rem;color:#888;"></i> ทั้งหมด</button>${categories.map(c => `<button class="voc-dropdown-item" data-cat="${c.replace(/"/g, '&quot;')}" onclick="filterByCategory('${c.replace(/'/g, "&#39;")}',this)">${c}</button>`).join('')}</div></div>`; }
+  html += `</div>`;
   if (!tickets.length) { container.innerHTML = html + '<div class="no-tickets"><i class="fas fa-inbox" style="font-size:2.5rem;color:#ddd;"></i><p style="margin-top:12px;">ไม่มีเรื่อง</p></div>'; return; }
   html += `<p style="color:#888;margin-bottom:14px;font-size:.85rem;" id="admin-ticket-count">แสดง ${tickets.length} รายการ</p>`;
   tickets.forEach(t => {
@@ -1230,22 +1267,110 @@ function renderAdminTickets(tickets) {
     const isPinned = String(t['Pinned'] || '').toLowerCase() === 'true';
     const comments = t['Comments'] || ''; const commentEntries = comments ? comments.split('\n---\n').filter(c => c.trim()) : [];
     const detail = t['รายละเอียด'] || '(ไม่มีรายละเอียด)'; const detailShort = detail.length > 200 ? detail.substring(0, 200) + '...' : detail; const needExpand = detail.length > 200;
-    html += `<div class="admin-ticket-card ${scColor[t['สถานะ']] || 'pending'} ${isHigh ? 'priority-high' : ''}" id="card-${tid}" data-category="${(t['ประเภทเรื่อง'] || '').replace(/"/g, '&quot;')}">
-      <div class="admin-card-top"><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">${isHigh ? '<span>🚨</span>' : ''}<span class="ticket-id" style="font-size:.96rem;">${tid}</span><span class="priority-badge ${pClass[pr] || 'p-low'}">${pLabel[pr] || pr}</span></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><span class="status ${scTag[t['สถานะ']] || 'status-pending'}">${t['สถานะ']}</span><button id="pin-btn-${tid}" onclick="togglePin('${tid}',${!isPinned})" style="padding:3px 9px;border-radius:8px;border:1px solid ${isPinned ? '#2d6a4f' : '#ddd'};background:${isPinned ? '#e8f5e9' : '#fff'};font-size:.74rem;color:${isPinned ? '#2d6a4f' : '#aaa'};font-family:'Sarabun',sans-serif;"><i class="fas fa-thumbtack"></i>${isPinned ? 'แสดงอยู่' : 'ปักหมุด'}</button>${currentUser && currentUser.role === 'superadmin' ? `<button onclick="deleteTicket('${tid}')" style="padding:3px 9px;border-radius:8px;border:1px solid #f5c6c6;background:#fff5f5;font-size:.74rem;color:#d00000;font-family:'Sarabun',sans-serif;"><i class="fas fa-trash-alt"></i> ลบ</button>` : ''}</div></div>
-      <div style="font-size:.97rem;font-weight:700;margin-bottom:10px;">${t['หัวข้อ'] || '-'}</div>
-      <div class="admin-card-meta"><span><strong>ประเภทผู้แจ้ง:</strong> ${t['ประเภทผู้แจ้ง'] || '-'}</span><span><strong>ชื่อ:</strong> ${t['ชื่อ'] || '-'}</span><span><strong>ประเภทเรื่อง:</strong> ${t['ประเภทเรื่อง'] || '-'}</span><span><strong>วันที่แจ้ง:</strong> ${t['วันที่แจ้ง'] || '-'}</span><span><strong>กำหนดตอบกลับ:</strong> ${t['กำหนดตอบกลับ'] || '-'}</span><span><strong>ผู้รับผิดชอบ:</strong> ${t['ผู้รับผิดชอบ'] || '-'}</span></div>
+    // ข้อมูลที่ใช้ค้นหา: Ticket ID + ชื่อผู้ใช้ + ชื่อ-นามสกุล
+    const searchKey = _normSearch([tid, t['Username'], t['ชื่อ']].filter(Boolean).join(' '));
+    html += `<div class="admin-ticket-card admin-collapsible ${scColor[t['สถานะ']] || 'pending'} ${isHigh ? 'priority-high' : ''}" id="card-${tid}" data-category="${(t['ประเภทเรื่อง'] || '').replace(/"/g, '&quot;')}" data-search="${searchKey.replace(/"/g, '&quot;')}">
+      <div class="admin-card-head" onclick="toggleAdminCard(this)" role="button" tabindex="0" aria-expanded="false"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAdminCard(this);}">
+        <div class="admin-card-top"><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">${isHigh ? '<span>🚨</span>' : ''}<span class="ticket-id" style="font-size:.96rem;">${tid}</span><span class="priority-badge ${pClass[pr] || 'p-low'}">${pLabel[pr] || pr}</span></div><div class="admin-card-actions" onclick="event.stopPropagation();" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><span class="status ${scTag[t['สถานะ']] || 'status-pending'}">${t['สถานะ']}</span><button id="pin-btn-${tid}" onclick="togglePin('${tid}',${!isPinned})" style="padding:3px 9px;border-radius:8px;border:1px solid ${isPinned ? '#2d6a4f' : '#ddd'};background:${isPinned ? '#e8f5e9' : '#fff'};font-size:.74rem;color:${isPinned ? '#2d6a4f' : '#aaa'};font-family:'Sarabun',sans-serif;"><i class="fas fa-thumbtack"></i>${isPinned ? 'แสดงอยู่' : 'ปักหมุด'}</button>${currentUser && currentUser.role === 'superadmin' ? `<button onclick="deleteTicket('${tid}')" style="padding:3px 9px;border-radius:8px;border:1px solid #f5c6c6;background:#fff5f5;font-size:.74rem;color:#d00000;font-family:'Sarabun',sans-serif;"><i class="fas fa-trash-alt"></i> ลบ</button>` : ''}</div></div>
+        <div style="font-size:.97rem;font-weight:700;margin-bottom:10px;">${t['หัวข้อ'] || '-'}</div>
+        <div class="admin-card-meta"><span><strong>ประเภทผู้แจ้ง:</strong> ${t['ประเภทผู้แจ้ง'] || '-'}</span><span><strong>ชื่อ:</strong> ${t['ชื่อ'] || '-'}</span><span><strong>ประเภทเรื่อง:</strong> ${t['ประเภทเรื่อง'] || '-'}</span><span><strong>วันที่แจ้ง:</strong> ${t['วันที่แจ้ง'] || '-'}</span></div>
+        <div class="tc-toggle-hint"><span class="tc-hint-text">ดูรายละเอียด</span><i class="fas fa-chevron-down tc-chevron"></i></div>
+      </div>
+      <div class="admin-card-body">
+      <div class="admin-card-meta"><span><strong>กำหนดตอบกลับ:</strong> ${t['กำหนดตอบกลับ'] || '-'}</span><span><strong>ผู้รับผิดชอบ:</strong> ${t['ผู้รับผิดชอบ'] || '-'}</span></div>
       ${t['หมายเหตุผู้ใช้'] ? `<div class="admin-user-note"><span class="admin-note-label"><i class="fas fa-sticky-note"></i> หมายเหตุจากผู้แจ้ง</span><div class="admin-note-text">${t['หมายเหตุผู้ใช้']}</div></div>` : ''}
       ${t['FileURL'] ? `<div class="admin-file-box"><span class="admin-note-label"><i class="fas fa-paperclip"></i> ไฟล์แนบ</span><div>${t['FileURL'].startsWith('https://') ? `<a href="${t['FileURL']}" target="_blank" rel="noopener" style="color:var(--dgreen);font-weight:700;text-decoration:none;"><i class="fas fa-external-link-alt"></i> ${t['FileURL']}</a>` : t['FileURL']}</div></div>` : ''}
       <div class="detail-box" id="adm-detail-${tid}">${needExpand ? detailShort : detail}${needExpand ? `<button class="btn-expand" onclick="expandAdminDetail('${tid}','${encodeURIComponent(detail)}')">ดูเพิ่มเติม ▼</button>` : ''}</div>
       ${commentEntries.length ? `<div style="margin-bottom:12px;"><div style="font-size:.75rem;font-weight:700;color:#aaa;text-transform:uppercase;margin-bottom:8px;"><i class="fas fa-comments"></i> ความคิดเห็น (${commentEntries.length} รายการ)</div><div class="comments-log">${commentEntries.map((c, idx) => { const mm = c.match(/^\[(.*?)\]\s*(.*?):/); const timestamp = mm ? mm[1] : '', author = mm ? mm[2] : ''; const text = c.replace(/^\[.*?\].*?:\s*/, '').trim(); const isLatest = idx === commentEntries.length - 1; return `<div class="comment-entry ${isLatest ? 'comment-latest' : ''}"><div class="comment-meta">${isLatest ? '<span class="comment-new-badge">ใหม่</span>' : ''}${author ? `<strong style="color:#2d6a4f;">${author}</strong> · ` : ''}<i class="fas fa-clock" style="font-size:.65rem;"></i> ${timestamp || 'ไม่ระบุเวลา'}</div><div class="comment-text">${text}</div></div>`; }).join('')}</div></div>` : ''}
       <div class="comment-add-box"><div style="font-size:.78rem;color:#2d6a4f;font-weight:700;margin-bottom:6px;"><i class="fas fa-plus-circle"></i> เพิ่มความคิดเห็น</div><textarea id="new-comment-${tid}" rows="2" placeholder="พิมพ์ความคิดเห็น..."></textarea><button class="btn-comment" onclick="addComment('${tid}')"><i class="fas fa-paper-plane"></i> ส่งความคิดเห็น</button></div>
       <div class="update-row" style="margin-top:10px;"><select id="status-${tid}" data-prev="${t['สถานะ'] || 'รอดำเนินการ'}" onchange="onStatusSelectChange('${tid}',this)"><option value="รอดำเนินการ" ${t['สถานะ'] === 'รอดำเนินการ' ? 'selected' : ''}>รอดำเนินการ</option><option value="กำลังดำเนินการ" ${t['สถานะ'] === 'กำลังดำเนินการ' ? 'selected' : ''}>กำลังดำเนินการ</option><option value="รอตรวจสอบ" ${t['สถานะ'] === 'รอตรวจสอบ' ? 'selected' : ''}>รอตรวจสอบ</option><option value="เสร็จสิ้น" ${t['สถานะ'] === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option><option value="ปฏิเสธ" ${t['สถานะ'] === 'ปฏิเสธ' ? 'selected' : ''}>ปฏิเสธ</option></select><input type="text" id="assignee-${tid}" placeholder="ระบุผู้รับผิดชอบ" value="${t['ผู้รับผิดชอบ'] || ''}"><button class="btn-update" onclick="submitUpdate('${tid}')"><i class="fas fa-save"></i> บันทึก</button></div>
+      </div>
     </div>`;
   });
+  html += `<div class="no-tickets" id="admin-search-empty" style="display:none;"><i class="fas fa-search" style="font-size:2.2rem;color:#ddd;"></i><p style="margin-top:12px;">ไม่พบเรื่องที่ตรงกับคำค้นหา</p></div>`;
   container.innerHTML = html;
+  // คงคำค้นหาเดิมไว้หลังโหลดรายการใหม่ (เช่น หลังบันทึกสถานะ/ความคิดเห็น)
+  const searchInput = document.getElementById('admin-ticket-search');
+  if (searchInput && _admSearch) { searchInput.value = _admSearch; }
+  const clr = document.getElementById('admin-search-clear');
+  if (clr) clr.style.display = _admSearch ? '' : 'none';
+  _admCat = 'all';
+  _applyAdminFilters();
 }
 
-function filterByCategory(cat, btn) { document.querySelectorAll('#admin-cat-dd .voc-dropdown-item').forEach(b => b.classList.remove('active')); if (btn) btn.classList.add('active'); const label = document.getElementById('admin-cat-label'); if (label) label.textContent = btn ? btn.textContent.trim() : 'ทั้งหมด'; document.getElementById('admin-cat-dd')?.classList.remove('open'); const cards = document.querySelectorAll('.admin-ticket-card[data-category]'); let shown = 0; cards.forEach(card => { const match = cat === 'all' || card.dataset.category === cat; card.style.display = match ? '' : 'none'; if (match) shown++; }); const countEl = document.getElementById('admin-ticket-count'); if (countEl) countEl.textContent = `แสดง ${shown} รายการ${cat !== 'all' ? ` (กรอง: ${cat})` : ''}`; }
+// ════ ADMIN — ค้นหา + กรองประเภท ════
+let _admCat = 'all';
+let _admSearch = '';
+
+// ตัดช่องว่าง/ขีด/จุด และแปลงเป็นตัวพิมพ์เล็ก เพื่อให้ค้นหาแบบหลวม ๆ ได้
+function _normSearch(s) {
+  return String(s || '').toLowerCase().replace(/[\s\-_./]/g, '');
+}
+
+// จับคู่แบบไม่ต้องพิมพ์เป๊ะ: ผ่านถ้าเป็น substring หรือเป็น subsequence (ตัวอักษรเรียงตามลำดับ)
+function _looseMatch(haystack, needle) {
+  if (!needle) return true;
+  if (haystack.includes(needle)) return true;
+  if (needle.length < 3) return false;
+  let i = 0;
+  for (const ch of haystack) { if (ch === needle[i]) i++; if (i === needle.length) return true; }
+  return false;
+}
+
+function _applyAdminFilters() {
+  const q = _normSearch(_admSearch);
+  const cards = document.querySelectorAll('.admin-ticket-card[data-category]');
+  let shown = 0;
+  cards.forEach(card => {
+    const okCat = _admCat === 'all' || card.dataset.category === _admCat;
+    const okSearch = _looseMatch(card.dataset.search || '', q);
+    const match = okCat && okSearch;
+    card.style.display = match ? '' : 'none';
+    if (match) shown++;
+  });
+  const parts = [];
+  if (_admCat !== 'all') parts.push(`ประเภท: ${_admCat}`);
+  if (_admSearch.trim()) parts.push(`ค้นหา: "${_admSearch.trim()}"`);
+  const countEl = document.getElementById('admin-ticket-count');
+  if (countEl) countEl.textContent = `แสดง ${shown} รายการ${parts.length ? ` (${parts.join(' · ')})` : ''}`;
+  const empty = document.getElementById('admin-search-empty');
+  if (empty) empty.style.display = shown === 0 ? '' : 'none';
+}
+
+function onAdminSearch(val) {
+  _admSearch = val || '';
+  const clr = document.getElementById('admin-search-clear');
+  if (clr) clr.style.display = _admSearch ? '' : 'none';
+  _applyAdminFilters();
+}
+
+function clearAdminSearch() {
+  const input = document.getElementById('admin-ticket-search');
+  if (input) input.value = '';
+  onAdminSearch('');
+  input?.focus();
+}
+
+function filterByCategory(cat, btn) {
+  document.querySelectorAll('#admin-cat-dd .voc-dropdown-item').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const label = document.getElementById('admin-cat-label');
+  if (label) label.textContent = btn ? btn.textContent.trim() : 'ทั้งหมด';
+  document.getElementById('admin-cat-dd')?.classList.remove('open');
+  _admCat = cat;
+  _applyAdminFilters();
+}
+
+// ── Accordion: เปิด/ปิดรายละเอียดเต็มของการ์ดฝั่งผู้ดูแล ──────────────────
+function toggleAdminCard(head) {
+  const card = head.closest('.admin-collapsible');
+  if (!card) return;
+  const open = card.classList.toggle('open');
+  head.setAttribute('aria-expanded', open ? 'true' : 'false');
+  const hint = head.querySelector('.tc-hint-text');
+  if (hint) hint.textContent = open ? 'ย่อรายละเอียด' : 'ดูรายละเอียด';
+}
 function expandAdminDetail(tid, enc) { const el = document.getElementById('adm-detail-' + tid); if (!el) return; el.innerHTML = decodeURIComponent(enc); }
 
 async function addComment(ticketId) { const commentEl = document.getElementById('new-comment-' + ticketId); const comment = commentEl?.value.trim(); if (!comment) { await showAlert('กรุณาพิมพ์ความคิดเห็น', ''); return; } try { const res = await api.post('/api/tickets', { action: 'addComment', ticketId, comment, author: currentUser?.fullname || currentUser?.username || 'ผู้ดูแล' }); if (res.success) { if (commentEl) commentEl.value = ''; showToast('บันทึกความคิดเห็นสำเร็จ', 'success'); loadAdminTickets(document.querySelector('.filter-btn.active')?.id?.replace('filter-', '') || 'pending'); } else await showAlert('ไม่สำเร็จ', res.message || ''); } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); } }
@@ -1398,6 +1523,8 @@ function _exposeGlobals() {
   G.submitUpdate = submitUpdate; G.deleteTicket = deleteTicket; G.onStatusSelectChange = onStatusSelectChange;
   G._dashDrilldown = _dashDrilldown; G.loadDashboard = loadDashboard;
   G.filterByCategory = filterByCategory; G.expandAdminDetail = expandAdminDetail;
+  G.onAdminSearch = onAdminSearch; G.clearAdminSearch = clearAdminSearch;
+  G.toggleAdminCard = toggleAdminCard; G.toggleTicketCard = toggleTicketCard;
   G.selectTicketFilter = selectTicketFilter; G.setFilter = setFilter;
   G.loadReport = loadReport; G.selectReportType = selectReportType;
   G.printReport = printReport; G.showUserReport = showUserReport; G.closeUserReport = closeUserReport;
