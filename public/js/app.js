@@ -569,12 +569,10 @@ function _openManualModal(title, downloadUrl) {
 function openManual(src, title) {
   const modal = document.getElementById('manual-modal');
   const img = document.getElementById('manual-modal-img');
-  const frame = document.getElementById('manual-modal-frame');
   if (!modal || !img) { notManual(); return; }
   const url = encodeURI(src);
   const probe = new Image();
   probe.onload = () => {
-    if (frame) { frame.src = 'about:blank'; frame.style.display = 'none'; }
     img.src = url;
     img.style.display = '';
     const dl = document.getElementById('manual-download');
@@ -588,39 +586,11 @@ function openManual(src, title) {
   probe.src = url;
 }
 
-// เอกสาร PDF — ฝังไว้ในหน้าต่างเดียวกัน ไม่ต้องเปิดแท็บใหม่
-// เช็คก่อนว่ามีไฟล์จริง ถ้ายังไม่มีจะ fallback ไป notManual()
-async function openManualPdf(src, title) {
-  const modal = document.getElementById('manual-modal');
-  const frame = document.getElementById('manual-modal-frame');
-  const img = document.getElementById('manual-modal-img');
-  if (!modal || !frame) { notManual(); return; }
-  const url = encodeURI(src);
-  try {
-    const res = await fetch(url, { method: 'HEAD' });
-    // rewrite ของ Vercel ส่ง index.html กลับมาเมื่อไม่พบไฟล์ จึงต้องเช็ค content-type ด้วย
-    const ct = res.headers.get('content-type') || '';
-    if (!res.ok || !ct.includes('pdf')) { notManual(); return; }
-  } catch (e) { notManual(); return; }
-  if (img) { img.removeAttribute('src'); img.style.display = 'none'; }
-  frame.src = url;
-  frame.style.display = '';
-  _manualZoomed = false;
-  _applyManualZoom();
-  const zb = document.getElementById('manual-zoom-btn');
-  if (zb) zb.style.display = 'none'; // PDF viewer มีปุ่มซูมของตัวเองอยู่แล้ว
-  const dl = document.getElementById('manual-download');
-  if (dl) dl.setAttribute('download', '');
-  _openManualModal(title, url);
-}
-
 function closeManual() {
   const modal = document.getElementById('manual-modal');
   if (!modal) return;
   modal.classList.add('hidden');
   document.body.style.overflow = '';
-  const frame = document.getElementById('manual-modal-frame');
-  if (frame) { frame.src = 'about:blank'; }  // หยุดโหลด PDF ตอนปิด
 }
 
 function toggleManualZoom() {
@@ -641,7 +611,6 @@ document.addEventListener('keydown', e => {
 });
 
 window.openManual = openManual;
-window.openManualPdf = openManualPdf;
 window.closeManual = closeManual;
 window.toggleManualZoom = toggleManualZoom;
 

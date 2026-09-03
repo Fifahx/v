@@ -6939,19 +6939,3 @@ body.font-xl {
     font-size: .86rem;
   }
 }
-
-/* PDF ใน manual modal */
-#manual-modal-frame {
-  width: 100%;
-  height: 72vh;
-  border: none;
-  border-radius: 8px;
-  background: #fff;
-  display: block;
-}
-
-@media(max-width:767px) {
-  #manual-modal-frame {
-    height: 66vh;
-  }
-}
