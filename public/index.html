@@ -663,14 +663,16 @@
       </div>
       <div class="admin-filters">
         <button class="filter-btn active" id="filter-pending"
-          onclick="loadAdminTickets('pending');setFilter('pending')">รอดำเนินการ</button>
+          onclick="loadAdminTickets('pending');setFilter('pending')">รออนุมัติ</button>
+        <button class="filter-btn" id="filter-review"
+          onclick="loadAdminTickets('review');setFilter('review')">อนุมัติ</button>
         <button class="filter-btn" id="filter-inprogress"
           onclick="loadAdminTickets('inprogress');setFilter('inprogress')">กำลังดำเนินการ</button>
-        <button class="filter-btn" id="filter-review"
-          onclick="loadAdminTickets('review');setFilter('review')">รอตรวจสอบ</button>
-        <button class="filter-btn" id="filter-all" onclick="loadAdminTickets('all');setFilter('all')">ทั้งหมด</button>
         <button class="filter-btn" id="filter-done"
-          onclick="loadAdminTickets('done');setFilter('done')">เสร็จสิ้น</button>
+          onclick="loadAdminTickets('done');setFilter('done')">ดำเนินการเสร็จสิ้น</button>
+        <button class="filter-btn" id="filter-rejected"
+          onclick="loadAdminTickets('rejected');setFilter('rejected')">ปฏิเสธ</button>
+        <button class="filter-btn" id="filter-all" onclick="loadAdminTickets('all');setFilter('all')">ทั้งหมด</button>
       </div>
       <div id="admin-ticket-list"></div>
     </div>

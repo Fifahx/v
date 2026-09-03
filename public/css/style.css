@@ -1361,6 +1361,10 @@ label {
   border-left-color: #f77f00;
 }
 
+.admin-ticket-card.review {
+  border-left-color: #7048b6;
+}
+
 .admin-ticket-card.inprogress {
   border-left-color: #3a86ff;
 }

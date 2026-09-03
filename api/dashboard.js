@@ -92,7 +92,7 @@ module.exports = async function handler(req, res) {
     const data = await getSheetData(sheets, SHEET_TICKETS);
 
     const stats = {
-      total: 0, pending: 0, inprogress: 0, done: 0, rejected: 0,
+      total: 0, pending: 0, approved: 0, inprogress: 0, done: 0, rejected: 0,
       byCategory: {}, byCustomer: {}, byMonth: {},
       byPriority: { high: 0, medium: 0, low: 0 },
       urgentTickets: [],
@@ -122,6 +122,7 @@ module.exports = async function handler(req, res) {
       const priority = String(data[i][priorityIdx] || 'medium').toLowerCase();
 
       if (status === 'รอดำเนินการ') stats.pending++;
+      else if (status === 'รอตรวจสอบ') stats.approved++;
       else if (status === 'กำลังดำเนินการ') stats.inprogress++;
       else if (status === 'เสร็จสิ้น') stats.done++;
       else if (status === 'ปฏิเสธ') stats.rejected++;

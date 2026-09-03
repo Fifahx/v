@@ -603,14 +603,35 @@ async function finalSubmit() {
   }
 }
 
+// ════ STATUS LABEL / ORDER ════
+// ค่าที่เก็บใน Sheet ยังเป็นค่าเดิม — เปลี่ยนเฉพาะข้อความที่แสดงผล
+// เพื่อไม่ให้ข้อมูลเก่าและ API เดิมพัง
+const STATUS_LABEL = {
+  'รอดำเนินการ': 'รออนุมัติ',
+  'รอตรวจสอบ': 'อนุมัติ',
+  'กำลังดำเนินการ': 'กำลังดำเนินการ',
+  'เสร็จสิ้น': 'ดำเนินการเสร็จสิ้น',
+  'ปฏิเสธ': 'ปฏิเสธ',
+};
+// ลำดับการแสดงผล: รออนุมัติ → อนุมัติ → กำลังดำเนินการ → ดำเนินการเสร็จสิ้น → ปฏิเสธ
+const STATUS_ORDER = {
+  'รอดำเนินการ': 1,
+  'รอตรวจสอบ': 2,
+  'กำลังดำเนินการ': 3,
+  'เสร็จสิ้น': 4,
+  'ปฏิเสธ': 5,
+};
+function statusLabel(s) { return STATUS_LABEL[s] || s || '-'; }
+function statusRank(s) { return STATUS_ORDER[s] ?? 90; }
+
 // ════ PROGRESS BAR ════
 function buildProgressBar(status) {
   const steps = [
     { label: 'รับเรื่อง', icon: 'fas fa-inbox' },
-    { label: 'ตรวจสอบข้อมูล', icon: 'fas fa-search' },
-    { label: 'มอบหมายผู้ดูแล', icon: 'fas fa-user-check' },
+    { label: 'รออนุมัติ', icon: 'fas fa-search' },
+    { label: 'อนุมัติ', icon: 'fas fa-user-check' },
     { label: 'กำลังดำเนินการ', icon: 'fas fa-cog' },
-    { label: 'เสร็จสิ้น', icon: 'fas fa-check-circle' },
+    { label: 'ดำเนินการเสร็จสิ้น', icon: 'fas fa-check-circle' },
   ];
   const statusMap = {
     'รอดำเนินการ': 1,
@@ -701,7 +722,7 @@ async function loadPinnedTickets() {
         const commentMeta = lastEntry ? (lastEntry.match(/^\[(.*?)\]/) || ['', ''])[1] : '';
         const priority = t['ความเร่งด่วน'] || 'medium'; const detailText = t['รายละเอียด'] || '';
         const detailShort = detailText.length > 200 ? detailText.substring(0, 200) + '...' : detailText;
-        html += `<div class="pinned-card"><div class="pinned-card-header"><div><div class="pinned-card-title">${t['หัวข้อ'] || '-'}</div><div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;">${t['ประเภทเรื่อง'] ? `<span class="chip blue" style="font-size:.73rem;"><i class="fas fa-tag"></i>${t['ประเภทเรื่อง']}</span>` : ''}${priority ? `<span class="chip ${pChip[priority] || 'gray'}" style="font-size:.73rem;">${pLabel[priority] || priority}</span>` : ''}</div></div><span class="status ${sc[t['สถานะ']] || 'status-pending'}">${t['สถานะ'] || '-'}</span></div>${detailText ? `<div class="pinned-detail-box"><div class="pinned-detail-label"><i class="fas fa-align-left"></i> รายละเอียด</div><div class="pinned-detail-text" id="pin-detail-${t['Ticket ID']}">${detailShort.replace(/\n/g, '<br>')}</div>${detailText.length > 200 ? `<button class="btn-expand" onclick="expandPinDetail('${t['Ticket ID']}',this)">ดูเพิ่มเติม ▼</button>` : ''}</div>` : ''}<div class="pinned-card-body">${buildProgressBar(t['สถานะ'])}</div><div class="pinned-card-footer"><span><i class="fas fa-calendar-alt"></i>${t['วันที่แจ้ง'] || ''}</span><span><i class="fas fa-clock"></i>กำหนด: ${t['กำหนดตอบกลับ'] || '-'}</span><span><i class="fas fa-user-tie"></i>${t['ผู้รับผิดชอบ'] || 'รอมอบหมาย'}</span></div>${commentText ? `<div class="pinned-comment-box"><div class="pinned-comment-meta"><i class="fas fa-comment-dots"></i> ความคิดเห็นล่าสุด${commentMeta ? ` · ${commentMeta}` : ''}</div><div class="pinned-comment-text">${commentText}</div></div>` : ''}</div>`;
+        html += `<div class="pinned-card"><div class="pinned-card-header"><div><div class="pinned-card-title">${t['หัวข้อ'] || '-'}</div><div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;">${t['ประเภทเรื่อง'] ? `<span class="chip blue" style="font-size:.73rem;"><i class="fas fa-tag"></i>${t['ประเภทเรื่อง']}</span>` : ''}${priority ? `<span class="chip ${pChip[priority] || 'gray'}" style="font-size:.73rem;">${pLabel[priority] || priority}</span>` : ''}</div></div><span class="status ${sc[t['สถานะ']] || 'status-pending'}">${statusLabel(t['สถานะ'])}</span></div>${detailText ? `<div class="pinned-detail-box"><div class="pinned-detail-label"><i class="fas fa-align-left"></i> รายละเอียด</div><div class="pinned-detail-text" id="pin-detail-${t['Ticket ID']}">${detailShort.replace(/\n/g, '<br>')}</div>${detailText.length > 200 ? `<button class="btn-expand" onclick="expandPinDetail('${t['Ticket ID']}',this)">ดูเพิ่มเติม ▼</button>` : ''}</div>` : ''}<div class="pinned-card-body">${buildProgressBar(t['สถานะ'])}</div><div class="pinned-card-footer"><span><i class="fas fa-calendar-alt"></i>${t['วันที่แจ้ง'] || ''}</span><span><i class="fas fa-clock"></i>กำหนด: ${t['กำหนดตอบกลับ'] || '-'}</span><span><i class="fas fa-user-tie"></i>${t['ผู้รับผิดชอบ'] || 'รอมอบหมาย'}</span></div>${commentText ? `<div class="pinned-comment-box"><div class="pinned-comment-meta"><i class="fas fa-comment-dots"></i> ความคิดเห็นล่าสุด${commentMeta ? ` · ${commentMeta}` : ''}</div><div class="pinned-comment-text">${commentText}</div></div>` : ''}</div>`;
       });
       container.innerHTML = html;
     } else container.classList.add('hidden');
@@ -767,7 +788,7 @@ function buildTicketCard(t, showRating = false) {
       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTicketCard(this);}">
       <div class="ticket-card-header">
         <div><div class="ticket-id"><i class="fas fa-ticket-alt" style="font-size:.75rem;margin-right:4px;"></i>${tid}</div><div class="ticket-subject" style="margin-top:4px;">${t['หัวข้อ'] || '-'}</div></div>
-        <span class="status ${sc[t['สถานะ']] || 'status-pending'}">${t['สถานะ'] || '-'}</span>
+        <span class="status ${sc[t['สถานะ']] || 'status-pending'}">${statusLabel(t['สถานะ'])}</span>
       </div>
       <div class="ticket-card-brief">
         <div class="ticket-card-section-label"><i class="fas fa-info-circle"></i> ข้อมูลการแจ้ง</div>
@@ -785,7 +806,9 @@ async function renderTicketCards(tickets, showRating = false) {
   const resDiv = document.getElementById('track-result'); let ratedSet = new Set();
   if (showRating && currentUser) { try { const ratedRes = await Promise.all(tickets.filter(t => t['สถานะ'] === 'เสร็จสิ้น').map(t => api.get(`/api/ratings?action=byTicket&id=${encodeURIComponent(t['Ticket ID'] || '')}`))); ratedRes.forEach((res, idx) => { if (res.success && res.ratings && res.ratings.length > 0) { const tid = tickets.filter(t => t['สถานะ'] === 'เสร็จสิ้น')[idx]['Ticket ID']; if (res.ratings.some(r => String(r.username || '').toLowerCase() === String(currentUser.username || '').toLowerCase())) ratedSet.add(tid); } }); } catch (e) { } }
   let html = `<p style="color:#888;margin-bottom:16px;font-size:.88rem;">พบ ${tickets.length} รายการ</p>`;
-  tickets.forEach(t => { const canRate = showRating && t['สถานะ'] === 'เสร็จสิ้น' && !ratedSet.has(t['Ticket ID']); html += buildTicketCard(t, canRate); });
+  // เรียงตามลำดับสถานะ: รออนุมัติ → อนุมัติ → กำลังดำเนินการ → ดำเนินการเสร็จสิ้น → ปฏิเสธ
+  const sorted = [...tickets].sort((a, b) => statusRank(a['สถานะ']) - statusRank(b['สถานะ']));
+  sorted.forEach(t => { const canRate = showRating && t['สถานะ'] === 'เสร็จสิ้น' && !ratedSet.has(t['Ticket ID']); html += buildTicketCard(t, canRate); });
   resDiv.innerHTML = html;
 }
 
@@ -824,7 +847,7 @@ function printReport() {
       .map(([k, v]) => `<tr><td ${tdStyle}>${k}</td><td ${tdR}>${v}</td><td ${tdR}>${r.total ? Math.round(v / r.total * 100) : 0}%</td></tr>`).join('');
     body = `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
-        ${[['ทั้งหมด', r.total, '#1b4332'], ['เสร็จสิ้น', r.done, '#2d6a4f'], ['รอ/ดำเนินการ', r.pending, '#f77f00'], ['ปฏิเสธ', r.rejected, '#d00000']].map(([l, v, c]) => `<div style="border:2px solid ${c};border-radius:10px;padding:12px;text-align:center;"><div style="font-size:1.8rem;font-weight:800;color:${c};">${v}</div><div style="font-size:.78rem;color:#666;">${l}</div></div>`).join('')}
+        ${[['ทั้งหมด', r.total, '#1b4332'], ['ดำเนินการเสร็จสิ้น', r.done, '#2d6a4f'], ['รออนุมัติ/ดำเนินการ', r.pending, '#f77f00'], ['ปฏิเสธ', r.rejected, '#d00000']].map(([l, v, c]) => `<div style="border:2px solid ${c};border-radius:10px;padding:12px;text-align:center;"><div style="font-size:1.8rem;font-weight:800;color:${c};">${v}</div><div style="font-size:.78rem;color:#666;">${l}</div></div>`).join('')}
       </div>
       <div style="background:#e8f5e9;border-radius:8px;padding:10px 16px;margin-bottom:16px;">อัตราความสำเร็จ: <strong style="color:#2d6a4f;font-size:1.2rem;">${r.successRate}%</strong></div>
       ${secTitle('สถานะทั้งหมด')}
@@ -908,8 +931,8 @@ function renderReportService(r, box) {
   box.innerHTML = `
     <div class="rpt-kpi-grid">
       <div class="rpt-kpi"><div class="rpt-kpi-num">${r.total}</div><div class="rpt-kpi-label">📋 ทั้งหมด</div></div>
-      <div class="rpt-kpi green"><div class="rpt-kpi-num" style="color:#2d6a4f">${r.done}</div><div class="rpt-kpi-label">✅ เสร็จสิ้น</div></div>
-      <div class="rpt-kpi orange"><div class="rpt-kpi-num" style="color:#f77f00">${r.pending}</div><div class="rpt-kpi-label">⏳ รอ/ดำเนินการ</div></div>
+      <div class="rpt-kpi green"><div class="rpt-kpi-num" style="color:#2d6a4f">${r.done}</div><div class="rpt-kpi-label">✅ ดำเนินการเสร็จสิ้น</div></div>
+      <div class="rpt-kpi orange"><div class="rpt-kpi-num" style="color:#f77f00">${r.pending}</div><div class="rpt-kpi-label">⏳ รออนุมัติ/ดำเนินการ</div></div>
       <div class="rpt-kpi red"><div class="rpt-kpi-num" style="color:#d00000">${r.rejected}</div><div class="rpt-kpi-label">❌ ปฏิเสธ</div></div>
     </div>
     <div class="rpt-success-bar-wrap">
@@ -949,7 +972,7 @@ function renderReportMonthly(r, box) { const months = r.months || []; const maxT
 
 async function showUserReport(username) { const po = document.getElementById('profile-overlay'); if (po) document.body.removeChild(po); navigateTo('user-report'); const box = document.getElementById('user-report-content'); box.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>'; try { const res = await api.get('/api/report?type=userSummary&username=' + encodeURIComponent(username)); if (!res.success) { box.innerHTML = '<p style="color:red;padding:20px;">โหลดไม่สำเร็จ</p>'; return; } renderUserReport(res.report, box); } catch (e) { box.innerHTML = `<p style="color:red;padding:20px;">${e.message}</p>`; } }
 function closeUserReport() { if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')) navigateTo('admin-report'); else navigateTo('tracking'); }
-function renderUserReport(r, box) { const scClass = { 'รอดำเนินการ': 'status-pending', 'กำลังดำเนินการ': 'status-inprogress', 'เสร็จสิ้น': 'status-done', 'ปฏิเสธ': 'status-rejected' }; const catEntries = Object.entries(r.byCategory || {}).sort((a, b) => b[1] - a[1]); const maxCat = Math.max(...catEntries.map(e => e[1]), 1); const catBars = catEntries.map(([k, v]) => `<div class="rpt-bar-row"><span class="rpt-bar-label">${k}</span><div class="rpt-bar-track"><div class="rpt-bar-fill" style="width:${Math.round(v / maxCat * 100)}%"></div></div><span class="rpt-bar-count">${v}</span></div>`).join(''); const ticketRows = (r.recentTickets || []).map(t => `<tr><td style="font-size:.78rem;color:#2d6a4f;font-weight:700;">${t.ticketId}</td><td style="font-size:.83rem;">${t.subject}</td><td><span class="status ${scClass[t.status] || 'status-pending'}" style="font-size:.72rem;">${t.status}</span></td><td style="font-size:.78rem;color:#888;">${t.date}</td></tr>`).join(''); box.innerHTML = `<div class="rpt-kpi-grid"><div class="rpt-kpi"><div class="rpt-kpi-num">${r.total}</div><div class="rpt-kpi-label">📋 รวมทั้งหมด</div></div><div class="rpt-kpi green"><div class="rpt-kpi-num" style="color:#2d6a4f;">${r.done}</div><div class="rpt-kpi-label">✅ เสร็จสิ้น</div></div><div class="rpt-kpi orange"><div class="rpt-kpi-num" style="color:#f77f00;">${r.pending}</div><div class="rpt-kpi-label">⏳ รอดำเนินการ</div></div><div class="rpt-kpi red"><div class="rpt-kpi-num" style="color:#d00000;">${r.rejected}</div><div class="rpt-kpi-label">❌ ปฏิเสธ</div></div></div><div class="rpt-success-bar-wrap"><div style="display:flex;justify-content:space-between;font-size:.84rem;color:#888;margin-bottom:6px;"><span>อัตราความสำเร็จ</span><span style="font-weight:700;color:#2d6a4f;font-size:1.1rem;">${r.successRate}%</span></div><div class="rpt-bar-track big"><div class="rpt-bar-fill" style="width:${r.successRate}%"></div></div></div><div class="rpt-card"><div class="rpt-card-title"><i class="fas fa-tags"></i> ประเภทเรื่องที่แจ้ง</div>${catBars || '<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div><div class="rpt-card" style="overflow-x:auto;"><div class="rpt-card-title"><i class="fas fa-history"></i> ประวัติคำร้องล่าสุด</div><table class="rpt-table"><tr><th>Ticket ID</th><th>หัวข้อ</th><th>สถานะ</th><th>วันที่</th></tr>${ticketRows || '<tr><td colspan="4" style="color:#bbb;">ยังไม่มีข้อมูล</td></tr>'}</table></div>`; }
+function renderUserReport(r, box) { const scClass = { 'รอดำเนินการ': 'status-pending', 'รอตรวจสอบ': 'status-review', 'กำลังดำเนินการ': 'status-inprogress', 'เสร็จสิ้น': 'status-done', 'ปฏิเสธ': 'status-rejected' }; const catEntries = Object.entries(r.byCategory || {}).sort((a, b) => b[1] - a[1]); const maxCat = Math.max(...catEntries.map(e => e[1]), 1); const catBars = catEntries.map(([k, v]) => `<div class="rpt-bar-row"><span class="rpt-bar-label">${k}</span><div class="rpt-bar-track"><div class="rpt-bar-fill" style="width:${Math.round(v / maxCat * 100)}%"></div></div><span class="rpt-bar-count">${v}</span></div>`).join(''); const ticketRows = (r.recentTickets || []).map(t => `<tr><td style="font-size:.78rem;color:#2d6a4f;font-weight:700;">${t.ticketId}</td><td style="font-size:.83rem;">${t.subject}</td><td><span class="status ${scClass[t.status] || 'status-pending'}" style="font-size:.72rem;">${statusLabel(t.status)}</span></td><td style="font-size:.78rem;color:#888;">${t.date}</td></tr>`).join(''); box.innerHTML = `<div class="rpt-kpi-grid"><div class="rpt-kpi"><div class="rpt-kpi-num">${r.total}</div><div class="rpt-kpi-label">📋 รวมทั้งหมด</div></div><div class="rpt-kpi green"><div class="rpt-kpi-num" style="color:#2d6a4f;">${r.done}</div><div class="rpt-kpi-label">✅ ดำเนินการเสร็จสิ้น</div></div><div class="rpt-kpi orange"><div class="rpt-kpi-num" style="color:#f77f00;">${r.pending}</div><div class="rpt-kpi-label">⏳ รออนุมัติ</div></div><div class="rpt-kpi red"><div class="rpt-kpi-num" style="color:#d00000;">${r.rejected}</div><div class="rpt-kpi-label">❌ ปฏิเสธ</div></div></div><div class="rpt-success-bar-wrap"><div style="display:flex;justify-content:space-between;font-size:.84rem;color:#888;margin-bottom:6px;"><span>อัตราความสำเร็จ</span><span style="font-weight:700;color:#2d6a4f;font-size:1.1rem;">${r.successRate}%</span></div><div class="rpt-bar-track big"><div class="rpt-bar-fill" style="width:${r.successRate}%"></div></div></div><div class="rpt-card"><div class="rpt-card-title"><i class="fas fa-tags"></i> ประเภทเรื่องที่แจ้ง</div>${catBars || '<p style="color:#bbb;">ยังไม่มีข้อมูล</p>'}</div><div class="rpt-card" style="overflow-x:auto;"><div class="rpt-card-title"><i class="fas fa-history"></i> ประวัติคำร้องล่าสุด</div><table class="rpt-table"><tr><th>Ticket ID</th><th>หัวข้อ</th><th>สถานะ</th><th>วันที่</th></tr>${ticketRows || '<tr><td colspan="4" style="color:#bbb;">ยังไม่มีข้อมูล</td></tr>'}</table></div>`; }
 
 // ════ ADMIN DASHBOARD ════
 async function loadDashboard() {
@@ -1058,7 +1081,7 @@ async function _dashDrilldown(title, filterFn, queryHint) {
       <div class="dd-ticket-item">
         <div class="dd-ticket-top">
           <span class="dd-ticket-id">${t['Ticket ID'] || ''}</span>
-          <span class="status status-${{ 'รอดำเนินการ': 'pending', 'กำลังดำเนินการ': 'inprogress', 'เสร็จสิ้น': 'success', 'ปฏิเสธ': 'reject' }[t['สถานะ']] || 'pending'}" style="font-size:.68rem;padding:2px 9px;">${t['สถานะ'] || ''}</span>
+          <span class="status status-${{ 'รอดำเนินการ': 'pending', 'รอตรวจสอบ': 'review', 'กำลังดำเนินการ': 'inprogress', 'เสร็จสิ้น': 'success', 'ปฏิเสธ': 'reject' }[t['สถานะ']] || 'pending'}" style="font-size:.68rem;padding:2px 9px;">${statusLabel(t['สถานะ'])}</span>
         </div>
         <div class="dd-ticket-subject">${(t['หัวข้อ'] || '').slice(0, 90)}</div>
         <div class="dd-ticket-meta">
@@ -1124,7 +1147,7 @@ ${urgH}
     <h3><i class="fas fa-chart-line"></i> ภาพรวมระบบรับฟังเสียงลูกค้า</h3>
     <p>จากทั้งหมด ${s.total} เรื่อง ดำเนินการเสร็จสิ้นแล้ว ${s.done} เรื่อง
     ${inprogress > 0 ? `กำลังดำเนินการ ${inprogress} เรื่อง` : ''}
-    ${s.pending > 0 ? ` และรอดำเนินการอีก ${s.pending} เรื่อง` : ''}</p>
+    ${s.pending > 0 ? ` และรออนุมัติอีก ${s.pending} เรื่อง` : ''}</p>
   </div>
   <div class="dash-headline-mini">
     <div class="dash-headline-mini-item"><b>${rs.avg || '-'}</b><span><i class="fas fa-star" style="color:#ffd700;"></i> คะแนนเฉลี่ย</span></div>
@@ -1136,9 +1159,10 @@ ${urgH}
 <!-- ══ STAT CARDS: คลิกดูรายละเอียดแต่ละสถานะ ══ -->
 <div class="dash-grid-5">
   <div class="stat-card clickable" onclick="_dashDrilldown('Ticket ทั้งหมด', t => true, 'all')"><div class="stat-icon" style="background:#e8f5e9;"><i class="fas fa-inbox" style="color:#2d6a4f;"></i></div><div class="stat-num">${s.total}</div><div class="stat-label">ทั้งหมด</div></div>
-  <div class="stat-card clickable orange" onclick="_dashDrilldown('รอดำเนินการ', t => t['สถานะ']==='รอดำเนินการ', 'pending')"><div class="stat-icon" style="background:#fff8e1;"><i class="fas fa-hourglass-half" style="color:#f77f00;"></i></div><div class="stat-num" style="color:#f77f00;">${s.pending}</div><div class="stat-label">รอดำเนินการ</div></div>
+  <div class="stat-card clickable orange" onclick="_dashDrilldown('รออนุมัติ', t => t['สถานะ']==='รอดำเนินการ', 'pending')"><div class="stat-icon" style="background:#fff8e1;"><i class="fas fa-hourglass-half" style="color:#f77f00;"></i></div><div class="stat-num" style="color:#f77f00;">${s.pending}</div><div class="stat-label">รออนุมัติ</div></div>
+  <div class="stat-card clickable" onclick="_dashDrilldown('อนุมัติ', t => t['สถานะ']==='รอตรวจสอบ', 'review')"><div class="stat-icon" style="background:#ede7f6;"><i class="fas fa-user-check" style="color:#7048b6;"></i></div><div class="stat-num" style="color:#7048b6;">${s.approved || 0}</div><div class="stat-label">อนุมัติ</div></div>
   <div class="stat-card clickable blue" onclick="_dashDrilldown('กำลังดำเนินการ', t => t['สถานะ']==='กำลังดำเนินการ', 'กำลังดำเนินการ')"><div class="stat-icon" style="background:#e3f2fd;"><i class="fas fa-cog" style="color:#3a86ff;"></i></div><div class="stat-num" style="color:#3a86ff;">${inprogress}</div><div class="stat-label">กำลังดำเนินการ</div></div>
-  <div class="stat-card clickable" onclick="_dashDrilldown('เสร็จสิ้น', t => t['สถานะ']==='เสร็จสิ้น', 'เสร็จสิ้น')"><div class="stat-icon" style="background:#e8f5e9;"><i class="fas fa-check-circle" style="color:#2d6a4f;"></i></div><div class="stat-num" style="color:#2d6a4f;">${s.done}</div><div class="stat-label">เสร็จสิ้น</div></div>
+  <div class="stat-card clickable" onclick="_dashDrilldown('ดำเนินการเสร็จสิ้น', t => t['สถานะ']==='เสร็จสิ้น', 'เสร็จสิ้น')"><div class="stat-icon" style="background:#e8f5e9;"><i class="fas fa-check-circle" style="color:#2d6a4f;"></i></div><div class="stat-num" style="color:#2d6a4f;">${s.done}</div><div class="stat-label">ดำเนินการเสร็จสิ้น</div></div>
   <div class="stat-card clickable red" onclick="_dashDrilldown('ปฏิเสธ', t => t['สถานะ']==='ปฏิเสธ', 'all')"><div class="stat-icon" style="background:#fde8e8;"><i class="fas fa-times-circle" style="color:#d00000;"></i></div><div class="stat-num" style="color:#d00000;">${s.rejected || 0}</div><div class="stat-label">ปฏิเสธ</div></div>
 </div>
 
@@ -1149,9 +1173,10 @@ ${urgH}
     <div class="donut-wrap">
       <canvas id="donut-status" width="160" height="160"></canvas>
       <div class="donut-legend">
-        <div class="dl-item clickable" onclick="_dashDrilldown('รอดำเนินการ', t => t['สถานะ']==='รอดำเนินการ', 'pending')"><span class="dl-dot" style="background:#f77f00;"></span>รอดำเนินการ <b>${s.pending}</b></div>
+        <div class="dl-item clickable" onclick="_dashDrilldown('รออนุมัติ', t => t['สถานะ']==='รอดำเนินการ', 'pending')"><span class="dl-dot" style="background:#f77f00;"></span>รออนุมัติ <b>${s.pending}</b></div>
+        <div class="dl-item clickable" onclick="_dashDrilldown('อนุมัติ', t => t['สถานะ']==='รอตรวจสอบ', 'review')"><span class="dl-dot" style="background:#7048b6;"></span>อนุมัติ <b>${s.approved || 0}</b></div>
         <div class="dl-item clickable" onclick="_dashDrilldown('กำลังดำเนินการ', t => t['สถานะ']==='กำลังดำเนินการ', 'กำลังดำเนินการ')"><span class="dl-dot" style="background:#3a86ff;"></span>กำลังดำเนินการ <b>${inprogress}</b></div>
-        <div class="dl-item clickable" onclick="_dashDrilldown('เสร็จสิ้น', t => t['สถานะ']==='เสร็จสิ้น', 'เสร็จสิ้น')"><span class="dl-dot" style="background:#2d6a4f;"></span>เสร็จสิ้น <b>${s.done}</b></div>
+        <div class="dl-item clickable" onclick="_dashDrilldown('ดำเนินการเสร็จสิ้น', t => t['สถานะ']==='เสร็จสิ้น', 'เสร็จสิ้น')"><span class="dl-dot" style="background:#2d6a4f;"></span>ดำเนินการเสร็จสิ้น <b>${s.done}</b></div>
         <div class="dl-item clickable" onclick="_dashDrilldown('ปฏิเสธ', t => t['สถานะ']==='ปฏิเสธ', 'all')"><span class="dl-dot" style="background:#d00000;"></span>ปฏิเสธ <b>${s.rejected || 0}</b></div>
       </div>
     </div>
@@ -1202,14 +1227,15 @@ ${urgH}
   // วาด donut หลังจาก DOM render เสร็จ (rAF ป้องกัน canvas null) — พร้อม onClick แต่ละชิ้น
   requestAnimationFrame(function () {
     _drawDonut('donut-status',
-      [{ value: s.pending }, { value: inprogress }, { value: s.done }, { value: s.rejected || 0 }],
-      ['#f77f00', '#3a86ff', '#2d6a4f', '#d00000'],
+      [{ value: s.pending }, { value: s.approved || 0 }, { value: inprogress }, { value: s.done }, { value: s.rejected || 0 }],
+      ['#f77f00', '#7048b6', '#3a86ff', '#2d6a4f', '#d00000'],
       {
         onClick: (i) => {
           const map = [
-            ['รอดำเนินการ', t => t['สถานะ'] === 'รอดำเนินการ', 'pending'],
+            ['รออนุมัติ', t => t['สถานะ'] === 'รอดำเนินการ', 'pending'],
+            ['อนุมัติ', t => t['สถานะ'] === 'รอตรวจสอบ', 'review'],
             ['กำลังดำเนินการ', t => t['สถานะ'] === 'กำลังดำเนินการ', 'กำลังดำเนินการ'],
-            ['เสร็จสิ้น', t => t['สถานะ'] === 'เสร็จสิ้น', 'เสร็จสิ้น'],
+            ['ดำเนินการเสร็จสิ้น', t => t['สถานะ'] === 'เสร็จสิ้น', 'เสร็จสิ้น'],
             ['ปฏิเสธ', t => t['สถานะ'] === 'ปฏิเสธ', 'all'],
           ][i];
           if (map) _dashDrilldown(map[0], map[1], map[2]);
@@ -1244,9 +1270,12 @@ async function loadAdminTickets(filter) { document.getElementById('admin-ticket-
 
 function renderAdminTickets(tickets) {
   const container = document.getElementById('admin-ticket-list');
-  const po = { 'high': 0, 'medium': 1, 'low': 2 }; tickets.sort((a, b) => (po[a['ความเร่งด่วน']] ?? 9) - (po[b['ความเร่งด่วน']] ?? 9));
-  const scColor = { 'รอดำเนินการ': 'pending', 'กำลังดำเนินการ': 'inprogress', 'เสร็จสิ้น': 'done', 'ปฏิเสธ': 'rejected' };
-  const scTag = { 'รอดำเนินการ': 'status-pending', 'กำลังดำเนินการ': 'status-inprogress', 'เสร็จสิ้น': 'status-success', 'ปฏิเสธ': 'status-reject' };
+  const po = { 'high': 0, 'medium': 1, 'low': 2 };
+  // เรียงตามลำดับสถานะก่อน (รออนุมัติ → อนุมัติ → กำลังดำเนินการ → ดำเนินการเสร็จสิ้น → ปฏิเสธ)
+  // ถ้าสถานะเดียวกันจึงเรียงตามความเร่งด่วน
+  tickets.sort((a, b) => (statusRank(a['สถานะ']) - statusRank(b['สถานะ'])) || ((po[a['ความเร่งด่วน']] ?? 9) - (po[b['ความเร่งด่วน']] ?? 9)));
+  const scColor = { 'รอดำเนินการ': 'pending', 'รอตรวจสอบ': 'review', 'กำลังดำเนินการ': 'inprogress', 'เสร็จสิ้น': 'done', 'ปฏิเสธ': 'rejected' };
+  const scTag = { 'รอดำเนินการ': 'status-pending', 'รอตรวจสอบ': 'status-review', 'กำลังดำเนินการ': 'status-inprogress', 'เสร็จสิ้น': 'status-success', 'ปฏิเสธ': 'status-reject' };
   const pLabel = { 'high': '🔴 เร่งด่วน', 'medium': '🟡 ปานกลาง', 'low': '🟢 ทั่วไป' };
   const pClass = { 'high': 'p-high', 'medium': 'p-medium', 'low': 'p-low' };
   const categories = [...new Set(tickets.map(t => t['ประเภทเรื่อง']).filter(Boolean))].sort();
@@ -1272,7 +1301,7 @@ function renderAdminTickets(tickets) {
     html += `<div class="admin-ticket-card admin-collapsible ${scColor[t['สถานะ']] || 'pending'} ${isHigh ? 'priority-high' : ''}" id="card-${tid}" data-category="${(t['ประเภทเรื่อง'] || '').replace(/"/g, '&quot;')}" data-search="${searchKey.replace(/"/g, '&quot;')}">
       <div class="admin-card-head" onclick="toggleAdminCard(this)" role="button" tabindex="0" aria-expanded="false"
         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAdminCard(this);}">
-        <div class="admin-card-top"><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">${isHigh ? '<span>🚨</span>' : ''}<span class="ticket-id" style="font-size:.96rem;">${tid}</span><span class="priority-badge ${pClass[pr] || 'p-low'}">${pLabel[pr] || pr}</span></div><div class="admin-card-actions" onclick="event.stopPropagation();" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><span class="status ${scTag[t['สถานะ']] || 'status-pending'}">${t['สถานะ']}</span><button id="pin-btn-${tid}" onclick="togglePin('${tid}',${!isPinned})" style="padding:3px 9px;border-radius:8px;border:1px solid ${isPinned ? '#2d6a4f' : '#ddd'};background:${isPinned ? '#e8f5e9' : '#fff'};font-size:.74rem;color:${isPinned ? '#2d6a4f' : '#aaa'};font-family:'Sarabun',sans-serif;"><i class="fas fa-thumbtack"></i>${isPinned ? 'แสดงอยู่' : 'ปักหมุด'}</button>${currentUser && currentUser.role === 'superadmin' ? `<button onclick="deleteTicket('${tid}')" style="padding:3px 9px;border-radius:8px;border:1px solid #f5c6c6;background:#fff5f5;font-size:.74rem;color:#d00000;font-family:'Sarabun',sans-serif;"><i class="fas fa-trash-alt"></i> ลบ</button>` : ''}</div></div>
+        <div class="admin-card-top"><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">${isHigh ? '<span>🚨</span>' : ''}<span class="ticket-id" style="font-size:.96rem;">${tid}</span><span class="priority-badge ${pClass[pr] || 'p-low'}">${pLabel[pr] || pr}</span></div><div class="admin-card-actions" onclick="event.stopPropagation();" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><span class="status ${scTag[t['สถานะ']] || 'status-pending'}">${statusLabel(t['สถานะ'])}</span><button id="pin-btn-${tid}" onclick="togglePin('${tid}',${!isPinned})" style="padding:3px 9px;border-radius:8px;border:1px solid ${isPinned ? '#2d6a4f' : '#ddd'};background:${isPinned ? '#e8f5e9' : '#fff'};font-size:.74rem;color:${isPinned ? '#2d6a4f' : '#aaa'};font-family:'Sarabun',sans-serif;"><i class="fas fa-thumbtack"></i>${isPinned ? 'แสดงอยู่' : 'ปักหมุด'}</button>${currentUser && currentUser.role === 'superadmin' ? `<button onclick="deleteTicket('${tid}')" style="padding:3px 9px;border-radius:8px;border:1px solid #f5c6c6;background:#fff5f5;font-size:.74rem;color:#d00000;font-family:'Sarabun',sans-serif;"><i class="fas fa-trash-alt"></i> ลบ</button>` : ''}</div></div>
         <div style="font-size:.97rem;font-weight:700;margin-bottom:10px;">${t['หัวข้อ'] || '-'}</div>
         <div class="admin-card-meta"><span><strong>ประเภทผู้แจ้ง:</strong> ${t['ประเภทผู้แจ้ง'] || '-'}</span><span><strong>ชื่อ:</strong> ${t['ชื่อ'] || '-'}</span><span><strong>ประเภทเรื่อง:</strong> ${t['ประเภทเรื่อง'] || '-'}</span><span><strong>วันที่แจ้ง:</strong> ${t['วันที่แจ้ง'] || '-'}</span></div>
         <div class="tc-toggle-hint"><span class="tc-hint-text">ดูรายละเอียด</span><i class="fas fa-chevron-down tc-chevron"></i></div>
@@ -1284,7 +1313,7 @@ function renderAdminTickets(tickets) {
       <div class="detail-box" id="adm-detail-${tid}">${needExpand ? detailShort : detail}${needExpand ? `<button class="btn-expand" onclick="expandAdminDetail('${tid}','${encodeURIComponent(detail)}')">ดูเพิ่มเติม ▼</button>` : ''}</div>
       ${commentEntries.length ? `<div style="margin-bottom:12px;"><div style="font-size:.75rem;font-weight:700;color:#aaa;text-transform:uppercase;margin-bottom:8px;"><i class="fas fa-comments"></i> ความคิดเห็น (${commentEntries.length} รายการ)</div><div class="comments-log">${commentEntries.map((c, idx) => { const mm = c.match(/^\[(.*?)\]\s*(.*?):/); const timestamp = mm ? mm[1] : '', author = mm ? mm[2] : ''; const text = c.replace(/^\[.*?\].*?:\s*/, '').trim(); const isLatest = idx === commentEntries.length - 1; return `<div class="comment-entry ${isLatest ? 'comment-latest' : ''}"><div class="comment-meta">${isLatest ? '<span class="comment-new-badge">ใหม่</span>' : ''}${author ? `<strong style="color:#2d6a4f;">${author}</strong> · ` : ''}<i class="fas fa-clock" style="font-size:.65rem;"></i> ${timestamp || 'ไม่ระบุเวลา'}</div><div class="comment-text">${text}</div></div>`; }).join('')}</div></div>` : ''}
       <div class="comment-add-box"><div style="font-size:.78rem;color:#2d6a4f;font-weight:700;margin-bottom:6px;"><i class="fas fa-plus-circle"></i> เพิ่มความคิดเห็น</div><textarea id="new-comment-${tid}" rows="2" placeholder="พิมพ์ความคิดเห็น..."></textarea><button class="btn-comment" onclick="addComment('${tid}')"><i class="fas fa-paper-plane"></i> ส่งความคิดเห็น</button></div>
-      <div class="update-row" style="margin-top:10px;"><select id="status-${tid}" data-prev="${t['สถานะ'] || 'รอดำเนินการ'}" onchange="onStatusSelectChange('${tid}',this)"><option value="รอดำเนินการ" ${t['สถานะ'] === 'รอดำเนินการ' ? 'selected' : ''}>รอดำเนินการ</option><option value="กำลังดำเนินการ" ${t['สถานะ'] === 'กำลังดำเนินการ' ? 'selected' : ''}>กำลังดำเนินการ</option><option value="รอตรวจสอบ" ${t['สถานะ'] === 'รอตรวจสอบ' ? 'selected' : ''}>รอตรวจสอบ</option><option value="เสร็จสิ้น" ${t['สถานะ'] === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option><option value="ปฏิเสธ" ${t['สถานะ'] === 'ปฏิเสธ' ? 'selected' : ''}>ปฏิเสธ</option></select><input type="text" id="assignee-${tid}" placeholder="ระบุผู้รับผิดชอบ" value="${t['ผู้รับผิดชอบ'] || ''}"><button class="btn-update" onclick="submitUpdate('${tid}')"><i class="fas fa-save"></i> บันทึก</button></div>
+      <div class="update-row" style="margin-top:10px;"><select id="status-${tid}" data-prev="${t['สถานะ'] || 'รอดำเนินการ'}" onchange="onStatusSelectChange('${tid}',this)">${Object.keys(STATUS_ORDER).map(k => `<option value="${k}" ${t['สถานะ'] === k ? 'selected' : ''}>${STATUS_LABEL[k]}</option>`).join('')}</select><input type="text" id="assignee-${tid}" placeholder="ระบุผู้รับผิดชอบ" value="${t['ผู้รับผิดชอบ'] || ''}"><button class="btn-update" onclick="submitUpdate('${tid}')"><i class="fas fa-save"></i> บันทึก</button></div>
       </div>
     </div>`;
   });
@@ -1383,7 +1412,7 @@ async function onStatusSelectChange(tid, selectEl) {
   const prev = selectEl.dataset.prev || ns;
   if (ns === prev) return;
 
-  const ok = await showConfirm('ยืนยันการเปลี่ยนสถานะ', `คุณต้องการอัพเดทสถานะเป็น "<strong>${ns}</strong>" หรือไม่?`);
+  const ok = await showConfirm('ยืนยันการเปลี่ยนสถานะ', `คุณต้องการอัพเดทสถานะเป็น "<strong>${statusLabel(ns)}</strong>" หรือไม่?`);
   if (!ok) {
     selectEl.value = prev; // ยกเลิก → คืนค่าเดิม
     return;
@@ -1403,7 +1432,7 @@ async function submitUpdate(tid, skipConfirm) {
   const ns = selectEl.value;
   const as = document.getElementById('assignee-' + tid).value;
   if (!skipConfirm) {
-    if (!await showConfirm('ยืนยันการอัปเดตสถานะ', `คุณต้องการอัปเดตสถานะเป็น <strong style="color:var(--dgreen);">'${ns}'</strong> หรือไม่?<br><small style="color:#888;">Ticket: ${tid}</small>`)) return;
+    if (!await showConfirm('ยืนยันการอัปเดตสถานะ', `คุณต้องการอัปเดตสถานะเป็น <strong style="color:var(--dgreen);">'${statusLabel(ns)}'</strong> หรือไม่?<br><small style="color:#888;">Ticket: ${tid}</small>`)) return;
   }
   const btn = document.querySelector(`#card-${tid} .btn-update`);
   if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
@@ -1416,7 +1445,7 @@ async function submitUpdate(tid, skipConfirm) {
         // อัปเดต badge สถานะมุมขวาบน
         const scTag = { 'รอดำเนินการ': 'status-pending', 'กำลังดำเนินการ': 'status-inprogress', 'รอตรวจสอบ': 'status-review', 'เสร็จสิ้น': 'status-done', 'ปฏิเสธ': 'status-rejected' };
         const badge = card.querySelector('.admin-card-top .status');
-        if (badge) { badge.textContent = ns; badge.className = `status ${scTag[ns] || 'status-pending'}`; }
+        if (badge) { badge.textContent = statusLabel(ns); badge.className = `status ${scTag[ns] || 'status-pending'}`; }
         // อัปเดต ผู้รับผิดชอบ ใน footer ของ card (ถ้ามี)
         if (as) {
           const assigneeEl = card.querySelector('.card-assignee');
