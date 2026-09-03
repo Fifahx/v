@@ -3433,6 +3433,10 @@ header {
   text-shadow: 0 1px 6px rgba(0, 0, 0, .40);
 }
 
+.hero-sub-bottom {
+  display: none;
+}
+
 .hero-cta-row {
   display: flex;
   gap: 12px;
@@ -6307,7 +6311,7 @@ body.font-xl {
   }
 
   .hero-section {
-    padding: 2.5rem 12px 5rem !important;
+    padding: 2.5rem 12px 3rem !important;
   }
 
   /* ── 1. ตัดคำซ้ำกับ Header: ซ่อน "VOC System" h1 เดิม
@@ -6317,11 +6321,12 @@ body.font-xl {
   }
 
   .hero-slogan-block {
-    background: none;
-    border-left: none;
-    backdrop-filter: none;
-    padding: 0;
+    background: rgba(255, 255, 255, .1);
+    border-left: 3px solid var(--primary);
+    backdrop-filter: blur(4px);
+    padding: 10px 12px;
     margin: 0 0 6px;
+    border-radius: 0 10px 10px 0;
     max-width: 100%;
   }
 
@@ -6342,10 +6347,22 @@ body.font-xl {
     line-height: 1.45;
   }
 
-  .hero-sub {
-    font-size: 8px;
-    margin-bottom: 0 !important;
-    line-height: 1.4;
+  /* ซ่อนข้อความคณะ/มหาวิทยาลัยตัวเดิมในคอลัมน์ข้อความ ใช้ตัวด้านล่าง hero-content แทน */
+  .hero-text-block>.hero-sub {
+    display: none;
+  }
+
+  .hero-sub-bottom {
+    display: block;
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, .88);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, .5);
+    margin: 14px 0 0;
+    padding: 0 10px;
   }
 
   /* ── ซ่อนปุ่ม CTA ในหัว hero บนมือถือ
