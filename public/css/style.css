@@ -6325,7 +6325,14 @@ body.font-xl {
 
   .hero-sub {
     font-size: 10px;
-    margin-bottom: 16px;
+    margin-bottom: 4px;
+  }
+
+  /* ── ซ่อนปุ่ม CTA ในหัว hero บนมือถือ
+         (การ์ด "แจ้งเรื่องร้องเรียน" / "ติดตามสถานะ" ใน .home-action-row
+         ที่อยู่ถัดจาก hero ทำหน้าที่เป็น CTA หลักบนมือถือแทน) ── */
+  .hero-cta-row {
+    display: none;
   }
 
   /* ── 2. Dark gradient overlay (scrim) 2 โซน ทับรูปพื้นหลัง
@@ -6347,16 +6354,16 @@ body.font-xl {
          ขยายกรอบรูปให้ใหญ่ขึ้น ชิดกึ่งกลาง และดันขึ้นมาใกล้ข้อความ ── */
   .hero-mgmt-panel {
     max-width: 100%;
-    margin: -4px auto 0;
+    margin: -14px auto 0;
   }
 
   .mgmt-h-track-wrap {
-    height: 340px;
+    height: 360px;
   }
 
   .mgmt-h-img {
-    max-width: 300px;
-    height: 340px;
+    max-width: 320px;
+    height: 360px;
   }
 
   /* ── 3. แถบชื่อ-ตำแหน่งผู้บริหาร: ติดขอบล่างสุดของกรอบรูป
@@ -6387,24 +6394,6 @@ body.font-xl {
     display: block;
   }
 
-  /* ── 4/5. แสดงปุ่ม CTA ในหัว hero บนมือถือเหมือนเวอร์ชัน PC
-         (เดิมถูกซ่อนไว้ ตอนนี้เปิดกลับมาและย่อขนาดให้พอดีจอ) ── */
-  .hero-cta-row {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 10px;
-    margin: 4px 0 18px;
-  }
-
-  .hero-cta-row .hero-btn {
-    flex: 1 1 0;
-    justify-content: center;
-    padding: 11px 10px;
-    font-size: 12.5px;
-    white-space: nowrap;
-  }
-
   /* ── 6. dots indicator ของ slider — คงไว้ตามที่ขอ แต่ปรับให้เข้ากับแถบชื่อพื้นทึบ ── */
   .mgmt-dots {
     margin-top: 8px;
@@ -6414,11 +6403,11 @@ body.font-xl {
 /* จอเล็กมาก: ลดขนาดรูปผู้บริหารลงอีกนิด ไม่ให้ล้นจอ แต่ยังคงเด่นกว่าเดิม */
 @media (max-width: 400px) {
   .mgmt-h-track-wrap {
-    height: 300px;
+    height: 320px;
   }
 
   .mgmt-h-img {
-    max-width: 260px;
-    height: 300px;
+    max-width: 280px;
+    height: 320px;
   }
 }
