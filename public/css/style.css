@@ -6291,6 +6291,15 @@ body.font-xl {
    ════════════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
 
+  /* ── 0. ลด gap ของ grid hero-content บนมือถือ ให้รูปขยับขึ้นมาชิดข้อความจริง ── */
+  .hero-content {
+    gap: 0;
+  }
+
+  .hero-section {
+    padding: 2.5rem 16px 5rem;
+  }
+
   /* ── 1. ตัดคำซ้ำกับ Header: ซ่อน "VOC System" h1 เดิม
          แล้วใช้ quote "ทุกเสียงมีความหมาย" เป็นหัวข้อหลักแทน ── */
   .hero-title {
@@ -6354,7 +6363,7 @@ body.font-xl {
          ขยายกรอบรูปให้ใหญ่ขึ้น ชิดกึ่งกลาง และดันขึ้นมาใกล้ข้อความ ── */
   .hero-mgmt-panel {
     max-width: 100%;
-    margin: -14px auto 0;
+    margin: -28px auto 0;
   }
 
   .mgmt-h-track-wrap {
