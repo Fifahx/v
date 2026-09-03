@@ -79,7 +79,8 @@
             </a>
           </div>
           <div class="header-brand" id="header-brand" onclick="navigateTo('home')" role="link" tabindex="0"
-            title="กลับหน้าหลัก" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateTo('home');}">
+            title="กลับหน้าหลัก"
+            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateTo('home');}">
             <div class="header-brand-title"><span class="brand-voc">VOC</span> System</div>
             <div class="header-brand-sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</div>
           </div>
@@ -170,7 +171,8 @@
     </div><!-- /hero-content -->
 
     <!-- ข้อความคณะ/มหาวิทยาลัย เวอร์ชันมือถือ: แสดงด้านล่างสุดของ hero เท่านั้น -->
-    <p class="hero-sub hero-sub-bottom"><span class="hsb-line">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร</span> <span class="hsb-dot">·</span> <span class="hsb-line">มหาวิทยาลัยราชภัฏยะลา</span></p>
+    <p class="hero-sub hero-sub-bottom"><span class="hsb-line">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร</span> <span
+        class="hsb-dot">·</span> <span class="hsb-line">มหาวิทยาลัยราชภัฏยะลา</span></p>
 
     <!-- Decorative wave -->
     <div class="hero-wave">
@@ -337,7 +339,7 @@
             <div class="manual-card-desc">ภาพสรุปขั้นตอนแบบง่าย</div>
           </div>
           <div class="manual-card"
-            onclick="openManualPdf('https://drive.google.com/file/d/1QiEfLnztYmThSfNzwha7D4a00_ItwPnu/preview','คู่มือการใช้งาน (PDF)','https://drive.google.com/file/d/1QiEfLnztYmThSfNzwha7D4a00_ItwPnu/view?usp=sharing')">
+            onclick="openManualPdf('/pdf/คู่มือการใช้งานระบบรับฟังเสียงลูกค้า.pdf','คู่มือการใช้งาน (PDF)')">
             <div class="manual-icon-wrap"><i class="fas fa-file-pdf"></i></div>
             <div class="manual-card-title">เอกสาร PDF</div>
             <div class="manual-card-desc">คู่มือฉบับเต็มสำหรับพิมพ์</div>
@@ -774,8 +776,8 @@
   </div>
 
   <!-- MANUAL VIEWER MODAL — อ่านคู่มือในหน้าต่างกลางจอ ไม่ต้องเปิดแท็บใหม่ -->
-  <div id="manual-modal" class="manual-modal hidden" role="dialog" aria-modal="true" aria-labelledby="manual-modal-title"
-    onclick="if(event.target===this)closeManual()">
+  <div id="manual-modal" class="manual-modal hidden" role="dialog" aria-modal="true"
+    aria-labelledby="manual-modal-title" onclick="if(event.target===this)closeManual()">
     <div class="manual-modal-box">
       <div class="manual-modal-bar">
         <div class="manual-modal-title" id="manual-modal-title"><i class="fas fa-images"></i> <span

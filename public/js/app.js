@@ -588,22 +588,30 @@ function openManual(src, title) {
   probe.src = url;
 }
 
-// เอกสาร PDF — ฝัง preview ไว้ในหน้าต่างเดียวกัน ไม่ต้องเปิดแท็บใหม่
-function openManualPdf(previewUrl, title, openUrl) {
+// เอกสาร PDF — ฝังไว้ในหน้าต่างเดียวกัน ไม่ต้องเปิดแท็บใหม่
+// เช็คก่อนว่ามีไฟล์จริง ถ้ายังไม่มีจะ fallback ไป notManual()
+async function openManualPdf(src, title) {
   const modal = document.getElementById('manual-modal');
   const frame = document.getElementById('manual-modal-frame');
   const img = document.getElementById('manual-modal-img');
-  if (!modal || !frame) { if (openUrl) window.open(openUrl, '_blank'); else notManual(); return; }
+  if (!modal || !frame) { notManual(); return; }
+  const url = encodeURI(src);
+  try {
+    const res = await fetch(url, { method: 'HEAD' });
+    // rewrite ของ Vercel ส่ง index.html กลับมาเมื่อไม่พบไฟล์ จึงต้องเช็ค content-type ด้วย
+    const ct = res.headers.get('content-type') || '';
+    if (!res.ok || !ct.includes('pdf')) { notManual(); return; }
+  } catch (e) { notManual(); return; }
   if (img) { img.removeAttribute('src'); img.style.display = 'none'; }
-  frame.src = previewUrl;
+  frame.src = url;
   frame.style.display = '';
   _manualZoomed = false;
   _applyManualZoom();
   const zb = document.getElementById('manual-zoom-btn');
-  if (zb) zb.style.display = 'none'; // PDF มีปุ่มซูมของตัวเองอยู่แล้ว
+  if (zb) zb.style.display = 'none'; // PDF viewer มีปุ่มซูมของตัวเองอยู่แล้ว
   const dl = document.getElementById('manual-download');
-  if (dl) dl.removeAttribute('download');   // ลิงก์ภายนอก ให้เปิดแทนดาวน์โหลดตรง
-  _openManualModal(title, openUrl);
+  if (dl) dl.setAttribute('download', '');
+  _openManualModal(title, url);
 }
 
 function closeManual() {
