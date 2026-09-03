@@ -438,6 +438,44 @@ function toggleAnon() {
   fields.style.opacity = isAnon ? '0.35' : '1';
   fields.style.pointerEvents = isAnon ? 'none' : '';
   fields.querySelectorAll('input').forEach(el => { el.disabled = isAnon; if (isAnon) el.value = ''; });
+  // ติ๊กนิรนามแล้ว → ล้างข้อความเตือนที่ค้างอยู่
+  if (isAnon) _clearIdentityErrors();
+}
+
+// ── Step 1: ตรวจสอบการแสดงตัวตนก่อนไป step 2 ──────────────────────────────
+function _clearIdentityErrors() {
+  document.querySelectorAll('#identity-panel-step1 .field-err').forEach(e => e.remove());
+  document.querySelectorAll('#identity-panel-step1 input').forEach(e => e.classList.remove('input-error'));
+}
+
+function _showIdentityError(id, msg, focus) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('input-error');
+  const p = document.createElement('p');
+  p.className = 'field-err';
+  p.innerHTML = `<i class="fas fa-exclamation-circle"></i>${msg}`;
+  el.parentNode.appendChild(p);
+  if (focus) el.focus();
+}
+
+function goToStep2() {
+  _clearIdentityErrors();
+  const panel = document.getElementById('identity-panel-step1');
+  // ผู้ใช้ที่ login แล้ว panel ถูกซ่อน — ระบบรู้ตัวตนอยู่แล้ว ข้ามการตรวจสอบ
+  const needCheck = panel && !panel.classList.contains('hidden');
+  if (needCheck && !document.getElementById('isAnon')?.checked) {
+    const name = document.getElementById('v-name')?.value.trim() || '';
+    const sid = document.getElementById('v-sid')?.value.trim() || '';
+    let firstBad = null;
+    if (!name) { _showIdentityError('v-name', 'กรุณากรอกชื่อ-นามสกุล หรือติ๊ก "แจ้งแบบนิรนาม"', true); firstBad = 'v-name'; }
+    if (!sid) { _showIdentityError('v-sid', 'กรุณากรอกรหัสนักศึกษา/หน่วยงาน หรือติ๊ก "แจ้งแบบนิรนาม"', !firstBad); firstBad = firstBad || 'v-sid'; }
+    if (firstBad) {
+      showToast('กรุณากรอกข้อมูลผู้แจ้ง หรือเลือกแจ้งแบบนิรนาม', 'error');
+      return;
+    }
+  }
+  changeStep(2);
 }
 function handleFileSelect(inputEl) {
   // Legacy: ไม่ใช้แล้ว — ใช้ link input แทน
@@ -1349,7 +1387,7 @@ function _exposeGlobals() {
   G.showAdminLoginModal = showAdminLoginModal; G.hideAdminLoginModal = hideAdminLoginModal;
   G.showSuperAdminLoginModal = showAdminLoginModal;
   G.showProfile = showProfile; G.saveProfile = saveProfile;
-  G.changeStep = changeStep; G.setOption = setOption; G.toggleAnon = toggleAnon;
+  G.changeStep = changeStep; G.setOption = setOption; G.toggleAnon = toggleAnon; G.goToStep2 = goToStep2;
   G.handleFileSelect = handleFileSelect; G.prepareReview = prepareReview; G.finalSubmit = finalSubmit;
   G.onTurnstileSuccess = onTurnstileSuccess; G.onTurnstileExpire = onTurnstileExpire;
   G.onTurnstileError = onTurnstileError; G.resetTurnstile = resetTurnstile;
