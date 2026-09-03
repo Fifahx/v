@@ -6315,8 +6315,15 @@ body.font-xl {
   }
 
   .hero-section {
-    padding: 2.5rem 12px 1.25rem !important;
+    padding: 2.5rem 12px 54px !important;
     min-height: 0 !important;
+  }
+
+  /* คงคลื่นด้านล่างไว้ แต่ลดความสูงลงให้พอดีจอมือถือ
+     แล้วเผื่อ padding-bottom ของ hero ไว้เท่ากับความสูงคลื่น + ระยะห่าง
+     พื้นหลังจึงขยายลงมาคลุมพื้นที่คลื่น ไม่ทับแถบชื่อคณะ */
+  .hero-wave svg {
+    height: 40px;
   }
 
   /* ── 1. ตัดคำซ้ำกับ Header: ซ่อน "VOC System" h1 เดิม
