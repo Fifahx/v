@@ -157,6 +157,12 @@ module.exports = async function handler(req, res) {
       const postAuth = requireAuth(req, res, ['admin', 'superadmin']);
       if (!postAuth) return;
 
+      // ── ตรวจสิทธิ์รายการ (superadmin ผ่านเสมอ) ──
+      // สิทธิ์ฝังมากับ token ตอน login — แก้สิทธิ์แล้วจะมีผลกับ session ใหม่
+      const _perms = Array.isArray(postAuth.perms) ? postAuth.perms : null;
+      const can = (key) => postAuth.role === 'superadmin' || !_perms || _perms.includes(key);
+      const denied = () => res.status(403).json({ success: false, message: 'บัญชีของคุณไม่มีสิทธิ์ดำเนินการนี้' });
+
       const findRow = (tid) => {
         for (let i = 1; i < data.length; i++)
           if (String(data[i][idx.ticketId] || '') === String(tid)) return i + 1;
@@ -164,6 +170,7 @@ module.exports = async function handler(req, res) {
       };
 
       if (action === 'update') {
+        if (!can('ticket.update')) return denied();
         const row = findRow(ticketId);
         if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
         const updates = [];
@@ -176,6 +183,7 @@ module.exports = async function handler(req, res) {
       }
 
       if (action === 'addComment') {
+        if (!can('ticket.comment')) return denied();
         const row = findRow(ticketId);
         if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
         if (idx.comments === -1)
@@ -196,6 +204,7 @@ module.exports = async function handler(req, res) {
       }
 
       if (action === 'togglePin') {
+        if (!can('ticket.pin')) return denied();
         const row = findRow(ticketId);
         if (row < 0) return res.json({ success: false, message: 'ไม่พบ Ticket' });
         if (idx.pinned === -1)

@@ -79,8 +79,7 @@
             </a>
           </div>
           <div class="header-brand" id="header-brand" onclick="navigateTo('home')" role="link" tabindex="0"
-            title="กลับหน้าหลัก"
-            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateTo('home');}">
+            title="กลับหน้าหลัก" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateTo('home');}">
             <div class="header-brand-title"><span class="brand-voc">VOC</span> System</div>
             <div class="header-brand-sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</div>
           </div>
@@ -171,8 +170,7 @@
     </div><!-- /hero-content -->
 
     <!-- ข้อความคณะ/มหาวิทยาลัย เวอร์ชันมือถือ: แสดงด้านล่างสุดของ hero เท่านั้น -->
-    <p class="hero-sub hero-sub-bottom"><span class="hsb-line">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร</span> <span
-        class="hsb-dot">·</span> <span class="hsb-line">มหาวิทยาลัยราชภัฏยะลา</span></p>
+    <p class="hero-sub hero-sub-bottom"><span class="hsb-line">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร</span> <span class="hsb-dot">·</span> <span class="hsb-line">มหาวิทยาลัยราชภัฏยะลา</span></p>
 
     <!-- Decorative wave -->
     <div class="hero-wave">
@@ -776,8 +774,8 @@
   </div>
 
   <!-- MANUAL VIEWER MODAL — อ่านคู่มือในหน้าต่างกลางจอ ไม่ต้องเปิดแท็บใหม่ -->
-  <div id="manual-modal" class="manual-modal hidden" role="dialog" aria-modal="true"
-    aria-labelledby="manual-modal-title" onclick="if(event.target===this)closeManual()">
+  <div id="manual-modal" class="manual-modal hidden" role="dialog" aria-modal="true" aria-labelledby="manual-modal-title"
+    onclick="if(event.target===this)closeManual()">
     <div class="manual-modal-box">
       <div class="manual-modal-bar">
         <div class="manual-modal-title" id="manual-modal-title"><i class="fas fa-images"></i> <span
@@ -794,6 +792,19 @@
       </div>
       <div class="manual-modal-hint">เลื่อนเพื่ออ่าน · กดพื้นที่ว่างหรือปุ่ม Esc เพื่อปิด</div>
     </div>
+  </div>
+
+  <!-- FLOATING NAV ICON — ลิงก์แบบฟอร์มประเมิน (ตั้งค่าได้จากหน้า SuperAdmin) -->
+  <div id="nav-fab-wrap" class="nav-fab-wrap hidden">
+    <div id="nav-fab-bubble" class="nav-fab-bubble" role="status" aria-live="polite">
+      <span id="nav-fab-bubble-text"></span>
+      <button type="button" class="nav-fab-bubble-close" onclick="dismissNavFabBubble()"
+        aria-label="ปิดข้อความ">&times;</button>
+    </div>
+    <a id="nav-fab-btn" class="nav-fab-btn" href="#" target="_blank" rel="noopener">
+      <i class="fas fa-clipboard-list"></i>
+      <span class="nav-fab-label" id="nav-fab-label"></span>
+    </a>
   </div>
 
   <!-- FOOTER -->

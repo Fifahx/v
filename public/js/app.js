@@ -89,6 +89,15 @@ window.onTurnstileSuccess = (token) => onTurnstileSuccess(token);
 window.onTurnstileExpire = () => onTurnstileExpire();
 window.onTurnstileError = () => onTurnstileError();
 let currentUser = null;
+
+// ── สิทธิ์การใช้งาน ──
+// superadmin ได้ทุกสิทธิ์ / บัญชีเดิมที่ยังไม่เคยตั้งสิทธิ์ (ไม่มี field) ก็ได้ทุกสิทธิ์
+function hasPerm(key) {
+  if (!currentUser) return false;
+  if (currentUser.role === 'superadmin') return true;
+  if (!Array.isArray(currentUser.permissions)) return true;
+  return currentUser.permissions.includes(key);
+}
 let currentStep = 1;
 let ratingSelection = 0;
 let vocData = { cType: 'นักศึกษา', priority: 'medium', category: 'ข้อเสนอแนะหลักสูตร' };
@@ -175,7 +184,17 @@ function updateMenuForUser() {
 function updateMenuForAdmin() {
   _updateAdminFab(true); // ซ่อน FAB — admin login แล้ว ไม่ต้องแสดงอีก
   _initAdminPageContent('admin');
-  document.getElementById('main-nav').innerHTML = `<a onclick="navigateTo('home')" id="nav-home">หน้าหลัก</a><a onclick="navigateTo('admin-dashboard')" id="nav-admin-dashboard">สถิติ</a><a onclick="navigateTo('admin-tickets')" id="nav-admin-tickets">จัดการเรื่อง</a><a onclick="navigateTo('admin-reviews')" id="nav-admin-reviews">รีวิว</a><a onclick="navigateTo('admin-report')" id="nav-admin-report">รายงาน</a><a onclick="navigateTo('faq')" id="nav-faq">FAQ</a>`;
+  // แสดงเฉพาะเมนูที่บัญชีนี้มีสิทธิ์เข้าถึง
+  const links = [
+    ['home', 'nav-home', 'หน้าหลัก', null],
+    ['admin-dashboard', 'nav-admin-dashboard', 'สถิติ', 'dashboard'],
+    ['admin-tickets', 'nav-admin-tickets', 'จัดการเรื่อง', 'tickets'],
+    ['admin-reviews', 'nav-admin-reviews', 'รีวิว', 'reviews'],
+    ['admin-report', 'nav-admin-report', 'รายงาน', 'report'],
+    ['faq', 'nav-faq', 'FAQ', null],
+  ].filter(([, , , perm]) => !perm || hasPerm(perm));
+  document.getElementById('main-nav').innerHTML = links
+    .map(([page, id, label]) => `<a onclick="navigateTo('${page}')" id="${id}">${label}</a>`).join('');
   document.getElementById('right-menu').innerHTML = `<span class="user-badge header-auth-desktop"><i class="fas fa-shield-alt"></i>${currentUser.fullname || 'Admin'}</span><a onclick="doLogout()" class="header-auth-desktop" style="color:#fff;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt"></i></a><button class="header-auth-mobile header-auth-mobile--logged" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ (Admin)"><i class="fas fa-shield-alt"></i></button><button class="header-auth-mobile header-auth-mobile--logout" onclick="doLogout()" aria-label="ออกจากระบบ" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>`;
 }
 function updateMenuForSuperAdmin() {
@@ -889,9 +908,7 @@ async function renderTicketCards(tickets, showRating = false) {
 // ════ RATING ════
 function buildRatingBox(ticketId) { return `<div class="rating-box" id="rbox-${ticketId}"><h4>ให้คะแนนการบริการ</h4><div class="star-row" id="stars-${ticketId}">${[1, 2, 3, 4, 5].map(i => `<button class="star-btn dim" onclick="selectStar('${ticketId}',${i})">⭐</button>`).join('')}</div><textarea class="rating-comment" id="rc-${ticketId}" rows="2" placeholder="ความคิดเห็น (ไม่บังคับ)"></textarea><button class="btn-rate" onclick="submitRating('${ticketId}')"><i class="fas fa-paper-plane"></i> ส่งคะแนน</button></div>`; }
 function selectStar(tid, score) { ratingSelection = score; const row = document.getElementById('stars-' + tid); if (!row) return; row.querySelectorAll('.star-btn').forEach((b, i) => { b.classList.toggle('lit', i < score); b.classList.toggle('dim', i >= score); b.style.transform = i < score ? 'scale(1.1)' : 'scale(1)'; }); }
-async function submitRating(ticketId) {
-  if (!ratingSelection) { await showAlert('กรุณาเลือกคะแนน', ''); return; } const comment = document.getElementById('rc-' + ticketId)?.value.trim(); try {
-    const res = await api.post('/api/ratings', { ticketId, username: currentUser?.username || '', score: ratingSelection, comment }); if (res.success) {
+async function submitRating(ticketId) { if (!ratingSelection) { await showAlert('กรุณาเลือกคะแนน', ''); return; } const comment = document.getElementById('rc-' + ticketId)?.value.trim(); try { const res = await api.post('/api/ratings', { ticketId, username: currentUser?.username || '', score: ratingSelection, comment }); if (res.success) {
       const box = document.getElementById('rbox-' + ticketId);
       if (box) box.innerHTML = `<div style="text-align:center;padding:16px;color:#2d6a4f;font-weight:700;">✅ ขอบคุณสำหรับ ${'⭐'.repeat(ratingSelection)} คะแนน</div>`;
       // เอาสถานะ "รอให้คะแนน" ออกจากการ์ดทันที แล้วติดป้ายว่าให้คะแนนแล้ว
@@ -907,9 +924,7 @@ async function submitRating(ticketId) {
       ratingSelection = 0;
       // โหลดรายการใหม่เพื่อให้การ์ดกลับไปอยู่ตำแหน่งตามลำดับสถานะ
       if (_trackRenderMode === 'my') setTimeout(() => loadMyTickets(), 1500);
-    } else await showAlert('แจ้งเตือน', res.message);
-  } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
-}
+    } else await showAlert('แจ้งเตือน', res.message); } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); } }
 
 // ════ FAQ ════
 async function loadFaq() { const container = document.getElementById('faq-content'); if (!container) return; container.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>'; try { const res = await api.get('/api/faq'); if (res.success) renderFaq(res.faqs || []); else container.innerHTML = '<p style="color:red;">โหลด FAQ ไม่สำเร็จ</p>'; } catch (e) { container.innerHTML = `<p style="color:red;">${e.message}</p>`; } }
@@ -1569,9 +1584,28 @@ function renderReviews(ratings, summary) { const container = document.getElement
 
 // ════ SUPERADMIN ════
 async function loadSuperAdmin() { showSATab('news'); }
-function showSATab(tab) { currentSATab = tab; if (tab === 'news') loadSANews(); if (tab === 'faq') loadSAFaq(); if (tab === 'admins') loadSAAdmins(); }
-function _saTabsHtml() { return `<div class="sa-tabs"><button class="sa-tab ${currentSATab === 'news' ? 'active' : ''}" onclick="showSATab('news')"><i class="fas fa-newspaper"></i> ข่าวสาร</button><button class="sa-tab ${currentSATab === 'faq' ? 'active' : ''}" onclick="showSATab('faq')"><i class="fas fa-question-circle"></i> FAQ</button><button class="sa-tab ${currentSATab === 'admins' ? 'active' : ''}" onclick="showSATab('admins')"><i class="fas fa-user-shield"></i> เจ้าหน้าที่</button></div>`; }
-function _saBannerHtml() { return `<div class="superadmin-banner"><i class="fas fa-crown"></i><div><strong>เจ้าหน้าที่ระดับสูง</strong><br><small>จัดการข่าวสาร FAQ และการตั้งค่าระบบ</small></div></div>`; }
+function showSATab(tab) {
+  currentSATab = tab;
+  if (tab === 'news') loadSANews();
+  if (tab === 'faq') loadSAFaq();
+  if (tab === 'admins') loadSAAdmins();
+  if (tab === 'mgmt') loadSAMgmt();
+  if (tab === 'perms') loadSAPerms();
+  if (tab === 'navicon') loadSANavIcon();
+}
+function _saTabsHtml() {
+  const tabs = [
+    ['news', 'fa-newspaper', 'ข่าวสาร'],
+    ['faq', 'fa-question-circle', 'FAQ'],
+    ['admins', 'fa-user-shield', 'เจ้าหน้าที่'],
+    ['perms', 'fa-key', 'สิทธิ์การใช้งาน'],
+    ['mgmt', 'fa-users', 'ผู้บริหาร'],
+    ['navicon', 'fa-location-arrow', 'ไอคอนนำทาง'],
+  ];
+  return `<div class="sa-tabs">${tabs.map(([k, icon, label]) =>
+    `<button class="sa-tab ${currentSATab === k ? 'active' : ''}" onclick="showSATab('${k}')"><i class="fas ${icon}"></i> ${label}</button>`).join('')}</div>`;
+}
+function _saBannerHtml() { return `<div class="superadmin-banner"><i class="fas fa-crown"></i><div><strong>เจ้าหน้าที่ระดับสูง</strong><br><small>จัดการข่าวสาร FAQ สิทธิ์เจ้าหน้าที่ ข้อมูลผู้บริหาร และการตั้งค่าระบบ</small></div></div>`; }
 
 async function loadSAAdmins() { const container = document.getElementById('superadmin-content'); if (!container) return; try { const res = await api.post('/api/auth', { action: 'listAdmins' }); renderSAAdmins(res.admins || []); } catch (e) { document.getElementById('superadmin-content').innerHTML = `<p style="color:red;">${e.message}</p>`; } }
 function renderSAAdmins(admins) { const container = document.getElementById('superadmin-content'); let html = _saBannerHtml() + _saTabsHtml(); html += `<div class="news-manager-form"><h4><i class="fas fa-user-plus"></i> เพิ่ม เจ้าหน้าที่ ใหม่</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="form-group" style="margin-bottom:0;"><label>Username *</label><input type="text" id="new-admin-user" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div><div class="form-group" style="margin-bottom:0;"><label>รหัสผ่าน *</label><input type="password" id="new-admin-pass" placeholder="อย่างน้อย 8 ตัว" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div><div class="form-group" style="margin-bottom:0;"><label>ชื่อแสดง</label><input type="text" id="new-admin-name" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div><div class="form-group" style="margin-bottom:0;"><label>อีเมล</label><input type="email" id="new-admin-email" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div></div><button class="btn-add-news" style="margin-top:14px;" onclick="addAdmin()"><i class="fas fa-plus"></i> เพิ่ม Admin</button></div>`; admins.forEach(a => { html += `<div class="news-manager-card" style="display:flex;align-items:center;gap:14px;"><div style="width:44px;height:44px;background:var(--dgreen);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;">${(a.fullname || a.username || 'A')[0].toUpperCase()}</div><div style="flex:1;"><div style="font-weight:700;">${a.fullname || a.username}</div><div style="font-size:.82rem;color:#aaa;font-family:monospace;">${a.username} · ${a.email || 'ไม่มีอีเมล'}</div></div><span style="font-size:.75rem;padding:3px 10px;border-radius:8px;background:${a.status === 'active' ? '#e8f5e9' : '#fde8e8'};color:${a.status === 'active' ? '#2d6a4f' : '#d00000'};font-weight:700;">${a.status === 'active' ? 'ใช้งาน' : 'ระงับ'}</span></div>`; }); container.innerHTML = html; }
@@ -1593,6 +1627,424 @@ function editFaq(f) { const catOpts = ['การใช้งาน', 'ควา
 async function updateFaq(faqId) { const category = document.getElementById('edit-faq-cat')?.value; const question = document.getElementById('edit-faq-q')?.value.trim(); const answer = document.getElementById('edit-faq-a')?.value.trim(); if (!question || !answer) { await showAlert('กรุณากรอกข้อมูล', ''); return; } try { const res = await api.post('/api/faq', { action: 'update', faqId, category, question, answer }); if (res.success) { const o = document.getElementById('edit-faq-overlay'); if (o) document.body.removeChild(o); showToast('แก้ไข FAQ สำเร็จ', 'success'); loadSAFaq(); } else await showAlert('ไม่สำเร็จ', res.message); } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); } }
 async function addFaq() { const cat = document.getElementById('faq-cat-new')?.value; const q = document.getElementById('faq-q-new')?.value.trim(); const a = document.getElementById('faq-a-new')?.value.trim(); if (!q || !a) { await showAlert('กรุณากรอกข้อมูล', ''); return; } try { const res = await api.post('/api/faq', { action: 'add', category: cat, question: q, answer: a }); if (res.success) { showToast('เพิ่ม FAQ สำเร็จ', 'success'); loadSAFaq(); } else await showAlert('ไม่สำเร็จ', res.message); } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); } }
 async function deleteFaq(faqId) { if (!await showConfirm('ลบคำถาม', '', 'danger')) return; try { const res = await api.post('/api/faq', { action: 'delete', faqId }); if (res.success) { showToast('ลบ FAQ สำเร็จ', 'success'); loadSAFaq(); } else await showAlert('ลบไม่สำเร็จ', res.message); } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); } }
+
+
+// ════════════════════════════════════════════════════════════
+//  FLOATING NAV ICON (ลิงก์แบบฟอร์มประเมิน) + ป็อปอัพคล้ายแชท
+// ════════════════════════════════════════════════════════════
+let _navFabCfg = null;
+let _navFabTimers = [];
+
+function _clearNavFabTimers() {
+  _navFabTimers.forEach(t => clearTimeout(t));
+  _navFabTimers = [];
+}
+
+async function initNavFab(force = false) {
+  try {
+    const res = await api.get('/api/settings');
+    _navFabCfg = res.settings || {};
+  } catch (e) { return; }
+  applyNavFab(_navFabCfg);
+}
+
+function applyNavFab(cfg) {
+  const wrap = document.getElementById('nav-fab-wrap');
+  if (!wrap) return;
+  _clearNavFabTimers();
+
+  const on = String(cfg['navIcon.enabled']) === 'true';
+  const url = String(cfg['navIcon.url'] || '').trim();
+  if (!on || !url) { wrap.classList.add('hidden'); return; }
+
+  const btn = document.getElementById('nav-fab-btn');
+  const label = document.getElementById('nav-fab-label');
+  btn.href = url;
+  btn.title = cfg['navIcon.label'] || 'ประเมินความพึงพอใจ';
+  if (label) label.textContent = cfg['navIcon.label'] || 'ประเมินความพึงพอใจ';
+  wrap.classList.remove('hidden');
+
+  // ป็อปอัพ: โผล่ค้างไว้ตามเวลาที่ตั้ง แล้วหาย เว้นระยะแล้ววนใหม่
+  const popupOn = String(cfg['navIcon.popupEnabled']) === 'true';
+  if (!popupOn) return;
+  const text = cfg['navIcon.popupText'] || 'อย่าลืมกดประเมินประสิทธิภาพของระบบได้ที่นี่นะ';
+  const interval = Math.max(3, Number(cfg['navIcon.popupInterval']) || 10) * 1000;
+  const duration = Math.max(1, Number(cfg['navIcon.popupDuration']) || 3) * 1000;
+  const bubble = document.getElementById('nav-fab-bubble');
+  const bubbleText = document.getElementById('nav-fab-bubble-text');
+  if (!bubble || !bubbleText) return;
+  bubbleText.textContent = text;
+
+  const cycle = () => {
+    if (_navFabDismissed) return;
+    bubble.classList.add('show');
+    _navFabTimers.push(setTimeout(() => {
+      bubble.classList.remove('show');
+      _navFabTimers.push(setTimeout(cycle, interval));
+    }, duration));
+  };
+  _navFabTimers.push(setTimeout(cycle, 2000)); // เด้งครั้งแรกหลังโหลดหน้า 2 วิ
+}
+
+let _navFabDismissed = false;
+function dismissNavFabBubble() {
+  _navFabDismissed = true;
+  _clearNavFabTimers();
+  document.getElementById('nav-fab-bubble')?.classList.remove('show');
+}
+
+// ════════════════════════════════════════════════════════════
+//  SUPERADMIN — จัดการรูปภาพ/ตำแหน่งผู้บริหาร
+// ════════════════════════════════════════════════════════════
+let _saMgmtCache = [];
+
+// ย่อรูปฝั่ง client ก่อนส่ง เพราะเซลล์ Google Sheets เก็บได้ ~50,000 ตัวอักษร
+function _resizeImageToDataUrl(file, maxW = 420, quality = 0.72) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('อ่านไฟล์ไม่สำเร็จ'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('ไฟล์นี้ไม่ใช่รูปภาพ'));
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width);
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        // PNG รักษาพื้นหลังโปร่งใสของรูปผู้บริหาร แต่ไฟล์ใหญ่ — ลองทั้งคู่แล้วเลือกอันเล็กกว่า
+        const webp = canvas.toDataURL('image/webp', quality);
+        const png = canvas.toDataURL('image/png');
+        resolve(png.length <= 45000 ? png : webp);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleMgmtImage(input, previewId, holderId) {
+  const file = input.files?.[0];
+  if (!file) return;
+  try {
+    const dataUrl = await _resizeImageToDataUrl(file);
+    if (dataUrl.length > 45000) {
+      await showAlert('รูปใหญ่เกินไป', 'กรุณาใช้รูปที่มีขนาดเล็กลง หรือครอบตัดให้แคบลงก่อน');
+      input.value = '';
+      return;
+    }
+    const holder = document.getElementById(holderId);
+    if (holder) holder.value = dataUrl;
+    const prev = document.getElementById(previewId);
+    if (prev) { prev.innerHTML = `<img src="${dataUrl}" alt="ตัวอย่างรูป">`; prev.style.display = 'block'; }
+  } catch (e) {
+    await showAlert('เกิดข้อผิดพลาด', e.message);
+    input.value = '';
+  }
+}
+
+async function loadSAMgmt() {
+  const container = document.getElementById('superadmin-content');
+  if (!container) return;
+  container.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i></div>';
+  try {
+    const res = await api.get('/api/mgmt?all=1');
+    _saMgmtCache = res.people || [];
+    renderSAMgmt(_saMgmtCache);
+  } catch (e) {
+    container.innerHTML = `<p style="color:red;">${e.message}</p>`;
+  }
+}
+
+function renderSAMgmt(people) {
+  const container = document.getElementById('superadmin-content');
+  let html = _saBannerHtml() + _saTabsHtml();
+  html += `<div class="news-manager-form">
+    <h4><i class="fas fa-user-plus"></i> เพิ่มผู้บริหาร / อาจารย์</h4>
+    <div class="form-group"><label>ชื่อ-นามสกุล *</label><input type="text" id="mgmt-new-name" placeholder="เช่น ผศ.ดร.สมชาย ใจดี"></div>
+    <div class="form-group"><label>ตำแหน่ง *</label><input type="text" id="mgmt-new-pos" placeholder="เช่น รองคณบดีฝ่ายวิชาการ"></div>
+    <div class="form-group"><label>รูปภาพ</label>
+      <input type="file" accept="image/*" id="mgmt-new-file" onchange="handleMgmtImage(this,'mgmt-new-preview','mgmt-new-img')">
+      <input type="hidden" id="mgmt-new-img">
+      <div class="mgmt-img-preview" id="mgmt-new-preview" style="display:none;"></div>
+      <small style="color:#888;">ระบบจะย่อรูปให้อัตโนมัติ แนะนำรูปพื้นหลังโปร่งใส (PNG)</small>
+    </div>
+    <button class="btn-submit" onclick="addMgmt()"><i class="fas fa-plus"></i> เพิ่มรายชื่อ</button>
+  </div>`;
+
+  html += `<div class="sa-list-head"><i class="fas fa-users"></i> รายชื่อทั้งหมด (${people.length})</div>`;
+  if (!people.length) {
+    html += '<div class="no-tickets"><p>ยังไม่มีรายชื่อ</p></div>';
+  } else {
+    html += '<div class="mgmt-admin-grid">';
+    people.forEach((p, i) => {
+      html += `<div class="mgmt-admin-card">
+        <div class="mgmt-admin-thumb">${p.img ? `<img src="${p.img}" alt="${(p.name || '').replace(/"/g, '&quot;')}">` : '<i class="fas fa-user"></i>'}</div>
+        <div class="mgmt-admin-info">
+          <div class="mgmt-admin-name">${p.name || '-'}</div>
+          <div class="mgmt-admin-pos">${p.pos || '-'}</div>
+          <div class="mgmt-admin-order">ลำดับที่ ${i + 1}${p.status !== 'active' ? ' · ซ่อนอยู่' : ''}</div>
+        </div>
+        <div class="mgmt-admin-actions">
+          <button onclick="moveMgmt('${p.mgmtId}',-1)" title="เลื่อนขึ้น" ${i === 0 ? 'disabled' : ''}><i class="fas fa-arrow-up"></i></button>
+          <button onclick="moveMgmt('${p.mgmtId}',1)" title="เลื่อนลง" ${i === people.length - 1 ? 'disabled' : ''}><i class="fas fa-arrow-down"></i></button>
+          <button onclick="editMgmt('${p.mgmtId}')" title="แก้ไข"><i class="fas fa-edit"></i></button>
+          <button class="danger" onclick="deleteMgmt('${p.mgmtId}')" title="ลบ"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+async function addMgmt() {
+  const name = document.getElementById('mgmt-new-name')?.value.trim();
+  const pos = document.getElementById('mgmt-new-pos')?.value.trim();
+  const img = document.getElementById('mgmt-new-img')?.value || '';
+  if (!name || !pos) { await showAlert('ข้อมูลไม่ครบ', 'กรุณากรอกชื่อและตำแหน่ง'); return; }
+  if (!await showConfirm('ยืนยันการเพิ่มรายชื่อ', `ต้องการเพิ่ม <strong>${name}</strong> เข้าสไลด์หน้าแรกใช่หรือไม่?`)) return;
+  try {
+    const res = await api.post('/api/mgmt', { action: 'add', name, pos, img });
+    if (res.success) { showToast('เพิ่มรายชื่อสำเร็จ', 'success'); loadSAMgmt(); }
+    else await showAlert('เพิ่มไม่สำเร็จ', res.message || '');
+  } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
+}
+
+function editMgmt(mgmtId) {
+  const p = _saMgmtCache.find(x => String(x.mgmtId) === String(mgmtId));
+  if (!p) { showAlert('เกิดข้อผิดพลาด', 'ไม่พบรายการนี้'); return; }
+  const o = document.createElement('div');
+  o.className = 'voc-overlay'; o.id = 'edit-mgmt-overlay';
+  o.innerHTML = `<div class="voc-modal-box" style="max-width:560px;">
+    <div class="voc-modal-title"><i class="fas fa-edit"></i> แก้ไขข้อมูลผู้บริหาร</div>
+    <div class="form-group"><label>ชื่อ-นามสกุล *</label><input type="text" id="edit-mgmt-name" value="${(p.name || '').replace(/"/g, '&quot;')}" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div>
+    <div class="form-group"><label>ตำแหน่ง *</label><input type="text" id="edit-mgmt-pos" value="${(p.pos || '').replace(/"/g, '&quot;')}" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div>
+    <div class="form-group"><label>รูปภาพ</label>
+      <div class="mgmt-img-preview" id="edit-mgmt-preview" style="display:block;">${p.img ? `<img src="${p.img}" alt="รูปปัจจุบัน">` : '<span style="color:#aaa;">ยังไม่มีรูป</span>'}</div>
+      <input type="file" accept="image/*" id="edit-mgmt-file" onchange="handleMgmtImage(this,'edit-mgmt-preview','edit-mgmt-img')" style="margin-top:8px;">
+      <input type="hidden" id="edit-mgmt-img">
+      <small style="color:#888;">เว้นว่างไว้ = ใช้รูปเดิม</small>
+    </div>
+    <div class="voc-modal-btns">
+      <button class="voc-btn-cancel" onclick="document.getElementById('edit-mgmt-overlay').remove()">ยกเลิก</button>
+      <button class="voc-btn-ok" onclick="updateMgmt('${p.mgmtId}')">บันทึก</button>
+    </div>
+  </div>`;
+  document.body.appendChild(o);
+}
+
+async function updateMgmt(mgmtId) {
+  const name = document.getElementById('edit-mgmt-name')?.value.trim();
+  const pos = document.getElementById('edit-mgmt-pos')?.value.trim();
+  const img = document.getElementById('edit-mgmt-img')?.value || '';
+  if (!name || !pos) { await showAlert('ข้อมูลไม่ครบ', 'กรุณากรอกชื่อและตำแหน่ง'); return; }
+  if (!await showConfirm('ยืนยันการบันทึกการแก้ไข', `ต้องการบันทึกข้อมูลของ <strong>${name}</strong> ใช่หรือไม่?`)) return;
+  try {
+    const res = await api.post('/api/mgmt', { action: 'update', mgmtId, name, pos, img });
+    if (res.success) {
+      document.getElementById('edit-mgmt-overlay')?.remove();
+      showToast('บันทึกการแก้ไขสำเร็จ', 'success');
+      loadSAMgmt();
+    } else await showAlert('บันทึกไม่สำเร็จ', res.message || '');
+  } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
+}
+
+async function deleteMgmt(mgmtId) {
+  const p = _saMgmtCache.find(x => String(x.mgmtId) === String(mgmtId));
+  if (!await showConfirm('ยืนยันการลบรายชื่อ', `ต้องการลบ <strong>${p?.name || mgmtId}</strong> ออกจากสไลด์ใช่หรือไม่?<br><small style="color:#d00000;">ไม่สามารถเรียกคืนได้</small>`, 'danger')) return;
+  try {
+    const res = await api.post('/api/mgmt', { action: 'delete', mgmtId });
+    if (res.success) { showToast('ลบรายชื่อสำเร็จ', 'success'); loadSAMgmt(); }
+    else await showAlert('ลบไม่สำเร็จ', res.message || '');
+  } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
+}
+
+async function moveMgmt(mgmtId, dir) {
+  const p = _saMgmtCache.find(x => String(x.mgmtId) === String(mgmtId));
+  if (!await showConfirm('ยืนยันการเปลี่ยนลำดับ', `ต้องการเลื่อน <strong>${p?.name || mgmtId}</strong> ${dir < 0 ? 'ขึ้น' : 'ลง'} หนึ่งลำดับใช่หรือไม่?`)) return;
+  try {
+    const res = await api.post('/api/mgmt', { action: 'move', mgmtId, dir });
+    if (res.success) { showToast('เปลี่ยนลำดับสำเร็จ', 'success'); loadSAMgmt(); }
+    else await showAlert('เปลี่ยนลำดับไม่สำเร็จ', res.message || '');
+  } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
+}
+
+// ════════════════════════════════════════════════════════════
+//  SUPERADMIN — สิทธิ์การใช้งานของเจ้าหน้าที่
+// ════════════════════════════════════════════════════════════
+const PERM_LABELS = {
+  'dashboard': 'ดูหน้าสถิติ',
+  'tickets': 'เข้าหน้าจัดการเรื่อง',
+  'ticket.update': 'เปลี่ยนสถานะ / ผู้รับผิดชอบ',
+  'ticket.comment': 'เพิ่มความคิดเห็น',
+  'ticket.pin': 'ปักหมุดเรื่อง',
+  'reviews': 'ดูรีวิว',
+  'report': 'ดูรายงาน',
+};
+let _saPermsCache = [];
+
+async function loadSAPerms() {
+  const container = document.getElementById('superadmin-content');
+  if (!container) return;
+  container.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i></div>';
+  try {
+    const res = await api.post('/api/auth', { action: 'listAdmins' });
+    _saPermsCache = res.admins || [];
+    renderSAPerms(_saPermsCache);
+  } catch (e) {
+    container.innerHTML = `<p style="color:red;">${e.message}</p>`;
+  }
+}
+
+function renderSAPerms(admins) {
+  const container = document.getElementById('superadmin-content');
+  let html = _saBannerHtml() + _saTabsHtml();
+  html += `<div class="perm-note"><i class="fas fa-info-circle"></i> กำหนดได้ว่าเจ้าหน้าที่แต่ละคนเข้าถึงส่วนใดได้บ้าง — การเปลี่ยนสิทธิ์จะมีผลเมื่อเจ้าหน้าที่คนนั้นเข้าสู่ระบบครั้งถัดไป</div>`;
+  if (!admins.length) {
+    html += '<div class="no-tickets"><p>ยังไม่มีเจ้าหน้าที่ในระบบ</p></div>';
+    container.innerHTML = html;
+    return;
+  }
+  admins.forEach(a => {
+    const perms = a.permissions || [];
+    html += `<div class="perm-card" id="perm-card-${a.username}">
+      <div class="perm-card-head">
+        <div>
+          <div class="perm-card-name"><i class="fas fa-user-shield"></i> ${a.fullname || a.username}</div>
+          <div class="perm-card-sub">${a.username}${a.email ? ' · ' + a.email : ''}</div>
+        </div>
+        <span class="status ${a.status === 'active' ? 'status-success' : 'status-reject'}">${a.status === 'active' ? 'ใช้งาน' : 'ปิดใช้งาน'}</span>
+      </div>
+      <div class="perm-grid">
+        ${Object.keys(PERM_LABELS).map(k => `<label class="perm-item"><input type="checkbox" data-user="${a.username}" value="${k}" ${perms.includes(k) ? 'checked' : ''}><span>${PERM_LABELS[k]}</span></label>`).join('')}
+      </div>
+      <div class="perm-card-btns">
+        <button class="perm-btn-toggle" onclick="toggleAdminStatus('${a.username}','${a.status === 'active' ? 'disabled' : 'active'}')">
+          <i class="fas fa-power-off"></i> ${a.status === 'active' ? 'ปิดใช้งานบัญชี' : 'เปิดใช้งานบัญชี'}
+        </button>
+        <button class="perm-btn-save" onclick="saveAdminPerms('${a.username}')"><i class="fas fa-save"></i> บันทึกสิทธิ์</button>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+async function saveAdminPerms(username) {
+  const boxes = document.querySelectorAll(`#perm-card-${CSS.escape(username)} input[type="checkbox"]`);
+  const permissions = [...boxes].filter(b => b.checked).map(b => b.value);
+  const summary = permissions.length
+    ? permissions.map(k => PERM_LABELS[k]).join(', ')
+    : '<span style="color:#d00000;">ไม่มีสิทธิ์ใด ๆ</span>';
+  if (!await showConfirm('ยืนยันการบันทึกสิทธิ์', `กำหนดสิทธิ์ให้ <strong>${username}</strong> เป็น:<br><small>${summary}</small>`)) return;
+  try {
+    const res = await api.post('/api/auth', { action: 'setAdminPermissions', username, permissions });
+    if (res.success) { showToast('บันทึกสิทธิ์สำเร็จ', 'success'); loadSAPerms(); }
+    else await showAlert('บันทึกไม่สำเร็จ', res.message || '');
+  } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
+}
+
+async function toggleAdminStatus(username, status) {
+  const label = status === 'active' ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+  if (!await showConfirm(`ยืนยันการ${label}บัญชี`, `ต้องการ${label}บัญชี <strong>${username}</strong> ใช่หรือไม่?`, status === 'active' ? 'warning' : 'danger')) return;
+  try {
+    const res = await api.post('/api/auth', { action: 'setAdminStatus', username, status });
+    if (res.success) { showToast(`${label}บัญชีสำเร็จ`, 'success'); loadSAPerms(); }
+    else await showAlert('ไม่สำเร็จ', res.message || '');
+  } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
+}
+
+// ════════════════════════════════════════════════════════════
+//  SUPERADMIN — ตั้งค่าไอคอนนำทางลอย
+// ════════════════════════════════════════════════════════════
+async function loadSANavIcon() {
+  const container = document.getElementById('superadmin-content');
+  if (!container) return;
+  container.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i></div>';
+  try {
+    const res = await api.get('/api/settings');
+    renderSANavIcon(res.settings || {});
+  } catch (e) {
+    container.innerHTML = `<p style="color:red;">${e.message}</p>`;
+  }
+}
+
+function renderSANavIcon(s) {
+  const container = document.getElementById('superadmin-content');
+  const esc = v => String(v == null ? '' : v).replace(/"/g, '&quot;');
+  let html = _saBannerHtml() + _saTabsHtml();
+  html += `<div class="news-manager-form">
+    <h4><i class="fas fa-location-arrow"></i> ไอคอนนำทางลอย (แบบฟอร์มประเมิน)</h4>
+
+    <label class="nav-toggle-row">
+      <input type="checkbox" id="fab-enabled" ${String(s['navIcon.enabled']) === 'true' ? 'checked' : ''}>
+      <span>แสดงไอคอนลอยบนหน้าเว็บ</span>
+    </label>
+
+    <div class="form-group"><label>ลิงก์แบบฟอร์ม (Google Form) *</label>
+      <input type="url" id="fab-url" value="${esc(s['navIcon.url'])}" placeholder="https://docs.google.com/forms/d/e/..../viewform"></div>
+
+    <div class="form-group"><label>ข้อความกำกับไอคอน</label>
+      <input type="text" id="fab-label" value="${esc(s['navIcon.label'])}" placeholder="ประเมินความพึงพอใจ"></div>
+
+    <hr class="sa-divider">
+
+    <label class="nav-toggle-row">
+      <input type="checkbox" id="fab-popup-enabled" ${String(s['navIcon.popupEnabled']) === 'true' ? 'checked' : ''}>
+      <span>แสดงป็อปอัพแจ้งเตือนคล้ายแชท</span>
+    </label>
+
+    <div class="form-group"><label>ข้อความในป็อปอัพ</label>
+      <textarea id="fab-popup-text" rows="2" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;">${String(s['navIcon.popupText'] || '')}</textarea></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group"><label>เว้นระยะก่อนเด้งรอบถัดไป (วินาที)</label>
+        <input type="number" id="fab-popup-interval" min="3" max="600" value="${esc(s['navIcon.popupInterval'] || 10)}"></div>
+      <div class="form-group"><label>ค้างไว้นาน (วินาที)</label>
+        <input type="number" id="fab-popup-duration" min="1" max="60" value="${esc(s['navIcon.popupDuration'] || 3)}"></div>
+    </div>
+
+    <button class="btn-submit" onclick="saveNavIconSettings()"><i class="fas fa-save"></i> บันทึกการตั้งค่า</button>
+  </div>`;
+  container.innerHTML = html;
+}
+
+async function saveNavIconSettings() {
+  const enabled = document.getElementById('fab-enabled')?.checked ? 'true' : 'false';
+  const url = document.getElementById('fab-url')?.value.trim() || '';
+  const label = document.getElementById('fab-label')?.value.trim() || 'ประเมินความพึงพอใจ';
+  const popupEnabled = document.getElementById('fab-popup-enabled')?.checked ? 'true' : 'false';
+  const popupText = document.getElementById('fab-popup-text')?.value.trim() || '';
+  const popupInterval = document.getElementById('fab-popup-interval')?.value || '10';
+  const popupDuration = document.getElementById('fab-popup-duration')?.value || '3';
+
+  if (enabled === 'true' && !/^https?:\/\//i.test(url)) {
+    await showAlert('ลิงก์ไม่ถูกต้อง', 'กรุณาใส่ลิงก์แบบฟอร์มที่ขึ้นต้นด้วย https://');
+    return;
+  }
+  if (!await showConfirm('ยืนยันการบันทึกการตั้งค่า',
+    `ไอคอนลอย: <strong>${enabled === 'true' ? 'เปิด' : 'ปิด'}</strong><br>ป็อปอัพ: <strong>${popupEnabled === 'true' ? 'เปิด' : 'ปิด'}</strong> (ค้าง ${popupDuration} วิ · เว้น ${popupInterval} วิ)`)) return;
+
+  try {
+    const res = await api.post('/api/settings', {
+      action: 'set',
+      settings: {
+        'navIcon.enabled': enabled,
+        'navIcon.url': url,
+        'navIcon.label': label,
+        'navIcon.popupEnabled': popupEnabled,
+        'navIcon.popupText': popupText,
+        'navIcon.popupInterval': popupInterval,
+        'navIcon.popupDuration': popupDuration,
+      },
+    });
+    if (res.success) {
+      showToast('บันทึกการตั้งค่าสำเร็จ', 'success');
+      _navFabDismissed = false;
+      applyNavFab(res.settings || {});   // เห็นผลทันทีโดยไม่ต้องรีเฟรช
+    } else await showAlert('บันทึกไม่สำเร็จ', res.message || '');
+  } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
+}
 
 function _resetMenuToGuest() {
   const nav = document.getElementById('main-nav');
@@ -1652,6 +2104,12 @@ function _exposeGlobals() {
   G.loadReport = loadReport; G.selectReportType = selectReportType;
   G.printReport = printReport; G.showUserReport = showUserReport; G.closeUserReport = closeUserReport;
   G.loadSuperAdmin = loadSuperAdmin; G.showSATab = showSATab;
+  G.loadSAMgmt = loadSAMgmt; G.addMgmt = addMgmt; G.editMgmt = editMgmt;
+  G.updateMgmt = updateMgmt; G.deleteMgmt = deleteMgmt; G.moveMgmt = moveMgmt;
+  G.handleMgmtImage = handleMgmtImage;
+  G.loadSAPerms = loadSAPerms; G.saveAdminPerms = saveAdminPerms; G.toggleAdminStatus = toggleAdminStatus;
+  G.loadSANavIcon = loadSANavIcon; G.saveNavIconSettings = saveNavIconSettings;
+  G.dismissNavFabBubble = dismissNavFabBubble; G.hasPerm = hasPerm;
   G.addNews = addNews; G.editNews = editNews; G.updateNews = updateNews; G.deleteNews = deleteNews;
   G.addFaq = addFaq; G.editFaq = editFaq; G.updateFaq = updateFaq; G.deleteFaq = deleteFaq;
   G.addAdmin = addAdmin; G.handleNewsImageSelect = handleNewsImageSelect;
@@ -1676,6 +2134,8 @@ window.onload = function () {
 
   _registerCallbacks(); // register callbacks หลังจาก currentUser ถูก set แล้ว
   _exposeGlobals();
+
+  initNavFab(); // ไอคอนนำทางลอย + ป็อปอัพ (อ่านการตั้งค่าจาก /api/settings)
 
   if (saved) {
     if (saved.role === 'superadmin') updateMenuForSuperAdmin();
@@ -1706,7 +2166,7 @@ window.onload = function () {
 
 // ════ MGMT SLIDER (ต้องอยู่หลัง INIT section เพื่อให้ window.initMgmtSlider พร้อมก่อน onload) ════
 (function () {
-  const MGMT_PEOPLE = [
+  let MGMT_PEOPLE = [
     { img: '/img/คณะผู้บริหารคณะวิทย์/wilaiwan.png', name: 'ผศ.ดร.วิไลวัลย์ แก้วตาทิพย์', pos: 'คณบดีคณะวิทยาศาสตร์เทคโนโลยีและการเกษตร' },
     { img: '/img/คณะผู้บริหารคณะวิทย์/ดาว.png', name: 'ผศ.ดร.ปัทมา พิศภักดิ์', pos: 'รองคณบดีฝ่ายบริหารและเครือข่ายสัมพันธ์' },
     { img: '/img/คณะผู้บริหารคณะวิทย์/ely(nw).png', name: 'ผศ.ดร.อีลีหย๊ะ สนิโซ', pos: 'รองคณบดีฝ่ายวิจัย บริการวิชาการและกิจการนักศึกษา' },
@@ -1761,6 +2221,22 @@ window.onload = function () {
     if (track) { let tx = 0; track.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true }); track.addEventListener('touchend', e => { const diff = tx - e.changedTouches[0].clientX; if (Math.abs(diff) > 40) goTo(current + (diff > 0 ? 1 : -1)); }); }
   };
   window._mgmtGoTo = function (dir) { goTo(current + dir); };
+
+  // ดึงรายชื่อล่าสุดจากระบบจัดการ (superadmin แก้ได้) — ถ้าล้มเหลวใช้ค่าเริ่มต้นด้านบน
+  window._reloadMgmtPeople = async function () {
+    try {
+      const res = await fetch('/api/mgmt');
+      const json = await res.json();
+      if (json?.success && Array.isArray(json.people) && json.people.length) {
+        MGMT_PEOPLE = json.people.map(p => ({ img: p.img, name: p.name, pos: p.pos }));
+        current = 0;
+        buildSlides();
+        buildDots();
+        goTo(0);
+      }
+    } catch (e) { /* ใช้ค่าเริ่มต้นต่อไป */ }
+  };
+  window._reloadMgmtPeople();
 })();
 
 // ════════════════════════════════════════════════════

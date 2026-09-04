@@ -6514,7 +6514,6 @@ body.font-xl {
     padding: 6px 13px !important;
   }
 }
-
 /* ════════════════════════════════════════════════════════
    ADMIN SEARCH BAR + ACCORDION TICKET CARDS
    ════════════════════════════════════════════════════════ */
@@ -6937,5 +6936,397 @@ body.font-xl {
 
   .manual-modal-title {
     font-size: .86rem;
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   FLOATING NAV ICON + CHAT-STYLE POPUP
+   ════════════════════════════════════════════════════════ */
+.nav-fab-wrap {
+  position: fixed;
+  right: 20px;
+  bottom: 22px;
+  z-index: 3500;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.nav-fab-wrap.hidden {
+  display: none;
+}
+
+.nav-fab-btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 18px;
+  border-radius: 30px;
+  background: linear-gradient(135deg, #7248b9, #5b34a0);
+  color: #fff;
+  text-decoration: none;
+  font-family: 'Sarabun', sans-serif;
+  font-size: .9rem;
+  font-weight: 700;
+  box-shadow: 0 8px 22px rgba(91, 52, 160, .38);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.nav-fab-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(91, 52, 160, .5);
+}
+
+.nav-fab-btn i {
+  font-size: 1.15rem;
+}
+
+/* ป็อปอัพคล้ายกล่องแชท */
+.nav-fab-bubble {
+  pointer-events: auto;
+  position: relative;
+  max-width: 250px;
+  background: #fff;
+  color: #333;
+  border: 1.5px solid #e6e0f2;
+  border-radius: 14px 14px 4px 14px;
+  padding: 11px 30px 11px 14px;
+  font-size: .84rem;
+  line-height: 1.5;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .16);
+  opacity: 0;
+  transform: translateY(8px) scale(.96);
+  transition: opacity .28s ease, transform .28s ease;
+  visibility: hidden;
+}
+
+.nav-fab-bubble.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+}
+
+/* หางกล่องแชทชี้ลงหาไอคอน */
+.nav-fab-bubble::after {
+  content: '';
+  position: absolute;
+  right: 20px;
+  bottom: -8px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-right: 1.5px solid #e6e0f2;
+  border-bottom: 1.5px solid #e6e0f2;
+  transform: rotate(45deg);
+}
+
+.nav-fab-bubble-close {
+  position: absolute;
+  top: 5px;
+  right: 7px;
+  border: none;
+  background: none;
+  color: #bbb;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.nav-fab-bubble-close:hover {
+  color: #666;
+}
+
+@media(max-width:767px) {
+  .nav-fab-wrap {
+    right: 14px;
+    bottom: 84px;
+    /* เผื่อพื้นที่ปุ่มลอยเดิมของระบบ */
+  }
+
+  .nav-fab-label {
+    display: none;
+  }
+
+  .nav-fab-btn {
+    padding: 15px;
+    border-radius: 50%;
+  }
+
+  .nav-fab-bubble {
+    max-width: 210px;
+    font-size: .8rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .nav-fab-bubble,
+  .nav-fab-btn {
+    transition: none;
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   SUPERADMIN — จัดการผู้บริหาร / สิทธิ์ / ตั้งค่า
+   ════════════════════════════════════════════════════════ */
+.sa-list-head {
+  font-size: .9rem;
+  font-weight: 700;
+  color: #2d6a4f;
+  margin: 20px 0 12px;
+}
+
+.sa-divider {
+  border: none;
+  border-top: 1px dashed #ddd;
+  margin: 18px 0;
+}
+
+.mgmt-img-preview {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f4f6f5;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.mgmt-img-preview img {
+  max-width: 150px;
+  max-height: 170px;
+  border-radius: 8px;
+}
+
+.mgmt-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.mgmt-admin-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: var(--shadow);
+}
+
+.mgmt-admin-thumb {
+  flex: 0 0 62px;
+  width: 62px;
+  height: 62px;
+  border-radius: 12px;
+  background: #eef4f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #9bbcab;
+  font-size: 1.4rem;
+}
+
+.mgmt-admin-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.mgmt-admin-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mgmt-admin-name {
+  font-size: .92rem;
+  font-weight: 700;
+  color: #1b4332;
+}
+
+.mgmt-admin-pos {
+  font-size: .78rem;
+  color: #777;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.mgmt-admin-order {
+  font-size: .72rem;
+  color: #aaa;
+  margin-top: 4px;
+}
+
+.mgmt-admin-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+
+.mgmt-admin-actions button {
+  width: 30px;
+  height: 28px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 7px;
+  cursor: pointer;
+  color: #555;
+  font-size: .78rem;
+}
+
+.mgmt-admin-actions button:hover:not(:disabled) {
+  background: #f0f5f2;
+  border-color: #2d6a4f;
+  color: #2d6a4f;
+}
+
+.mgmt-admin-actions button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.mgmt-admin-actions button.danger:hover {
+  background: #fff5f5;
+  border-color: #d00000;
+  color: #d00000;
+}
+
+/* ── สิทธิ์การใช้งาน ── */
+.perm-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #eef4ff;
+  border: 1px solid #cfe0ff;
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: .82rem;
+  color: #29508c;
+  margin-bottom: 16px;
+}
+
+.perm-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+
+.perm-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.perm-card-name {
+  font-size: .95rem;
+  font-weight: 700;
+  color: #1b4332;
+}
+
+.perm-card-sub {
+  font-size: .76rem;
+  color: #999;
+  margin-top: 2px;
+}
+
+.perm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 8px;
+}
+
+.perm-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  background: #f7f9f8;
+  border: 1px solid #eaeeec;
+  border-radius: 8px;
+  font-size: .82rem;
+  cursor: pointer;
+}
+
+.perm-item input {
+  accent-color: #2d6a4f;
+  width: 16px;
+  height: 16px;
+}
+
+.perm-card-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.perm-btn-save,
+.perm-btn-toggle {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Sarabun', sans-serif;
+  font-size: .83rem;
+  font-weight: 700;
+}
+
+.perm-btn-save {
+  background: var(--dgreen);
+  color: #fff;
+}
+
+.perm-btn-toggle {
+  background: #fff;
+  border: 1px solid #ddd;
+  color: #666;
+}
+
+.perm-btn-toggle:hover {
+  border-color: #d00000;
+  color: #d00000;
+}
+
+.nav-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 14px;
+  background: #f7f9f8;
+  border: 1px solid #eaeeec;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  font-size: .88rem;
+  font-weight: 700;
+  color: #2d6a4f;
+  cursor: pointer;
+}
+
+.nav-toggle-row input {
+  accent-color: #2d6a4f;
+  width: 17px;
+  height: 17px;
+}
+
+@media(max-width:767px) {
+  .mgmt-admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .perm-grid {
+    grid-template-columns: 1fr;
   }
 }

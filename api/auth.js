@@ -5,9 +5,34 @@ const {
   hashPassword, encryptPassword, decryptPassword,
   formatDateThai, setCorsHeaders,
 } = require('./_sheets');
-const { createToken } = require('./_jwt');
+const { createToken, requireAuth } = require('./_jwt');
 
 const SHEET_SUPERADMINS = 'VOC_SuperAdmins';
+
+// ── สิทธิ์การใช้งานของเจ้าหน้าที่ (admin) ──
+// เก็บในคอลัมน์ F ของ VOC_Admins เป็นข้อความคั่นด้วยจุลภาค
+// ถ้าเซลล์ว่าง = ได้ทุกสิทธิ์ (เพื่อให้บัญชีเดิมใช้งานได้ตามปกติ)
+const ALL_PERMS = [
+  'dashboard',      // ดูหน้าสถิติ
+  'tickets',        // เข้าหน้าจัดการเรื่อง
+  'ticket.update',  // เปลี่ยนสถานะ / ผู้รับผิดชอบ
+  'ticket.comment', // เพิ่มความคิดเห็น
+  'ticket.pin',     // ปักหมุดเรื่อง
+  'reviews',        // ดูรีวิว
+  'report',         // ดูรายงาน
+];
+
+function parsePerms(cell) {
+  const raw = String(cell || '').trim();
+  if (!raw) return [...ALL_PERMS];            // บัญชีเดิมที่ยังไม่เคยตั้งสิทธิ์
+  if (raw === '-') return [];                  // ตั้งใจไม่ให้สิทธิ์ใด ๆ
+  return raw.split(',').map(x => x.trim()).filter(x => ALL_PERMS.includes(x));
+}
+
+function stringifyPerms(list) {
+  const clean = (Array.isArray(list) ? list : []).filter(x => ALL_PERMS.includes(x));
+  return clean.length ? clean.join(',') : '-';
+}
 
 async function ensureSuperAdminSheet(sheets) {
   // สร้าง sheet และ header เท่านั้น — ไม่เพิ่ม default account
@@ -75,8 +100,9 @@ module.exports = async function handler(req, res) {
       for (let i = 1; i < aData.length; i++) {
         if (String(aData[i][0]||'').toLowerCase() === String(username).toLowerCase()
           && String(aData[i][1]) === h && String(aData[i][4]) === 'active') {
-          const token = createToken({ username: aData[i][0], role: 'admin' });
-          return res.json({ success:true, role:'admin', token,
+          const perms = parsePerms(aData[i][5]);
+          const token = createToken({ username: aData[i][0], role: 'admin', perms });
+          return res.json({ success:true, role:'admin', token, permissions: perms,
             username:aData[i][0], fullname:aData[i][2], email:aData[i][3] });
         }
       }
@@ -129,7 +155,8 @@ module.exports = async function handler(req, res) {
           return res.json({ success:false, message:'Username นี้มีอยู่แล้ว' });
       }
       await appendRow(sheets, SHEET_ADMINS, [
-        username, hashPassword(password), fullname||username, email||'', 'active'
+        username, hashPassword(password), fullname||username, email||'', 'active',
+        stringifyPerms(Array.isArray(req.body.permissions) ? req.body.permissions : ALL_PERMS)
       ]);
       return res.json({ success:true, message:`เพิ่ม เจ้าหน้าที่ "${username}" สำเร็จ` });
     }
@@ -142,8 +169,49 @@ module.exports = async function handler(req, res) {
         fullname: String(r[2]||''),
         email:    String(r[3]||''),
         status:   String(r[4]||'active'),
+        permissions: parsePerms(r[5]),
       }));
-      return res.json({ success:true, admins });
+      return res.json({ success:true, admins, allPermissions: ALL_PERMS });
+    }
+
+    // ── SET ADMIN PERMISSIONS (superadmin เท่านั้น) ──
+    if (action === 'setAdminPermissions') {
+      const auth = requireAuth(req, res, ['superadmin']);
+      if (!auth) return;
+      const { username, permissions } = req.body;
+      if (!username) return res.json({ success:false, message:'ไม่ระบุ username' });
+      const data = await getSheetData(sheets, SHEET_ADMINS);
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]||'').toLowerCase() !== String(username).toLowerCase()) continue;
+        await withRetry(() => sheets.spreadsheets.values.update({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `${SHEET_ADMINS}!F${i+1}`,
+          valueInputOption: 'RAW',
+          requestBody: { values: [[stringifyPerms(permissions)]] },
+        }), 'auth:setAdminPermissions');
+        return res.json({ success:true, message:`บันทึกสิทธิ์ของ "${username}" แล้ว` });
+      }
+      return res.json({ success:false, message:'ไม่พบเจ้าหน้าที่นี้' });
+    }
+
+    // ── SET ADMIN STATUS (เปิด/ปิดการใช้งานบัญชี — superadmin เท่านั้น) ──
+    if (action === 'setAdminStatus') {
+      const auth = requireAuth(req, res, ['superadmin']);
+      if (!auth) return;
+      const { username, status } = req.body;
+      const newStatus = status === 'active' ? 'active' : 'disabled';
+      const data = await getSheetData(sheets, SHEET_ADMINS);
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]||'').toLowerCase() !== String(username).toLowerCase()) continue;
+        await withRetry(() => sheets.spreadsheets.values.update({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `${SHEET_ADMINS}!E${i+1}`,
+          valueInputOption: 'RAW',
+          requestBody: { values: [[newStatus]] },
+        }), 'auth:setAdminStatus');
+        return res.json({ success:true });
+      }
+      return res.json({ success:false, message:'ไม่พบเจ้าหน้าที่นี้' });
     }
 
     // ── ADD SUPERADMIN (เพิ่ม superadmin ใหม่ พร้อม AES encrypted password) ──
