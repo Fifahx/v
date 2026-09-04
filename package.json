@@ -2,10 +2,7 @@
   "name": "voc-system",
   "version": "1.0.0",
   "description": "VOC System - คณะวิทยาศาสตร์ฯ มรย.",
-    "private": true,
-  "engines": {
-    "node": "22.x"
-  },
+  "private": true,
   "scripts": {
     "dev": "vercel dev"
   },
