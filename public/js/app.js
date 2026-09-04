@@ -1633,6 +1633,79 @@ async function addFaq() { const cat = document.getElementById('faq-cat-new')?.va
 async function deleteFaq(faqId) { if (!await showConfirm('ลบคำถาม', '', 'danger')) return; try { const res = await api.post('/api/content?module=faq', { action: 'delete', faqId }); if (res.success) { showToast('ลบ FAQ สำเร็จ', 'success'); loadSAFaq(); } else await showAlert('ลบไม่สำเร็จ', res.message); } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); } }
 
 
+
+// ════════════════════════════════════════════════════════════
+//  BUTTON LOADING STATE
+//  จำปุ่มที่ผู้ใช้กดล่าสุด แล้วโชว์สปินเนอร์บนปุ่มนั้นระหว่างที่ยิง API
+//  ผูกกับ api.get/post/patch ไม่ใช่ตอนคลิก ปุ่มจึงไม่หมุนค้างตอนรอกล่องยืนยัน
+// ════════════════════════════════════════════════════════════
+let _lastClickedBtn = null;
+let _lastClickedAt = 0;
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('button, .btn-submit, .filter-btn, .sa-tab');
+  // ข้ามปุ่มในกล่อง modal — เพื่อให้ยังจำปุ่มต้นทางที่เปิด modal ไว้
+  if (!btn || btn.disabled || btn.closest('.voc-overlay, .voc-modal-box')) return;
+  _lastClickedBtn = btn;
+  _lastClickedAt = Date.now();
+}, true);
+
+function _startBtnLoading(btn) {
+  if (!btn || !btn.isConnected) return () => { };
+  // มี API หลายตัวยิงพร้อมกันจากปุ่มเดียว — นับซ้อนกันไว้ คืนสภาพเมื่อครบ
+  const depth = (Number(btn.dataset.loadingDepth) || 0) + 1;
+  btn.dataset.loadingDepth = String(depth);
+  if (depth === 1) {
+    btn.classList.add('btn-loading');
+    btn.setAttribute('aria-busy', 'true');
+    btn.disabled = true;
+    const icon = btn.querySelector('i');
+    if (icon) {
+      btn.dataset.origIcon = icon.className;
+      icon.className = 'fas fa-circle-notch fa-spin';
+    } else {
+      const sp = document.createElement('i');
+      sp.className = 'fas fa-circle-notch fa-spin btn-spin-added';
+      btn.prepend(sp, document.createTextNode(' '));
+    }
+  }
+  return () => {
+    if (!btn.isConnected) return;
+    const left = (Number(btn.dataset.loadingDepth) || 1) - 1;
+    btn.dataset.loadingDepth = String(left);
+    if (left > 0) return;
+    btn.classList.remove('btn-loading');
+    btn.removeAttribute('aria-busy');
+    btn.disabled = false;
+    delete btn.dataset.loadingDepth;
+    const icon = btn.querySelector('i');
+    if (btn.dataset.origIcon && icon) {
+      icon.className = btn.dataset.origIcon;
+      delete btn.dataset.origIcon;
+    } else {
+      btn.querySelector('i.btn-spin-added')?.remove();
+    }
+  };
+}
+
+// ผูกเข้ากับ api wrapper — ทุก request จะโชว์สถานะโหลดบนปุ่มที่กดล่าสุดอัตโนมัติ
+function _attachButtonLoading() {
+  ['get', 'post', 'patch'].forEach(method => {
+    const orig = api[method];
+    if (typeof orig !== 'function') return;
+    api[method] = async function (...args) {
+      // ใช้เฉพาะปุ่มที่เพิ่งกดภายใน 60 วิ กัน request ที่โหลดเองตอนเปลี่ยนหน้าไปจับปุ่มเก่า
+      const btn = (Date.now() - _lastClickedAt < 60000) ? _lastClickedBtn : null;
+      const restore = _startBtnLoading(btn);
+      try {
+        return await orig.apply(this, args);
+      } finally {
+        restore();
+      }
+    };
+  });
+}
+
 // ════════════════════════════════════════════════════════════
 //  FLOATING NAV ICON (ลิงก์แบบฟอร์มประเมิน) + ป็อปอัพคล้ายแชท
 // ════════════════════════════════════════════════════════════
@@ -2139,6 +2212,7 @@ window.onload = function () {
   _registerCallbacks(); // register callbacks หลังจาก currentUser ถูก set แล้ว
   _exposeGlobals();
 
+  _attachButtonLoading(); // โชว์สปินเนอร์บนปุ่มระหว่างยิง API
   initNavFab(); // ไอคอนนำทางลอย + ป็อปอัพ (อ่านการตั้งค่าจาก /api/content?module=settings)
 
   if (saved) {

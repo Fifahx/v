@@ -7349,3 +7349,18 @@ body.font-xl {
     grid-template-columns: 1fr;
   }
 }
+
+/* ════════════════════════════════════════════════════════
+   BUTTON LOADING STATE
+   ════════════════════════════════════════════════════════ */
+.btn-loading {
+  opacity: .72;
+  cursor: progress !important;
+  pointer-events: none;
+}
+
+.btn-loading i {
+  /* กันไอคอนขยับตอนสลับเป็นสปินเนอร์ */
+  min-width: 1em;
+  text-align: center;
+}
