@@ -908,7 +908,9 @@ async function renderTicketCards(tickets, showRating = false) {
 // ════ RATING ════
 function buildRatingBox(ticketId) { return `<div class="rating-box" id="rbox-${ticketId}"><h4>ให้คะแนนการบริการ</h4><div class="star-row" id="stars-${ticketId}">${[1, 2, 3, 4, 5].map(i => `<button class="star-btn dim" onclick="selectStar('${ticketId}',${i})">⭐</button>`).join('')}</div><textarea class="rating-comment" id="rc-${ticketId}" rows="2" placeholder="ความคิดเห็น (ไม่บังคับ)"></textarea><button class="btn-rate" onclick="submitRating('${ticketId}')"><i class="fas fa-paper-plane"></i> ส่งคะแนน</button></div>`; }
 function selectStar(tid, score) { ratingSelection = score; const row = document.getElementById('stars-' + tid); if (!row) return; row.querySelectorAll('.star-btn').forEach((b, i) => { b.classList.toggle('lit', i < score); b.classList.toggle('dim', i >= score); b.style.transform = i < score ? 'scale(1.1)' : 'scale(1)'; }); }
-async function submitRating(ticketId) { if (!ratingSelection) { await showAlert('กรุณาเลือกคะแนน', ''); return; } const comment = document.getElementById('rc-' + ticketId)?.value.trim(); try { const res = await api.post('/api/ratings', { ticketId, username: currentUser?.username || '', score: ratingSelection, comment }); if (res.success) {
+async function submitRating(ticketId) {
+  if (!ratingSelection) { await showAlert('กรุณาเลือกคะแนน', ''); return; } const comment = document.getElementById('rc-' + ticketId)?.value.trim(); try {
+    const res = await api.post('/api/ratings', { ticketId, username: currentUser?.username || '', score: ratingSelection, comment }); if (res.success) {
       const box = document.getElementById('rbox-' + ticketId);
       if (box) box.innerHTML = `<div style="text-align:center;padding:16px;color:#2d6a4f;font-weight:700;">✅ ขอบคุณสำหรับ ${'⭐'.repeat(ratingSelection)} คะแนน</div>`;
       // เอาสถานะ "รอให้คะแนน" ออกจากการ์ดทันที แล้วติดป้ายว่าให้คะแนนแล้ว
@@ -924,7 +926,9 @@ async function submitRating(ticketId) { if (!ratingSelection) { await showAlert(
       ratingSelection = 0;
       // โหลดรายการใหม่เพื่อให้การ์ดกลับไปอยู่ตำแหน่งตามลำดับสถานะ
       if (_trackRenderMode === 'my') setTimeout(() => loadMyTickets(), 1500);
-    } else await showAlert('แจ้งเตือน', res.message); } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); } }
+    } else await showAlert('แจ้งเตือน', res.message);
+  } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
+}
 
 // ════ FAQ ════
 async function loadFaq() { const container = document.getElementById('faq-content'); if (!container) return; container.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch"></i></div>'; try { const res = await api.get('/api/content?module=faq'); if (res.success) renderFaq(res.faqs || []); else container.innerHTML = '<p style="color:red;">โหลด FAQ ไม่สำเร็จ</p>'; } catch (e) { container.innerHTML = `<p style="color:red;">${e.message}</p>`; } }
@@ -1599,7 +1603,7 @@ function _saTabsHtml() {
     ['faq', 'fa-question-circle', 'FAQ'],
     ['admins', 'fa-user-shield', 'เจ้าหน้าที่'],
     ['perms', 'fa-key', 'สิทธิ์การใช้งาน'],
-    ['mgmt', 'fa-users', 'ผู้บริหาร'],
+    ['mgmt', 'fa-users', 'จัดการผู้บริหาร / อาจารย์'],
     ['navicon', 'fa-location-arrow', 'ไอคอนนำทาง'],
   ];
   return `<div class="sa-tabs">${tabs.map(([k, icon, label]) =>
