@@ -6514,6 +6514,7 @@ body.font-xl {
     padding: 6px 13px !important;
   }
 }
+
 /* ════════════════════════════════════════════════════════
    ADMIN SEARCH BAR + ACCORDION TICKET CARDS
    ════════════════════════════════════════════════════════ */
@@ -6944,8 +6945,8 @@ body.font-xl {
    ════════════════════════════════════════════════════════ */
 .nav-fab-wrap {
   position: fixed;
-  right: 20px;
-  bottom: 22px;
+  right: 24px;
+  bottom: 78px;
   z-index: 3500;
   display: flex;
   flex-direction: column;
@@ -6958,49 +6959,66 @@ body.font-xl {
   display: none;
 }
 
+/* ปุ่มวงกลม — ไม่มีข้อความกำกับ ใช้ tooltip แทน */
 .nav-fab-btn {
   pointer-events: auto;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  padding: 13px 18px;
-  border-radius: 30px;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
   background: linear-gradient(135deg, #7248b9, #5b34a0);
   color: #fff;
   text-decoration: none;
-  font-family: 'Sarabun', sans-serif;
-  font-size: .9rem;
-  font-weight: 700;
-  box-shadow: 0 8px 22px rgba(91, 52, 160, .38);
+  box-shadow: 0 8px 22px rgba(91, 52, 160, .4);
   transition: transform .15s ease, box-shadow .15s ease;
 }
 
 .nav-fab-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(91, 52, 160, .5);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 14px 30px rgba(91, 52, 160, .55);
 }
 
 .nav-fab-btn i {
-  font-size: 1.15rem;
+  font-size: 1.35rem;
+}
+
+/* ข้อความกำกับย้ายไปอยู่ใน tooltip/ป็อปอัพแทน */
+.nav-fab-label {
+  display: none;
 }
 
 /* ป็อปอัพคล้ายกล่องแชท */
 .nav-fab-bubble {
   pointer-events: auto;
   position: relative;
-  max-width: 250px;
+  max-width: 300px;
   background: #fff;
-  color: #333;
-  border: 1.5px solid #e6e0f2;
-  border-radius: 14px 14px 4px 14px;
-  padding: 11px 30px 11px 14px;
-  font-size: .84rem;
-  line-height: 1.5;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .16);
+  color: #2a2140;
+  border: 2px solid #7248b9;
+  border-radius: 16px 16px 4px 16px;
+  padding: 14px 34px 14px 17px;
+  font-size: .92rem;
+  font-weight: 600;
+  line-height: 1.55;
+  box-shadow: 0 14px 34px rgba(91, 52, 160, .3), 0 3px 10px rgba(0, 0, 0, .1);
   opacity: 0;
-  transform: translateY(8px) scale(.96);
-  transition: opacity .28s ease, transform .28s ease;
+  transform: translateY(10px) scale(.94);
+  transition: opacity .3s cubic-bezier(.2, .9, .3, 1.4), transform .3s cubic-bezier(.2, .9, .3, 1.4);
   visibility: hidden;
+}
+
+/* แถบสีด้านซ้ายให้สะดุดตา */
+.nav-fab-bubble::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, #7248b9, #b06ee0);
 }
 
 .nav-fab-bubble.show {
@@ -7013,13 +7031,13 @@ body.font-xl {
 .nav-fab-bubble::after {
   content: '';
   position: absolute;
-  right: 20px;
-  bottom: -8px;
-  width: 14px;
-  height: 14px;
+  right: 18px;
+  bottom: -9px;
+  width: 16px;
+  height: 16px;
   background: #fff;
-  border-right: 1.5px solid #e6e0f2;
-  border-bottom: 1.5px solid #e6e0f2;
+  border-right: 2px solid #7248b9;
+  border-bottom: 2px solid #7248b9;
   transform: rotate(45deg);
 }
 
@@ -7047,18 +7065,19 @@ body.font-xl {
     /* เผื่อพื้นที่ปุ่มลอยเดิมของระบบ */
   }
 
-  .nav-fab-label {
-    display: none;
+  .nav-fab-btn {
+    width: 52px;
+    height: 52px;
   }
 
-  .nav-fab-btn {
-    padding: 15px;
-    border-radius: 50%;
+  .nav-fab-btn i {
+    font-size: 1.2rem;
   }
 
   .nav-fab-bubble {
-    max-width: 210px;
-    font-size: .8rem;
+    max-width: 235px;
+    font-size: .85rem;
+    padding: 12px 30px 12px 15px;
   }
 }
 
