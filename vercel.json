@@ -9,6 +9,22 @@
   },
   "rewrites": [
     {
+      "source": "/api/news",
+      "destination": "/api/content?module=news"
+    },
+    {
+      "source": "/api/faq",
+      "destination": "/api/content?module=faq"
+    },
+    {
+      "source": "/api/mgmt",
+      "destination": "/api/content?module=mgmt"
+    },
+    {
+      "source": "/api/settings",
+      "destination": "/api/content?module=settings"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/:path*"
     },
