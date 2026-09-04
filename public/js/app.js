@@ -1775,49 +1775,95 @@ function dismissNavFabBubble() {
 // ════════════════════════════════════════════════════════════
 let _saMgmtCache = [];
 
-// ย่อรูปฝั่ง client ก่อนส่ง เพราะเซลล์ Google Sheets เก็บได้ ~50,000 ตัวอักษร
-function _resizeImageToDataUrl(file, maxW = 420, quality = 0.72) {
+// ── รูปผู้บริหาร ────────────────────────────────────────────
+// รับไฟล์ต้นทางได้ถึง 5 MB แล้วย่อฝั่งเบราว์เซอร์ก่อนเสมอ
+// ถ้าย่อแล้วเล็กพอ (<=45,000 ตัวอักษร) เก็บเป็น base64 ในชีตได้เลย
+// ถ้ายังใหญ่ จะอัปขึ้น Google Drive แล้วเก็บแค่ URL แทน
+const MGMT_MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const MGMT_INLINE_LIMIT = 45000;
+
+function _drawToCanvas(img, maxW) {
+  const scale = Math.min(1, maxW / img.width);
+  const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+  return canvas;
+}
+
+function _loadImageFromFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('อ่านไฟล์ไม่สำเร็จ'));
     reader.onload = () => {
       const img = new Image();
       img.onerror = () => reject(new Error('ไฟล์นี้ไม่ใช่รูปภาพ'));
-      img.onload = () => {
-        const scale = Math.min(1, maxW / img.width);
-        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        // PNG รักษาพื้นหลังโปร่งใสของรูปผู้บริหาร แต่ไฟล์ใหญ่ — ลองทั้งคู่แล้วเลือกอันเล็กกว่า
-        const webp = canvas.toDataURL('image/webp', quality);
-        const png = canvas.toDataURL('image/png');
-        resolve(png.length <= 45000 ? png : webp);
-      };
+      img.onload = () => resolve(img);
       img.src = reader.result;
     };
     reader.readAsDataURL(file);
   });
 }
 
+function _canvasToBlob(canvas, type, quality) {
+  return new Promise(r => canvas.toBlob(r, type, quality));
+}
+
+async function _prepareMgmtImage(file) {
+  const img = await _loadImageFromFile(file);
+
+  // ไล่ลดขนาด/คุณภาพลงเรื่อย ๆ หาอันที่เก็บลงชีตได้
+  for (const [maxW, q] of [[800, 0.9], [640, 0.82], [520, 0.75], [420, 0.7], [320, 0.62]]) {
+    const canvas = _drawToCanvas(img, maxW);
+    const png = canvas.toDataURL('image/png');
+    if (png.length <= MGMT_INLINE_LIMIT) return { value: png, mode: 'inline' };
+    const webp = canvas.toDataURL('image/webp', q);
+    if (webp.length <= MGMT_INLINE_LIMIT) return { value: webp, mode: 'inline' };
+  }
+
+  // ยังใหญ่อยู่ — เก็บไว้บน Drive แล้วอ้างด้วย URL แทน
+  const canvas = _drawToCanvas(img, 800);
+  const blob = await _canvasToBlob(canvas, 'image/png');
+  if (!blob) throw new Error('แปลงรูปไม่สำเร็จ');
+  const fd = new FormData();
+  fd.append('file', blob, `mgmt_${Date.now()}.png`);
+  const res = await fetch('/api/upload', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (!data.success || !data.fileId) throw new Error(data.error || 'อัปโหลดรูปไม่สำเร็จ');
+  // thumbnail endpoint ใช้เป็น <img src> ได้ตรง ๆ ต่างจากลิงก์ /view
+  return { value: `https://drive.google.com/thumbnail?id=${data.fileId}&sz=w800`, mode: 'drive' };
+}
+
 async function handleMgmtImage(input, previewId, holderId) {
   const file = input.files?.[0];
   if (!file) return;
+  if (file.size > MGMT_MAX_UPLOAD_BYTES) {
+    await showAlert('ไฟล์ใหญ่เกินไป', `ขนาดรูปต้องไม่เกิน 5 MB (ไฟล์นี้ ${(file.size / 1024 / 1024).toFixed(1)} MB)`);
+    input.value = '';
+    return;
+  }
+  const prev = document.getElementById(previewId);
+  if (prev) { prev.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังเตรียมรูป...'; prev.style.display = 'block'; }
   try {
-    const dataUrl = await _resizeImageToDataUrl(file);
-    if (dataUrl.length > 45000) {
-      await showAlert('รูปใหญ่เกินไป', 'กรุณาใช้รูปที่มีขนาดเล็กลง หรือครอบตัดให้แคบลงก่อน');
-      input.value = '';
-      return;
-    }
+    const { value, mode } = await _prepareMgmtImage(file);
     const holder = document.getElementById(holderId);
-    if (holder) holder.value = dataUrl;
-    const prev = document.getElementById(previewId);
-    if (prev) { prev.innerHTML = `<img src="${dataUrl}" alt="ตัวอย่างรูป">`; prev.style.display = 'block'; }
+    if (holder) holder.value = value;
+    if (prev) {
+      prev.innerHTML = `<img src="${value}" alt="ตัวอย่างรูป">` +
+        (mode === 'drive' ? '<div class="mgmt-img-note"><i class="fas fa-cloud"></i> รูปใหญ่ — จัดเก็บบน Google Drive</div>' : '');
+    }
   } catch (e) {
     await showAlert('เกิดข้อผิดพลาด', e.message);
     input.value = '';
+    if (prev) { prev.innerHTML = ''; prev.style.display = 'none'; }
   }
+}
+// หลังบันทึกสำเร็จ — โหลดหน้าเว็บใหม่เพื่อให้สไลด์หน้าแรกอัปเดตทันที
+// จำแท็บที่ค้างไว้ เพื่อกลับมาที่เดิมหลังรีโหลด
+function _reloadAfterMgmtChange(msg) {
+  showToast(msg, 'success');
+  try { sessionStorage.setItem('voc_return_sa_tab', 'mgmt'); } catch (e) { }
+  setTimeout(() => location.reload(), 900);
 }
 
 async function loadSAMgmt() {
@@ -1844,7 +1890,7 @@ function renderSAMgmt(people) {
       <input type="file" accept="image/*" id="mgmt-new-file" onchange="handleMgmtImage(this,'mgmt-new-preview','mgmt-new-img')">
       <input type="hidden" id="mgmt-new-img">
       <div class="mgmt-img-preview" id="mgmt-new-preview" style="display:none;"></div>
-      <small style="color:#888;">ระบบจะย่อรูปให้อัตโนมัติ แนะนำรูปพื้นหลังโปร่งใส (PNG)</small>
+      <small style="color:#888;">รองรับไฟล์ไม่เกิน 5 MB ระบบจะย่อรูปให้อัตโนมัติ แนะนำรูปพื้นหลังโปร่งใส (PNG)</small>
     </div>
     <button class="btn-submit" onclick="addMgmt()"><i class="fas fa-plus"></i> เพิ่มรายชื่อ</button>
   </div>`;
@@ -1883,7 +1929,7 @@ async function addMgmt() {
   if (!await showConfirm('ยืนยันการเพิ่มรายชื่อ', `ต้องการเพิ่ม <strong>${name}</strong> เข้าสไลด์หน้าแรกใช่หรือไม่?`)) return;
   try {
     const res = await api.post('/api/content?module=mgmt', { action: 'add', name, pos, img });
-    if (res.success) { showToast('เพิ่มรายชื่อสำเร็จ', 'success'); loadSAMgmt(); }
+    if (res.success) _reloadAfterMgmtChange('เพิ่มรายชื่อสำเร็จ');
     else await showAlert('เพิ่มไม่สำเร็จ', res.message || '');
   } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
 }
@@ -1921,8 +1967,7 @@ async function updateMgmt(mgmtId) {
     const res = await api.post('/api/content?module=mgmt', { action: 'update', mgmtId, name, pos, img });
     if (res.success) {
       document.getElementById('edit-mgmt-overlay')?.remove();
-      showToast('บันทึกการแก้ไขสำเร็จ', 'success');
-      loadSAMgmt();
+      _reloadAfterMgmtChange('บันทึกการแก้ไขสำเร็จ');
     } else await showAlert('บันทึกไม่สำเร็จ', res.message || '');
   } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
 }
@@ -1932,7 +1977,7 @@ async function deleteMgmt(mgmtId) {
   if (!await showConfirm('ยืนยันการลบรายชื่อ', `ต้องการลบ <strong>${p?.name || mgmtId}</strong> ออกจากสไลด์ใช่หรือไม่?<br><small style="color:#d00000;">ไม่สามารถเรียกคืนได้</small>`, 'danger')) return;
   try {
     const res = await api.post('/api/content?module=mgmt', { action: 'delete', mgmtId });
-    if (res.success) { showToast('ลบรายชื่อสำเร็จ', 'success'); loadSAMgmt(); }
+    if (res.success) _reloadAfterMgmtChange('ลบรายชื่อสำเร็จ');
     else await showAlert('ลบไม่สำเร็จ', res.message || '');
   } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
 }
@@ -1942,7 +1987,7 @@ async function moveMgmt(mgmtId, dir) {
   if (!await showConfirm('ยืนยันการเปลี่ยนลำดับ', `ต้องการเลื่อน <strong>${p?.name || mgmtId}</strong> ${dir < 0 ? 'ขึ้น' : 'ลง'} หนึ่งลำดับใช่หรือไม่?`)) return;
   try {
     const res = await api.post('/api/content?module=mgmt', { action: 'move', mgmtId, dir });
-    if (res.success) { showToast('เปลี่ยนลำดับสำเร็จ', 'success'); loadSAMgmt(); }
+    if (res.success) _reloadAfterMgmtChange('เปลี่ยนลำดับสำเร็จ');
     else await showAlert('เปลี่ยนลำดับไม่สำเร็จ', res.message || '');
   } catch (e) { await showAlert('เกิดข้อผิดพลาด', e.message); }
 }
@@ -2220,6 +2265,15 @@ window.onload = function () {
     else if (saved.role === 'admin') updateMenuForAdmin();
     else updateMenuForUser();
   }
+
+  // กลับมาที่แท็บเดิมของหน้า SuperAdmin หลังรีโหลดจากการบันทึกข้อมูล
+  try {
+    const backTab = sessionStorage.getItem('voc_return_sa_tab');
+    if (backTab && saved?.role === 'superadmin') {
+      sessionStorage.removeItem('voc_return_sa_tab');
+      setTimeout(() => { navigateTo('superadmin'); showSATab(backTab); }, 60);
+    }
+  } catch (e) { }
 
   document.addEventListener('click', function (e) {
     if (!e.target.closest('.voc-dropdown-wrap')) {

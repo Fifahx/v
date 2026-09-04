@@ -14,7 +14,9 @@ const {
 const { requireAuth } = require('./_jwt');
 
 const SHEET_MGMT = 'VOC_Mgmt';
-const MAX_IMG_CHARS = 45000; // เซลล์ Google Sheets รับได้ ~50,000 ตัวอักษร
+// เซลล์ Google Sheets รับได้ ~50,000 ตัวอักษร
+// รูปที่ใหญ่กว่านี้ฝั่ง client จะอัปขึ้น Drive แล้วส่งมาเป็น URL สั้น ๆ แทน
+const MAX_IMG_CHARS = 45000;
 
 // รายชื่อเริ่มต้น — ใช้ครั้งแรกที่ยังไม่มีชีต เพื่อให้หน้าเว็บไม่ว่าง
 const DEFAULT_PEOPLE = [
@@ -105,7 +107,7 @@ module.exports = async function handler(req, res) {
       if (action === 'add') {
         if (!name || !pos) return res.json({ success: false, message: 'กรุณากรอกชื่อและตำแหน่ง' });
         if (String(img || '').length > MAX_IMG_CHARS) {
-          return res.json({ success: false, message: 'รูปภาพใหญ่เกินไป กรุณาใช้รูปที่เล็กลง' });
+          return res.json({ success: false, message: 'ข้อมูลรูปภาพยาวเกินกว่าที่ชีตเก็บได้ กรุณาลองอัปโหลดใหม่' });
         }
         const ids = all.map(p => Number(p.mgmtId) || 0);
         const newId = ids.length ? Math.max(...ids) + 1 : 1;
@@ -116,7 +118,7 @@ module.exports = async function handler(req, res) {
 
       if (action === 'update') {
         if (String(img || '').length > MAX_IMG_CHARS) {
-          return res.json({ success: false, message: 'รูปภาพใหญ่เกินไป กรุณาใช้รูปที่เล็กลง' });
+          return res.json({ success: false, message: 'ข้อมูลรูปภาพยาวเกินกว่าที่ชีตเก็บได้ กรุณาลองอัปโหลดใหม่' });
         }
         for (let i = 1; i < data.length; i++) {
           if (String(data[i][0]) !== String(mgmtId)) continue;
