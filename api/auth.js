@@ -9,6 +9,14 @@ const { createToken, requireAuth } = require('./_jwt');
 
 const SHEET_SUPERADMINS = 'VOC_SuperAdmins';
 
+// เทียบ identifier ที่ผู้ใช้กรอก กับได้ทั้ง username และ email ของแถวนั้น
+function matchesIdentifier(input, username, email) {
+  const q = String(input || '').trim().toLowerCase();
+  if (!q) return false;
+  return q === String(username || '').trim().toLowerCase()
+      || q === String(email || '').trim().toLowerCase();
+}
+
 // ── สิทธิ์การใช้งานของเจ้าหน้าที่ (admin) ──
 // เก็บในคอลัมน์ F ของ VOC_Admins เป็นข้อความคั่นด้วยจุลภาค
 // ถ้าเซลล์ว่าง = ได้ทุกสิทธิ์ (เพื่อให้บัญชีเดิมใช้งานได้ตามปกติ)
@@ -65,14 +73,14 @@ module.exports = async function handler(req, res) {
       const data = await getSheetData(sheets, SHEET_USERS);
       const h    = hashPassword(password);
       for (let i = 1; i < data.length; i++) {
-        if (String(data[i][6]||'').toLowerCase() === String(username).toLowerCase()
+        if (matchesIdentifier(username, data[i][6], data[i][3])
           && String(data[i][7]) === h && String(data[i][8]) === 'active') {
           const token = createToken({ username: data[i][6], role: 'user' });
           return res.json({ success:true, role:'user', token,
             username:data[i][6], firstname:data[i][1], lastname:data[i][2], email:data[i][3] });
         }
       }
-      return res.json({ success:false, message:'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
+      return res.json({ success:false, message:'ชื่อผู้ใช้ / อีเมล หรือรหัสผ่านไม่ถูกต้อง' });
     }
 
     // ── LOGIN ADMIN (unified: ตรวจ superadmin ก่อน แล้วค่อย admin) ──
@@ -86,7 +94,7 @@ module.exports = async function handler(req, res) {
       for (let i = 1; i < saData.length; i++) {
         const rowUser   = String(saData[i][0]||'').toLowerCase();
         const rowStatus = String(saData[i][4]||'');
-        if (rowUser !== String(username).toLowerCase() || rowStatus !== 'active') continue;
+        if (!matchesIdentifier(username, rowUser, saData[i][3]) || rowStatus !== 'active') continue;
         const decrypted = decryptPassword(String(saData[i][1]||''));
         if (decrypted === password) {
           const token = createToken({ username: saData[i][0], role: 'superadmin' });
@@ -98,7 +106,7 @@ module.exports = async function handler(req, res) {
       // ตรวจ Admins ปกติ
       const aData = await getSheetData(sheets, SHEET_ADMINS);
       for (let i = 1; i < aData.length; i++) {
-        if (String(aData[i][0]||'').toLowerCase() === String(username).toLowerCase()
+        if (matchesIdentifier(username, aData[i][0], aData[i][3])
           && String(aData[i][1]) === h && String(aData[i][4]) === 'active') {
           const perms = parsePerms(aData[i][5]);
           const token = createToken({ username: aData[i][0], role: 'admin', perms });
@@ -106,7 +114,7 @@ module.exports = async function handler(req, res) {
             username:aData[i][0], fullname:aData[i][2], email:aData[i][3] });
         }
       }
-      return res.json({ success:false, message:'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
+      return res.json({ success:false, message:'ชื่อผู้ใช้ / อีเมล หรือรหัสผ่านไม่ถูกต้อง' });
     }
 
     // ── LOGIN SUPERADMIN (legacy — ยังรองรับไว้กัน client เก่า) ──
@@ -117,7 +125,7 @@ module.exports = async function handler(req, res) {
       for (let i = 1; i < data.length; i++) {
         const rowUser   = String(data[i][0]||'').toLowerCase();
         const rowStatus = String(data[i][4]||'');
-        if (rowUser !== String(username).toLowerCase() || rowStatus !== 'active') continue;
+        if (!matchesIdentifier(username, rowUser, data[i][3]) || rowStatus !== 'active') continue;
         const decrypted = decryptPassword(String(data[i][1]||''));
         if (decrypted === password) {
           const token = createToken({ username: data[i][0], role: 'superadmin' });
@@ -125,7 +133,7 @@ module.exports = async function handler(req, res) {
             username:data[i][0], fullname:data[i][2], email:data[i][3] });
         }
       }
-      return res.json({ success:false, message:'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
+      return res.json({ success:false, message:'ชื่อผู้ใช้ / อีเมล หรือรหัสผ่านไม่ถูกต้อง' });
     }
 
     // ── REGISTER ──

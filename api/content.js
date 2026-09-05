@@ -20,6 +20,7 @@ const HANDLERS = {
   faq: () => require('./_faq'),
   mgmt: () => require('./_mgmt'),
   settings: () => require('./_settings'),
+  announce: () => require('./_announce'),
 };
 
 function resolveModule(req) {
@@ -33,7 +34,7 @@ function resolveModule(req) {
   const m = String(req.url || '').match(/[?&]module=([^&]+)/);
   if (m) return decodeURIComponent(m[1]);
   // 4) เดาจาก path เดิมก่อน rewrite
-  const p = String(req.url || '').match(/^\/api\/(news|faq|mgmt|settings)\b/);
+  const p = String(req.url || '').match(/^\/api\/(news|faq|mgmt|settings|announce)\b/);
   return p ? p[1] : '';
 }
 

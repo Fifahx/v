@@ -5,7 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VOC STA YRU | คณะวิทยาศาสตร์ฯ มรย.</title>
-  <meta name="description" content="ระบบ VOC STA YRU สำหรับส่งข้อเสนอแนะ ร้องเรียน และรับฟังเสียงสะท้อนจากนักศึกษา คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา">
+  <meta name="description"
+    content="ระบบ VOC STA YRU สำหรับส่งข้อเสนอแนะ ร้องเรียน และรับฟังเสียงสะท้อนจากนักศึกษา คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
@@ -81,7 +82,8 @@
             </a>
           </div>
           <div class="header-brand" id="header-brand" onclick="navigateTo('home')" role="link" tabindex="0"
-            title="กลับหน้าหลัก" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateTo('home');}">
+            title="กลับหน้าหลัก"
+            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateTo('home');}">
             <div class="header-brand-title"><span class="brand-voc">VOC</span> System</div>
             <div class="header-brand-sub">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร มหาวิทยาลัยราชภัฏยะลา</div>
           </div>
@@ -172,7 +174,8 @@
     </div><!-- /hero-content -->
 
     <!-- ข้อความคณะ/มหาวิทยาลัย เวอร์ชันมือถือ: แสดงด้านล่างสุดของ hero เท่านั้น -->
-    <p class="hero-sub hero-sub-bottom"><span class="hsb-line">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร</span> <span class="hsb-dot">·</span> <span class="hsb-line">มหาวิทยาลัยราชภัฏยะลา</span></p>
+    <p class="hero-sub hero-sub-bottom"><span class="hsb-line">คณะวิทยาศาสตร์เทคโนโลยีและการเกษตร</span> <span
+        class="hsb-dot">·</span> <span class="hsb-line">มหาวิทยาลัยราชภัฏยะลา</span></p>
 
     <!-- Decorative wave -->
     <div class="hero-wave">
@@ -354,8 +357,8 @@
       <div class="auth-container">
         <div class="auth-header">เข้าสู่ระบบ</div>
         <div class="form-group">
-          <label>ชื่อผู้ใช้</label>
-          <input type="text" id="login-user" placeholder="Username" autocomplete="username">
+          <label>ชื่อผู้ใช้ หรือ อีเมล</label>
+          <input type="text" id="login-user" placeholder="Username หรือ Email" autocomplete="username">
         </div>
         <div class="form-group">
           <label>รหัสผ่าน</label>
@@ -703,6 +706,14 @@
 
 
     <!-- PAGE: ADMIN REPORT -->
+    <div id="page-announcements" class="hidden">
+      <div class="page-header">
+        <h2><i class="fas fa-bullhorn"></i> จัดการประกาศการอัปเดต</h2>
+        <p>ประกาศที่เปิดใช้งานจะแสดงเป็นป็อปอัพให้ผู้เข้าชม และอยู่ในแถบ "อัปเดตล่าสุด"</p>
+      </div>
+      <div id="announce-manager"></div>
+    </div>
+
     <div id="page-admin-report" class="hidden">
       <div class="section-title">
         <h2><i class="fas fa-file-chart-line"></i> รายงาน</h2>
@@ -764,8 +775,8 @@
       <button class="modal-close" onclick="hideAdminLoginModal()">✕</button>
       <h3>สำหรับเจ้าหน้าที่</h3>
       <div class="form-group">
-        <label>Username</label>
-        <input type="text" id="admin-user">
+        <label>Username หรือ Email</label>
+        <input type="text" id="admin-user" autocomplete="username">
       </div>
       <div class="form-group">
         <label>รหัสผ่าน</label>
@@ -776,8 +787,8 @@
   </div>
 
   <!-- MANUAL VIEWER MODAL — อ่านคู่มือในหน้าต่างกลางจอ ไม่ต้องเปิดแท็บใหม่ -->
-  <div id="manual-modal" class="manual-modal hidden" role="dialog" aria-modal="true" aria-labelledby="manual-modal-title"
-    onclick="if(event.target===this)closeManual()">
+  <div id="manual-modal" class="manual-modal hidden" role="dialog" aria-modal="true"
+    aria-labelledby="manual-modal-title" onclick="if(event.target===this)closeManual()">
     <div class="manual-modal-box">
       <div class="manual-modal-bar">
         <div class="manual-modal-title" id="manual-modal-title"><i class="fas fa-images"></i> <span
@@ -794,6 +805,40 @@
       </div>
       <div class="manual-modal-hint">เลื่อนเพื่ออ่าน · กดพื้นที่ว่างหรือปุ่ม Esc เพื่อปิด</div>
     </div>
+  </div>
+
+  <!-- ANNOUNCEMENT POPUP — เด้งครั้งแรกที่ผู้ใช้เข้าเว็บตามเงื่อนไขที่ตั้งไว้ -->
+  <div id="ann-modal" class="ann-modal hidden" role="dialog" aria-modal="true" aria-labelledby="ann-modal-title"
+    onclick="if(event.target===this)closeAnnModal()">
+    <div class="ann-modal-box">
+      <div class="ann-modal-bar">
+        <span class="ann-modal-tag" id="ann-modal-tag">อัปเดตระบบ</span>
+        <button type="button" class="ann-modal-close" onclick="closeAnnModal()" aria-label="ปิด">&times;</button>
+      </div>
+      <div class="ann-modal-body">
+        <h3 class="ann-modal-title" id="ann-modal-title"></h3>
+        <div class="ann-modal-date" id="ann-modal-date"></div>
+        <div class="ann-modal-content" id="ann-modal-content"></div>
+      </div>
+      <div class="ann-modal-foot">
+        <label class="ann-dontshow"><input type="checkbox" id="ann-dontshow-check" checked>
+          ไม่ต้องแสดงประกาศนี้อีก</label>
+        <button type="button" class="ann-modal-ok" onclick="closeAnnModal()">รับทราบ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR อัปเดตล่าสุด -->
+  <button type="button" id="ann-side-tab" class="ann-side-tab hidden" onclick="toggleAnnSidebar()"
+    aria-controls="ann-sidebar" aria-expanded="false">
+    <i class="fas fa-bullhorn"></i><span>อัปเดตล่าสุด</span><span class="ann-side-badge" id="ann-side-badge">0</span>
+  </button>
+  <div id="ann-sidebar" class="ann-sidebar" aria-hidden="true">
+    <div class="ann-sidebar-head">
+      <span><i class="fas fa-bullhorn"></i> อัปเดตล่าสุด</span>
+      <button type="button" onclick="toggleAnnSidebar()" aria-label="ปิดแถบ">&times;</button>
+    </div>
+    <div class="ann-sidebar-body" id="ann-sidebar-body"></div>
   </div>
 
   <!-- FLOATING NAV ICON — ลิงก์แบบฟอร์มประเมิน (ตั้งค่าได้จากหน้า SuperAdmin) -->

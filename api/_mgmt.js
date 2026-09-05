@@ -149,6 +149,18 @@ module.exports = async function handler(req, res) {
         return res.json({ success: true });
       }
 
+      // บันทึกลำดับใหม่ทั้งชุด (ใช้กับการลากเรียงลำดับ)
+      if (action === 'reorder') {
+        const ids = Array.isArray(req.body.ids) ? req.body.ids.map(String) : [];
+        if (!ids.length) return res.json({ success: false, message: 'ไม่มีข้อมูลลำดับที่ส่งมา' });
+        const byId = new Map(all.map(p => [String(p.mgmtId), p]));
+        const ordered = ids.map(id => byId.get(id)).filter(Boolean);
+        // รายการที่ไม่ได้ถูกส่งมา (เช่นถูกเพิ่มจากอีกหน้าจอ) ให้ต่อท้ายไว้ ไม่ให้หาย
+        all.forEach(p => { if (!ids.includes(String(p.mgmtId))) ordered.push(p); });
+        await rewriteAll(sheets, ordered);
+        return res.json({ success: true });
+      }
+
       if (action === 'move') {
         const idx = all.findIndex(p => String(p.mgmtId) === String(mgmtId));
         if (idx < 0) return res.json({ success: false, message: 'ไม่พบรายการนี้' });

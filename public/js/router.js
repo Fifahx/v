@@ -13,6 +13,7 @@ export const ALL_PAGES = [
   'home', 'login', 'register', 'portal', 'tracking', 'manual',
   'faq', 'admin-dashboard', 'admin-tickets',
   'admin-reviews', 'admin-report', 'user-report', 'superadmin',
+  'announcements',
 ];
 
 // ── ฟังก์ชันเหล่านี้ถูก inject จาก app.js ตอน init ──
@@ -58,7 +59,7 @@ export function _doNavigate(pageId) {
   closeMobileNav();
 
   // Guard: admin pages ต้องมี token ที่ยังไม่หมดอายุ
-  const adminPages = ['admin-dashboard', 'admin-tickets', 'admin-reviews', 'admin-report', 'superadmin'];
+  const adminPages = ['admin-dashboard', 'admin-tickets', 'admin-reviews', 'admin-report', 'superadmin', 'announcements'];
   if (adminPages.includes(pageId)) {
     const token = loadToken();
     if (!token || _isTokenExpiredLocal(token)) {
@@ -99,6 +100,7 @@ export function _doNavigate(pageId) {
   if (pageId === 'admin-tickets') { if (cb.loadAdminTickets) cb.loadAdminTickets('pending'); }
   if (pageId === 'admin-reviews') { if (cb.loadReviews) cb.loadReviews(); }
   if (pageId === 'superadmin') { if (cb.loadSuperAdmin) cb.loadSuperAdmin(); }
+  if (pageId === 'announcements') { if (cb.loadAnnounceManager) cb.loadAnnounceManager(); }
   if (pageId === 'faq') { if (cb.loadFaq) cb.loadFaq(); }
   if (pageId === 'tracking') {
     document.getElementById('track-result').innerHTML = '';

@@ -25,6 +25,10 @@
       "destination": "/api/content?module=settings"
     },
     {
+      "source": "/api/announce",
+      "destination": "/api/content?module=announce"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/:path*"
     },

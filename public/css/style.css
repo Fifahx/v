@@ -7375,3 +7375,467 @@ body.font-xl {
   justify-content: center;
   gap: 5px;
 }
+/* ════════════════════════════════════════════════════════
+   PASSWORD SHOW / HIDE
+   ════════════════════════════════════════════════════════ */
+.pw-field {
+  position: relative;
+  display: block;
+}
+
+.pw-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 44px !important;
+}
+
+.pw-toggle-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: #9aa8a1;
+  cursor: pointer;
+  font-size: .95rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pw-toggle-btn:hover {
+  color: var(--dgreen);
+  background: #f0f5f2;
+}
+
+/* ════════════════════════════════════════════════════════
+   MGMT — ลากเรียงลำดับ
+   ════════════════════════════════════════════════════════ */
+.mgmt-reorder-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #f7f9f8;
+  border: 1px solid #e5ebe8;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.mgmt-reorder-hint {
+  font-size: .8rem;
+  color: #7d8c85;
+}
+
+.mgmt-reorder-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.mgmt-btn-save,
+.mgmt-btn-reset {
+  padding: 8px 15px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Sarabun', sans-serif;
+  font-size: .83rem;
+  font-weight: 700;
+}
+
+.mgmt-btn-save {
+  background: var(--dgreen);
+  color: #fff;
+}
+
+.mgmt-btn-reset {
+  background: #fff;
+  border: 1px solid #ddd;
+  color: #666;
+}
+
+.mgmt-btn-save:disabled,
+.mgmt-btn-reset:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.mgmt-drag-handle {
+  flex: 0 0 auto;
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c3cec8;
+  cursor: grab;
+  touch-action: none;
+  /* จำเป็นสำหรับ pointer drag บนมือถือ */
+  user-select: none;
+}
+
+.mgmt-drag-handle:active {
+  cursor: grabbing;
+  color: var(--dgreen);
+}
+
+.mgmt-admin-card.dragging {
+  opacity: .6;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  border-color: var(--dgreen);
+}
+
+/* ════════════════════════════════════════════════════════
+   ประกาศการอัปเดต — ป็อปอัพ / แถบข้าง / หน้าจัดการ
+   ════════════════════════════════════════════════════════ */
+.ann-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 4200;
+  background: rgba(10, 25, 18, .68);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.ann-modal.hidden {
+  display: none;
+}
+
+.ann-modal-box {
+  background: #fff;
+  border-radius: 16px;
+  width: min(540px, 100%);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+}
+
+.ann-modal-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #1b4332, #2d6a4f);
+}
+
+.ann-modal-tag {
+  color: #ffd166;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .5px;
+}
+
+.ann-modal-close {
+  border: none;
+  background: rgba(255, 255, 255, .15);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.ann-modal-body {
+  padding: 18px 20px;
+  overflow: auto;
+}
+
+.ann-modal-title {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #1b4332;
+}
+
+.ann-modal-date {
+  font-size: .78rem;
+  color: #aaa;
+  margin: 5px 0 12px;
+}
+
+.ann-modal-content {
+  font-size: .92rem;
+  line-height: 1.75;
+  color: #444;
+  white-space: pre-wrap;
+}
+
+.ann-modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px 16px;
+  border-top: 1px solid #eee;
+}
+
+.ann-dontshow {
+  font-size: .8rem;
+  color: #777;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.ann-dontshow input {
+  accent-color: #2d6a4f;
+}
+
+.ann-modal-ok {
+  padding: 9px 22px;
+  border: none;
+  border-radius: 9px;
+  background: var(--dgreen);
+  color: #fff;
+  font-family: 'Sarabun', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* แถบข้าง */
+.ann-side-tab {
+  position: fixed;
+  right: 0;
+  top: 42%;
+  z-index: 3400;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 13px;
+  border: none;
+  border-radius: 12px 0 0 12px;
+  background: linear-gradient(135deg, #1b4332, #2d6a4f);
+  color: #fff;
+  font-family: 'Sarabun', sans-serif;
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: -3px 3px 14px rgba(0, 0, 0, .2);
+}
+
+.ann-side-tab.hidden {
+  display: none;
+}
+
+.ann-side-badge {
+  background: #ffd166;
+  color: #5a4200;
+  border-radius: 20px;
+  padding: 1px 7px;
+  font-size: .72rem;
+}
+
+.ann-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(370px, 88vw);
+  z-index: 4100;
+  background: #fff;
+  box-shadow: -6px 0 30px rgba(0, 0, 0, .22);
+  transform: translateX(102%);
+  transition: transform .28s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.ann-sidebar.open {
+  transform: translateX(0);
+}
+
+.ann-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 17px;
+  background: linear-gradient(135deg, #1b4332, #2d6a4f);
+  color: #fff;
+  font-weight: 700;
+}
+
+.ann-sidebar-head button {
+  border: none;
+  background: rgba(255, 255, 255, .15);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.ann-sidebar-body {
+  flex: 1;
+  overflow: auto;
+  padding: 14px;
+}
+
+.ann-item {
+  border: 1px solid #eee;
+  border-left: 3px solid var(--dgreen);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: #fff;
+}
+
+.ann-item-tag {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: .68rem;
+  font-weight: 800;
+  background: #e8f5e9;
+  color: #2d6a4f;
+}
+
+.ann-tag-news {
+  background: #eef4ff;
+  color: #29508c;
+}
+
+.ann-tag-maintenance {
+  background: #fff3cd;
+  color: #a86300;
+}
+
+.ann-item-title {
+  margin: 8px 0 4px;
+  font-size: .95rem;
+  color: #1b4332;
+}
+
+.ann-item-date {
+  font-size: .73rem;
+  color: #aaa;
+  margin-bottom: 7px;
+}
+
+.ann-item-content {
+  margin: 0;
+  font-size: .85rem;
+  line-height: 1.65;
+  color: #555;
+}
+
+/* หน้าจัดการประกาศ */
+.ann-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.ann-manage-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-left: 4px solid var(--dgreen);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 13px;
+  box-shadow: var(--shadow);
+}
+
+.ann-manage-card.is-off {
+  border-left-color: #ccc;
+  opacity: .72;
+}
+
+.ann-manage-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ann-manage-title {
+  display: block;
+  margin-top: 6px;
+  font-size: .98rem;
+  color: #1b4332;
+}
+
+.ann-manage-content {
+  font-size: .86rem;
+  line-height: 1.7;
+  color: #555;
+  margin: 9px 0;
+}
+
+.ann-manage-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: .75rem;
+  color: #999;
+  padding-top: 9px;
+  border-top: 1px dashed #eee;
+}
+
+.ann-manage-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 11px;
+  flex-wrap: wrap;
+}
+
+.ann-manage-btns button {
+  padding: 7px 14px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Sarabun', sans-serif;
+  font-size: .8rem;
+  color: #555;
+}
+
+.ann-manage-btns button:hover {
+  border-color: var(--dgreen);
+  color: var(--dgreen);
+}
+
+.ann-manage-btns button.danger:hover {
+  border-color: #d00000;
+  color: #d00000;
+  background: #fff5f5;
+}
+
+@media(max-width:767px) {
+  .ann-side-tab {
+    top: auto;
+    bottom: 160px;
+    padding: 9px 11px;
+    font-size: .74rem;
+  }
+
+  .ann-side-tab span:not(.ann-side-badge) {
+    display: none;
+  }
+
+  .ann-modal-foot {
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ann-sidebar {
+    transition: none;
+  }
+}
