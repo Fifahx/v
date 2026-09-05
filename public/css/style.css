@@ -23,7 +23,9 @@ body {
   font-family: 'Sarabun', sans-serif;
   background: var(--white);
   color: #2d2d2d;
-  overflow-x: hidden;
+  /* ใช้ clip ไม่ใช่ hidden — hidden จะบังคับให้ overflow-y เป็น auto
+     ทำให้ body กลายเป็น scroll container แล้ว position: sticky ของ header พัง */
+  overflow-x: clip;
 }
 
 a,
@@ -3148,6 +3150,26 @@ header {
   transition: top 0.3s ease;
 }
 
+/* เบราว์เซอร์เก่าที่ยังไม่รองรับ overflow-x: clip — sticky จะไม่ทำงาน
+   จึงถอยไปใช้ fixed แล้วเว้นที่ให้เนื้อหาด้วย padding-top แทน */
+@supports not (overflow-x: clip) {
+
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  header {
+    position: fixed;
+    left: 0;
+    right: 0;
+  }
+
+  body {
+    padding-top: 150px;
+  }
+}
+
 /* Top bar — logos + brand + auth */
 .header-top-bar {
   background: var(--dgreen);
@@ -4051,7 +4073,7 @@ header {
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 @media(max-width:480px) {
