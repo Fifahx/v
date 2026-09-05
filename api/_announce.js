@@ -81,11 +81,12 @@ module.exports = async function handler(req, res) {
       const { action, annId, title, content, type, popup, delayDays, showUntil, status } = req.body || {};
 
       if (action === 'add') {
-        if (!title || !content) return res.json({ success: false, message: 'กรุณากรอกหัวข้อและเนื้อหา' });
+        // ตอนนี้ฟอร์มมีช่องเดียวคือรายละเอียด — หัวข้อจึงไม่บังคับ
+        if (!content) return res.json({ success: false, message: 'กรุณากรอกรายละเอียดการอัปเดต' });
         const ids = all.map(a => Number(a.annId) || 0);
         const newId = ids.length ? Math.max(...ids) + 1 : 1;
         await appendRow(sheets, SHEET_ANN, [
-          newId, formatDateThai(new Date()), title, content, type || 'update',
+          newId, formatDateThai(new Date()), title || '', content, type || 'update',
           auth.username || 'admin',
           popup === false ? 'false' : 'true',
           String(Number(delayDays) || 0),

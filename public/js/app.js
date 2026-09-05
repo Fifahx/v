@@ -1637,21 +1637,13 @@ async function deleteFaq(faqId) { if (!await showConfirm('ลบคำถาม'
 //  ประกาศการอัปเดตระบบ — ป็อปอัพ + แถบอัปเดตล่าสุด + หน้าจัดการ
 // ════════════════════════════════════════════════════════════
 const ANN_API = '/api/content?module=announce';
-const ANN_FIRST_VISIT_KEY = 'voc_first_visit';
+// เก็บใน sessionStorage — ปิดแท็บแล้วเปิดใหม่จะเห็นประกาศอีกครั้ง
 const ANN_SEEN_KEY = 'voc_seen_announcements';
 
 let _annCache = [];
 
-function _annFirstVisit() {
-  try {
-    let v = localStorage.getItem(ANN_FIRST_VISIT_KEY);
-    if (!v) { v = String(Date.now()); localStorage.setItem(ANN_FIRST_VISIT_KEY, v); }
-    return Number(v) || Date.now();
-  } catch (e) { return Date.now(); }
-}
-
 function _annSeen() {
-  try { return JSON.parse(localStorage.getItem(ANN_SEEN_KEY) || '[]'); } catch (e) { return []; }
+  try { return JSON.parse(sessionStorage.getItem(ANN_SEEN_KEY) || '[]'); } catch (e) { return []; }
 }
 
 function _annMarkSeen(id) {
@@ -1659,17 +1651,15 @@ function _annMarkSeen(id) {
     const seen = _annSeen();
     if (!seen.includes(String(id))) {
       seen.push(String(id));
-      localStorage.setItem(ANN_SEEN_KEY, JSON.stringify(seen));
+      sessionStorage.setItem(ANN_SEEN_KEY, JSON.stringify(seen));
     }
   } catch (e) { }
 }
 
-// ถึงเวลาแสดงหรือยัง — นับจากครั้งแรกที่ผู้ใช้คนนี้เข้าเว็บ บวกจำนวนวันที่ตั้งไว้
+// เด้งทุกครั้งที่เข้าเว็บ ยกเว้นปิดไปแล้วในแท็บนี้ หรือเลยวันเวลาที่ตั้งไว้
 function _annShouldPopup(a) {
   if (!a.popup) return false;
   if (_annSeen().includes(String(a.annId))) return false;
-  const due = _annFirstVisit() + (Number(a.delayDays) || 0) * 86400000;
-  if (Date.now() < due) return false;
   if (a.showUntil) {
     const end = new Date(a.showUntil);
     if (!isNaN(end.getTime()) && Date.now() > end.getTime()) return false;
@@ -1678,7 +1668,6 @@ function _annShouldPopup(a) {
 }
 
 async function initAnnouncements() {
-  _annFirstVisit(); // บันทึกเวลาเข้าครั้งแรกทันทีที่โหลดหน้า
   try {
     const res = await fetch(ANN_API);
     const json = await res.json();
@@ -1697,10 +1686,9 @@ function openAnnModal(a) {
   document.getElementById('ann-modal-tag').textContent =
     a.type === 'maintenance' ? 'แจ้งปิดปรับปรุง' : a.type === 'news' ? 'ข่าวประชาสัมพันธ์' : 'อัปเดตระบบ';
   document.getElementById('ann-modal-title').textContent = a.title || '';
-  document.getElementById('ann-modal-date').textContent = a.createdAt || '';
+  document.getElementById('ann-modal-title').style.display = a.title ? '' : 'none';
   document.getElementById('ann-modal-content').textContent = a.content || '';
-  const chk = document.getElementById('ann-dontshow-check');
-  if (chk) chk.checked = true;
+  document.getElementById('ann-modal-date').textContent = a.createdAt || '';
   modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
@@ -1708,7 +1696,8 @@ function openAnnModal(a) {
 function closeAnnModal() {
   const modal = document.getElementById('ann-modal');
   if (!modal) return;
-  if (document.getElementById('ann-dontshow-check')?.checked) _annMarkSeen(modal.dataset.annId);
+  // ปิดแล้วไม่เด้งอีกในแท็บนี้ — เปิดแท็บใหม่จึงจะเห็นอีกครั้ง
+  _annMarkSeen(modal.dataset.annId);
   modal.classList.add('hidden');
   document.body.style.overflow = '';
 }
@@ -1723,9 +1712,9 @@ function renderAnnSidebar() {
   if (badge) badge.textContent = String(_annCache.length);
   body.innerHTML = _annCache.map(a => `<article class="ann-item">
     <span class="ann-item-tag ann-tag-${a.type || 'update'}">${a.type === 'maintenance' ? 'ปิดปรับปรุง' : a.type === 'news' ? 'ข่าว' : 'อัปเดต'}</span>
-    <h4 class="ann-item-title">${_escHtml(a.title)}</h4>
-    <div class="ann-item-date"><i class="fas fa-calendar-alt"></i> ${_escHtml(a.createdAt)}</div>
+    ${a.title ? `<h4 class="ann-item-title">${_escHtml(a.title)}</h4>` : ''}
     <p class="ann-item-content">${_escHtml(a.content).replace(/\n/g, '<br>')}</p>
+    <div class="ann-item-date"><i class="fas fa-calendar-alt"></i> ${_escHtml(a.createdAt)}</div>
   </article>`).join('');
 }
 
@@ -1734,14 +1723,22 @@ function _escHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function toggleAnnSidebar() {
+function toggleAnnSidebar(force) {
   const bar = document.getElementById('ann-sidebar');
   const tab = document.getElementById('ann-side-tab');
+  const back = document.getElementById('ann-sidebar-backdrop');
   if (!bar) return;
-  const open = bar.classList.toggle('open');
+  const open = typeof force === 'boolean' ? force : !bar.classList.contains('open');
+  bar.classList.toggle('open', open);
+  back?.classList.toggle('show', open);
   bar.setAttribute('aria-hidden', open ? 'false' : 'true');
   tab?.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
+
+// กด Esc ปิดแถบอัปเดตล่าสุด (คลิกนอกแถบใช้ฉากหลังจัดการ)
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('ann-sidebar')?.classList.contains('open')) toggleAnnSidebar(false);
+});
 
 // ── หน้าจัดการประกาศ (admin / superadmin) ──
 let _annManagerCache = [];
@@ -1763,17 +1760,17 @@ function renderAnnounceManager(list) {
   const box = document.getElementById('announce-manager');
   let html = `<div class="news-manager-form">
     <h4><i class="fas fa-plus-circle"></i> สร้างประกาศใหม่</h4>
-    <div class="form-group"><label>หัวข้อ *</label><input type="text" id="ann-new-title" placeholder="เช่น อัปเดตระบบเวอร์ชัน 2.1"></div>
-    <div class="form-group"><label>เนื้อหา *</label><textarea id="ann-new-content" rows="4" placeholder="รายละเอียดสิ่งที่เปลี่ยนแปลง"></textarea></div>
+    <div class="form-group"><label>รายละเอียดการอัปเดต *</label>
+      <textarea id="ann-new-content" rows="5" placeholder="เช่น - สามารถเข้าสู่ระบบด้วย Email ได้แล้ว"></textarea></div>
     <div class="ann-form-row">
       <div class="form-group"><label>ประเภท</label>
         <select id="ann-new-type"><option value="update">อัปเดตระบบ</option><option value="news">ข่าวประชาสัมพันธ์</option><option value="maintenance">แจ้งปิดปรับปรุง</option></select></div>
-      <div class="form-group"><label>เด้งหลังเข้าเว็บครั้งแรก (วัน)</label>
-        <input type="number" id="ann-new-delay" min="0" max="365" value="0"></div>
+      <div class="form-group"><label>เด้งหลังจากเข้าเว็บ</label>
+        <select id="ann-new-popup"><option value="true">เด้งทุกครั้งที่เปิดเว็บ</option><option value="false">ไม่เด้ง (แสดงในแถบอัปเดตล่าสุดเท่านั้น)</option></select></div>
       <div class="form-group"><label>แสดงถึงวันเวลา</label>
         <input type="datetime-local" id="ann-new-until"></div>
     </div>
-    <label class="nav-toggle-row"><input type="checkbox" id="ann-new-popup" checked><span>เด้งเป็นป็อปอัพเมื่อผู้ใช้เข้าเว็บ</span></label>
+    <p class="ann-form-note"><i class="fas fa-info-circle"></i> ป็อปอัพจะขึ้นเมื่อผู้ใช้เข้าหน้าเว็บ เมื่อกดปิดแล้วจะไม่ขึ้นอีก จนกว่าจะปิดแท็บแล้วเปิดเว็บใหม่</p>
     <button class="btn-submit" onclick="addAnnouncement()"><i class="fas fa-bullhorn"></i> ประกาศ</button>
   </div>`;
 
@@ -1784,18 +1781,15 @@ function renderAnnounceManager(list) {
     list.forEach(a => {
       html += `<div class="ann-manage-card ${a.status === 'active' ? '' : 'is-off'}">
         <div class="ann-manage-head">
-          <div>
-            <span class="ann-item-tag ann-tag-${a.type || 'update'}">${a.type === 'maintenance' ? 'ปิดปรับปรุง' : a.type === 'news' ? 'ข่าว' : 'อัปเดต'}</span>
-            <strong class="ann-manage-title">${_escHtml(a.title)}</strong>
-          </div>
+          <span class="ann-item-tag ann-tag-${a.type || 'update'}">${a.type === 'maintenance' ? 'ปิดปรับปรุง' : a.type === 'news' ? 'ข่าว' : 'อัปเดต'}</span>
           <span class="status ${a.status === 'active' ? 'status-success' : 'status-reject'}">${a.status === 'active' ? 'เปิดใช้งาน' : 'ปิดอยู่'}</span>
         </div>
+        ${a.title ? `<strong class="ann-manage-title">${_escHtml(a.title)}</strong>` : ''}
         <p class="ann-manage-content">${_escHtml(a.content).replace(/\n/g, '<br>')}</p>
         <div class="ann-manage-meta">
           <span><i class="fas fa-calendar-alt"></i> ${_escHtml(a.createdAt)}</span>
           <span><i class="fas fa-user"></i> ${_escHtml(a.author)}</span>
-          <span><i class="fas fa-bell"></i> ${a.popup ? 'เด้งป็อปอัพ' : 'ไม่เด้ง'}</span>
-          <span><i class="fas fa-hourglass-half"></i> หน่วง ${a.delayDays} วัน</span>
+          <span><i class="fas fa-bell"></i> ${a.popup ? 'เด้งทุกครั้งที่เปิดเว็บ' : 'ไม่เด้ง'}</span>
           <span><i class="fas fa-clock"></i> ${a.showUntil ? _escHtml(a.showUntil.replace('T', ' ')) : 'ไม่มีวันสิ้นสุด'}</span>
         </div>
         <div class="ann-manage-btns">
@@ -1810,17 +1804,17 @@ function renderAnnounceManager(list) {
 }
 
 async function addAnnouncement() {
-  const title = document.getElementById('ann-new-title')?.value.trim();
   const content = document.getElementById('ann-new-content')?.value.trim();
-  if (!title || !content) { await showAlert('ข้อมูลไม่ครบ', 'กรุณากรอกหัวข้อและเนื้อหา'); return; }
+  if (!content) { await showAlert('ข้อมูลไม่ครบ', 'กรุณากรอกรายละเอียดการอัปเดต'); return; }
   const payload = {
-    action: 'add', title, content,
+    action: 'add', title: '', content,
     type: document.getElementById('ann-new-type')?.value || 'update',
-    popup: !!document.getElementById('ann-new-popup')?.checked,
-    delayDays: Number(document.getElementById('ann-new-delay')?.value) || 0,
+    popup: document.getElementById('ann-new-popup')?.value !== 'false',
+    delayDays: 0,
     showUntil: document.getElementById('ann-new-until')?.value || '',
   };
-  if (!await showConfirm('ยืนยันการบันทึกประกาศ', `ต้องการประกาศ <strong>${_escHtml(title)}</strong> ใช่หรือไม่?`)) return;
+  const preview = content.length > 60 ? content.slice(0, 60) + '...' : content;
+  if (!await showConfirm('ยืนยันการบันทึกประกาศ', `ต้องการประกาศ <strong>${_escHtml(preview)}</strong> ใช่หรือไม่?`)) return;
   try {
     const res = await api.post(ANN_API, payload);
     if (res.success) { showToast('ประกาศสำเร็จ', 'success'); loadAnnounceManager(); }
@@ -1835,13 +1829,11 @@ function editAnnouncement(annId) {
   o.className = 'voc-overlay'; o.id = 'edit-ann-overlay';
   o.innerHTML = `<div class="voc-modal-box" style="max-width:600px;">
     <div class="voc-modal-title"><i class="fas fa-edit"></i> แก้ไขประกาศ</div>
-    <div class="form-group"><label>หัวข้อ *</label><input type="text" id="edit-ann-title" value="${_escHtml(a.title)}" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;"></div>
-    <div class="form-group"><label>เนื้อหา *</label><textarea id="edit-ann-content" rows="4" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;">${_escHtml(a.content)}</textarea></div>
+    <div class="form-group"><label>รายละเอียดการอัปเดต *</label><textarea id="edit-ann-content" rows="5" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:'Sarabun',sans-serif;box-sizing:border-box;margin-top:4px;">${_escHtml(a.content)}</textarea></div>
     <div class="ann-form-row">
-      <div class="form-group"><label>หน่วง (วัน)</label><input type="number" id="edit-ann-delay" min="0" max="365" value="${a.delayDays}" style="width:100%;padding:9px;border:1.5px solid #ddd;border-radius:8px;box-sizing:border-box;"></div>
+      <div class="form-group"><label>เด้งหลังจากเข้าเว็บ</label><select id="edit-ann-popup" style="width:100%;padding:9px;border:1.5px solid #ddd;border-radius:8px;box-sizing:border-box;font-family:'Sarabun',sans-serif;"><option value="true" ${a.popup ? 'selected' : ''}>เด้งทุกครั้งที่เปิดเว็บ</option><option value="false" ${a.popup ? '' : 'selected'}>ไม่เด้ง</option></select></div>
       <div class="form-group"><label>แสดงถึง</label><input type="datetime-local" id="edit-ann-until" value="${_escHtml(a.showUntil)}" style="width:100%;padding:9px;border:1.5px solid #ddd;border-radius:8px;box-sizing:border-box;"></div>
     </div>
-    <label class="nav-toggle-row"><input type="checkbox" id="edit-ann-popup" ${a.popup ? 'checked' : ''}><span>เด้งเป็นป็อปอัพ</span></label>
     <div class="voc-modal-btns">
       <button class="voc-btn-cancel" onclick="document.getElementById('edit-ann-overlay').remove()">ยกเลิก</button>
       <button class="voc-btn-ok" onclick="updateAnnouncement('${a.annId}')">บันทึกการแก้ไข</button>
@@ -1851,15 +1843,15 @@ function editAnnouncement(annId) {
 }
 
 async function updateAnnouncement(annId) {
-  const title = document.getElementById('edit-ann-title')?.value.trim();
   const content = document.getElementById('edit-ann-content')?.value.trim();
-  if (!title || !content) { await showAlert('ข้อมูลไม่ครบ', 'กรุณากรอกหัวข้อและเนื้อหา'); return; }
-  if (!await showConfirm('ยืนยันการบันทึกการแก้ไข', `ต้องการบันทึกประกาศ <strong>${_escHtml(title)}</strong> ใช่หรือไม่?`)) return;
+  if (!content) { await showAlert('ข้อมูลไม่ครบ', 'กรุณากรอกรายละเอียดการอัปเดต'); return; }
+  const preview = content.length > 60 ? content.slice(0, 60) + '...' : content;
+  if (!await showConfirm('ยืนยันการบันทึกการแก้ไข', `ต้องการบันทึกประกาศ <strong>${_escHtml(preview)}</strong> ใช่หรือไม่?`)) return;
   try {
     const res = await api.post(ANN_API, {
-      action: 'update', annId, title, content,
-      popup: !!document.getElementById('edit-ann-popup')?.checked,
-      delayDays: Number(document.getElementById('edit-ann-delay')?.value) || 0,
+      action: 'update', annId, content,
+      popup: document.getElementById('edit-ann-popup')?.value !== 'false',
+      delayDays: 0,
       showUntil: document.getElementById('edit-ann-until')?.value || '',
     });
     if (res.success) {
@@ -1880,7 +1872,8 @@ async function toggleAnnouncement(annId, status) {
 
 async function deleteAnnouncement(annId) {
   const a = _annManagerCache.find(x => String(x.annId) === String(annId));
-  if (!await showConfirm('ลบประกาศ', `ต้องการลบ <strong>${_escHtml(a?.title || annId)}</strong> ใช่หรือไม่?<br><small style="color:#d00000;">ไม่สามารถเรียกคืนได้</small>`, 'danger')) return;
+  const label = (a?.content || a?.title || annId).slice(0, 60);
+  if (!await showConfirm('ลบประกาศ', `ต้องการลบ <strong>${_escHtml(label)}</strong> ใช่หรือไม่?<br><small style="color:#d00000;">ไม่สามารถเรียกคืนได้</small>`, 'danger')) return;
   try {
     const res = await api.post(ANN_API, { action: 'delete', annId });
     if (res.success) { showToast('ลบประกาศสำเร็จ', 'success'); loadAnnounceManager(); }

@@ -7375,6 +7375,7 @@ body.font-xl {
   justify-content: center;
   gap: 5px;
 }
+
 /* ════════════════════════════════════════════════════════
    PASSWORD SHOW / HIDE
    ════════════════════════════════════════════════════════ */
@@ -7558,17 +7559,19 @@ body.font-xl {
   color: #1b4332;
 }
 
+.ann-modal-content {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: #333;
+  white-space: pre-wrap;
+}
+
 .ann-modal-date {
   font-size: .78rem;
   color: #aaa;
-  margin: 5px 0 12px;
-}
-
-.ann-modal-content {
-  font-size: .92rem;
-  line-height: 1.75;
-  color: #444;
-  white-space: pre-wrap;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed #eee;
 }
 
 .ann-modal-foot {
@@ -7636,6 +7639,22 @@ body.font-xl {
   border-radius: 20px;
   padding: 1px 7px;
   font-size: .72rem;
+}
+
+/* ฉากหลังโปร่ง — กดที่นี่เพื่อปิดแถบ */
+.ann-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 4050;
+  background: rgba(10, 25, 18, .35);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .25s ease;
+}
+
+.ann-sidebar-backdrop.show {
+  opacity: 1;
+  visibility: visible;
 }
 
 .ann-sidebar {
@@ -7720,17 +7739,20 @@ body.font-xl {
   color: #1b4332;
 }
 
+.ann-item-content {
+  margin: 8px 0 0;
+  font-size: .9rem;
+  line-height: 1.7;
+  color: #333;
+  font-weight: 500;
+}
+
 .ann-item-date {
   font-size: .73rem;
   color: #aaa;
-  margin-bottom: 7px;
-}
-
-.ann-item-content {
-  margin: 0;
-  font-size: .85rem;
-  line-height: 1.65;
-  color: #555;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px dashed #eee;
 }
 
 /* หน้าจัดการประกาศ */
@@ -7757,10 +7779,21 @@ body.font-xl {
 
 .ann-manage-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.ann-form-note {
+  font-size: .78rem;
+  color: #7d8c85;
+  background: #f7f9f8;
+  border: 1px solid #e5ebe8;
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin: 4px 0 14px;
 }
 
 .ann-manage-title {

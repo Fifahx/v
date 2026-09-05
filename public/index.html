@@ -817,12 +817,10 @@
       </div>
       <div class="ann-modal-body">
         <h3 class="ann-modal-title" id="ann-modal-title"></h3>
-        <div class="ann-modal-date" id="ann-modal-date"></div>
         <div class="ann-modal-content" id="ann-modal-content"></div>
+        <div class="ann-modal-date" id="ann-modal-date"></div>
       </div>
       <div class="ann-modal-foot">
-        <label class="ann-dontshow"><input type="checkbox" id="ann-dontshow-check" checked>
-          ไม่ต้องแสดงประกาศนี้อีก</label>
         <button type="button" class="ann-modal-ok" onclick="closeAnnModal()">รับทราบ</button>
       </div>
     </div>
@@ -833,6 +831,7 @@
     aria-controls="ann-sidebar" aria-expanded="false">
     <i class="fas fa-bullhorn"></i><span>อัปเดตล่าสุด</span><span class="ann-side-badge" id="ann-side-badge">0</span>
   </button>
+  <div id="ann-sidebar-backdrop" class="ann-sidebar-backdrop" onclick="toggleAnnSidebar()"></div>
   <div id="ann-sidebar" class="ann-sidebar" aria-hidden="true">
     <div class="ann-sidebar-head">
       <span><i class="fas fa-bullhorn"></i> อัปเดตล่าสุด</span>
