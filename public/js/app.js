@@ -3104,14 +3104,35 @@ window.onload = function () {
       header.style.top = '0px';
     }
 
-    // เลื่อนลงพอสมควรแล้ว ให้ยุบแถบบน (โลโก้/ชื่อระบบ) เหลือแค่แถบเมนู
-    // เผื่อระยะ 80/40 กันสั่นตอนเลื่อนขึ้นลงใกล้จุดตัด
-    const compact = header.classList.contains('compact');
-    if (!compact && window.scrollY > 80) header.classList.add('compact');
-    else if (compact && window.scrollY < 40) header.classList.remove('compact');
+    _updateCompact(header);
   }
 
-  window.addEventListener('scroll', _updateBar, { passive: true });
+  // ── ยุบแถบบนเหลือแค่แถบเมนูเมื่อเลื่อนลง ──
+  // การยุบทำให้ความสูง header เปลี่ยน เนื้อหาจึงขยับ และ scrollY อาจกระเด้งข้ามจุดตัดไปมา
+  // จึงต้องมีทั้งช่วงเผื่อกว้าง ๆ และล็อกเวลาสั้น ๆ หลังสลับ ไม่ให้สลับซ้ำระหว่างอนิเมชัน
+  let _compactLockUntil = 0;
+  function _updateCompact(header) {
+    if (Date.now() < _compactLockUntil) return;
+    const y = window.scrollY;
+    const compact = header.classList.contains('compact');
+    if (!compact && y > 160) {
+      header.classList.add('compact');
+      _compactLockUntil = Date.now() + 450;
+    } else if (compact && y < 60) {
+      header.classList.remove('compact');
+      _compactLockUntil = Date.now() + 450;
+    }
+  }
+
+  // รวมงานไว้ใน rAF เฟรมเดียว — scroll ยิงถี่มาก ถ้าอ่าน/เขียน layout ทุกครั้งจะกระตุก
+  let _barTicking = false;
+  function _onScroll() {
+    if (_barTicking) return;
+    _barTicking = true;
+    requestAnimationFrame(() => { _barTicking = false; _updateBar(); });
+  }
+
+  window.addEventListener('scroll', _onScroll, { passive: true });
 
   // รัน ทั้งตอน DOMContentLoaded และ load เพื่อความแน่ใจหลัง font/resource โหลด
   document.addEventListener('DOMContentLoaded', function () {
