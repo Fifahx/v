@@ -3103,6 +3103,12 @@ window.onload = function () {
       bar.classList.add('bar-hidden');
       header.style.top = '0px';
     }
+
+    // เลื่อนลงพอสมควรแล้ว ให้ยุบแถบบน (โลโก้/ชื่อระบบ) เหลือแค่แถบเมนู
+    // เผื่อระยะ 80/40 กันสั่นตอนเลื่อนขึ้นลงใกล้จุดตัด
+    const compact = header.classList.contains('compact');
+    if (!compact && window.scrollY > 80) header.classList.add('compact');
+    else if (compact && window.scrollY < 40) header.classList.remove('compact');
   }
 
   window.addEventListener('scroll', _updateBar, { passive: true });
